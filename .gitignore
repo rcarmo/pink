@@ -1,5 +1,9 @@
 *.py[cod]
 
+# Mac stuff
+.DS_Store
+.AppleDouble
+
 # C extensions
 *.so
 

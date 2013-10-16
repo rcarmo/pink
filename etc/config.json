@@ -1,0 +1,48 @@
+{
+    "#": "Simple configuration file for our little dev server.",
+    "debug": true,
+    "reloader": true,
+    "environment": "dev",
+    "http": {
+        "bind_address": "0.0.0.0",
+        "port": 9000
+    },
+    "errors": {
+        "pages": {
+            "base_uri": "/api/public/code",
+            "403": {
+                "heading": "Access denied",
+                "message": "You do not have the correct access permissions for this resource"
+            }
+        }
+    },
+    "#": "Do not add comments from this line down - dictConfig doesn't like them.",
+    "logging": {
+        "version": 1,
+        "formatters": {
+            "http": {
+                "format" : "localhost - - [%(asctime)s] %(process)d %(levelname)s %(message)s",
+                "datefmt": "%Y/%m/%d %H:%M:%S"
+            }
+        },
+        "handlers": {
+            "console": {
+                "class"    : "logging.StreamHandler",
+                "formatter": "http",
+                "level"    : "DEBUG",
+                "stream"   : "ext://sys.stdout"
+            }
+        },
+        "loggers": {
+            "some.module": {
+                "level"    : "DEBUG",
+                "handlers" : ["console"],
+                "propagate": false
+            }
+        },
+        "root": {
+            "level"   : "DEBUG",
+            "handlers": ["console"]
+        }
+    }
+}
