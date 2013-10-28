@@ -257,7 +257,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
                     if (visibleRouteHashMap[route.hash]) {
                         visibleRouteHashMap[route.hash].isActive(true);
                     } else if (route.parentHash && visibleRouteHashMap[route.parentHash]) {
-                        visibleRouteHashMap[route.hash].isActive(true);
+                        visibleRouteHashMap[route.parentHash].isActive(true);
                     }
                 };
             })();
