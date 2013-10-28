@@ -110,6 +110,11 @@ footer {
     right: 0px;
 }
 
+footer>.ink-navigation>ul>li>a {
+	display: block ! important;
+	text-align: center;
+}
+
 #mainMenuContainer {
     height:0px;
     overflow: visible;
@@ -120,8 +125,21 @@ footer {
     left: 0px; 
     right: 0px;
     margin-top: -1.5em;
+    z-index: 10000;
 }
 
+.scroll-area {
+	position: absolute;
+	left: 0.9em;
+	top: 2em;
+	right: 0.9em;
+	bottom: 3em;
+	overflow-y: auto;
+}
+
+.task-item {
+	cursor: pointer;	
+}
 
 /*****************************
   Standby lightbox 

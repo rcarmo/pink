@@ -26,7 +26,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
         this.infoModule = {
             title: ko.observable()
         };
-    }
+    };
 
     /* 
      * Toast notifications API
@@ -40,7 +40,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
         element.setTextContent(toast, message);
         panel.appendChild(toast);
         window.setTimeout(function() {element.remove(toast);}, delay);
-    }
+    };
     
     Module.prototype.showInfoToast = function(message) {
         this._showToast(message, 'info', 2000);
@@ -66,7 +66,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
         style.height = '300px';
         
         this.showModalWindow(title, moduleName, params, style);
-    }
+    };
 
     
     Module.prototype.showSmallModalWindow = function(title, moduleName, params, modalStyle) {
@@ -76,7 +76,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
         style.height = '500px';
         
         this.showModalWindow(title, moduleName, params, style);
-    }
+    };
     
     Module.prototype.showLargeModalWindow = function(title, moduleName, params, modalStyle) {
         var style = modalStyle || {};
@@ -85,7 +85,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
         style.height = '600px';
         
         this.showModalWindow(title, moduleName, params, style);
-    }
+    };
 
     Module.prototype.showModalWindow = function(title, moduleName, params, modalStyle) {
         this.modalModule.content(undefined);
@@ -97,17 +97,17 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
         this.modalModule.title(title);
         this.modalModule.content(moduleName);
         this.modalModule.modal.show(params);
-    }
+    };
 
     Module.prototype.showConfirm = function(title, message, callback) {
         this.alertModule.title(title);
         this.alertModule.modal.show({message: message, confirmCallback: callback});
-    }
+    };
 
     Module.prototype.showInfoBox = function(title, message) {
         this.infoModule.title(title);
         this.infoModule.modal.show({message: message});
-    }
+    };
     
     Module.prototype.showStandby = function() {
         var standbyPanel = document.getElementById('standbyLightBox');
@@ -115,7 +115,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
         if (standbyPanel.className.indexOf(' visible') < 0) {
             standbyPanel.className+=' visible';
         }
-    }
+    };
     
     Module.prototype.hideStandby = function() {
         window.setTimeout(function() {
@@ -125,7 +125,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
                 standbyPanel.className=standbyPanel.className.replace(' visible', '');
             }
         }, 500);
-    }
+    };
     
     /*
      * Define routing maps
@@ -142,7 +142,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
      */
     Module.prototype.listVisibleRoutes = function() {
         return [];
-    }
+    };
     
 
     /*
@@ -155,7 +155,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
      */
     Module.prototype.listInvisibleRoutes = function() {
         return [];
-    }
+    };
     
     
     Module.prototype._defineRoutingMaps = function () {
@@ -166,7 +166,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
             activeModule: ko.observable(undefined),
             moduleArgs: ko.observable(undefined)
         };
-    }
+    };
     
     /*
      * Allows a plugin to add a new visible route
@@ -174,7 +174,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
      */
     Module.prototype.addVisibleRoute = function(route) {
         this.definedRoutes.visibleRoutes.push(route);
-    }
+    };
 
     /*
      * Allows a plugin to add a new invisible route
@@ -182,7 +182,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
      */
     Module.prototype.addInvisibleRoute = function(route) {
         this.definedRoutes.invisibleRoutes.push(route);
-    }
+    };
     
     /*
      * This methods is responsible for:
@@ -193,7 +193,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
     Module.prototype._buildRoutingMaps = function() {
         var self = this;
         var routeHashMap = {};
-        var visibleRouteModuleMap = {};
+        var visibleRouteHashMap = {};
         var routes = [];
         var route;
 
@@ -203,7 +203,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
         // Initialize the visible routes map
         for (var i = 0; i < this.definedRoutes.visibleRoutes.length; i++) {
             route = this.definedRoutes.visibleRoutes[i];
-            visibleRouteModuleMap[route.module] = route;
+            visibleRouteHashMap[route.hash] = route;
         }
 
         // Configure each route's callback function
@@ -222,9 +222,13 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
                         self.definedRoutes.visibleRoutes[i].isActive(false);
                     }
 
-                    // Set the module's initialize func arguments
                     // Clear the active module to prevent reloading the module when moduleArgs changes
                     self.definedRoutes.activeModule(undefined);
+
+
+                    // -----------------------------------------------
+                    // Set the module's initializer function arguments
+                    // -----------------------------------------------
 
                     // Retrive the parameters name from the route hash
                     parameters = route.hash.match(/:[a-z]+/g);
@@ -238,6 +242,10 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
                             values[parameters[i].replace(":", "")] = argumentsValues[i];
                         }
                     }
+                    
+                    if (route.arguments) {
+                        values = Ink.extendObj(values, route.arguments);
+                    }
 
                     // Pass the parameters and its values to the module
                     self.definedRoutes.moduleArgs([values]);
@@ -246,17 +254,17 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
                     // Send a signal telling to which view the app changed
                     self.signals.viewChanged.dispatch(route);
 
-                    if (visibleRouteModuleMap[route.module]) {
-                        visibleRouteModuleMap[route.module].isActive(true);
-                    } else if (route.parentModule && visibleRouteModuleMap[route.parentModule]) {
-                        visibleRouteModuleMap[route.parentModule].isActive(true);
+                    if (visibleRouteHashMap[route.hash]) {
+                        visibleRouteHashMap[route.hash].isActive(true);
+                    } else if (route.parentHash && visibleRouteHashMap[route.parentHash]) {
+                        visibleRouteHashMap[route.hash].isActive(true);
                     }
                 };
             })();
         };
 
         this._router = new Router(routeHashMap);
-    }
+    };
 
     /*
      * Signals setup
@@ -277,7 +285,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
          * 
          * this.signals.userAdded = new Signal();
          */
-    }
+    };
     
     
     Module.prototype._setupSignals = function() {
@@ -289,7 +297,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
         this.signals.shellRendered = new Signal();
         
         this.addCustomSignals();
-    }
+    };
 
     
     /*
@@ -300,7 +308,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
      */
     Module.prototype.navigateTo = function(path, options) {
         Router.navigate(path, options);
-    }
+    };
 
     /*
      * Bootstrap plugins init
@@ -317,7 +325,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
      */
     Module.prototype.listPluginModules = function() {
         return [];
-    }
+    };
     
     Module.prototype._loadPlugins = function(callback) {
         var self=this;
@@ -325,11 +333,11 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
         window.setTimeout(function() {
             console.log('Loading plugins...');
             Ink.requireModules(self.listPluginModules(), function() {
-                console.log('All plugins loaded.')
+                console.log('All plugins loaded.');
                 callback();
             });        
         }, 0);
-    }
+    };
     
     /*
      * Application startup logic
@@ -346,7 +354,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
         * 
         * this.navigateTo('home');
         */ 
-    }
+    };
     
     Module.prototype.run = function() {
         var self=this;
@@ -360,7 +368,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
             ko.applyBindings();
         });
         this.navigateToStart();
-    }
+    };
 
     return Module;
 });

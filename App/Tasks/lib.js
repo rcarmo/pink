@@ -22,15 +22,16 @@ Ink.createModule('App.Tasks', '1', ['Ink.App_1', 'Ink.Data.Binding_1', 'Ink.Plug
      */
     Module.prototype.listVisibleRoutes = function() {
         return [
-          {isActive: ko.observable(true), caption: 'Todo', hash: 'home', module: 'App.Tasks.Home'},
-          {isActive: ko.observable(true), caption: 'Completed', hash: 'completed', module: 'App.Tasks.Completed'},
-          {isActive: ko.observable(true), caption: 'Incomplete', hash: 'incomplete', module: 'App.Tasks.Incomplete'}
+          {isActive: ko.observable(true), caption: 'To-do', hash: 'todo', module: 'App.Tasks.Home', arguments: {filter: 'todo'}},
+          {isActive: ko.observable(true), caption: 'Completed', hash: 'completed', module: 'App.Tasks.Home', arguments: {filter: 'complete'}},
+          {isActive: ko.observable(true), caption: 'Incomplete', hash: 'incomplete', module: 'App.Tasks.Home', arguments: {filter: 'incomplete'}}
         ];
     };
 
     Module.prototype.listInvisibleRoutes = function() {
         return [
-          //{isActive: ko.observable(false), hash: 'dashboard\\?search=:search', module: 'App.Intra.Dashboard.ListAll', parentModule: 'App.Intra.Dashboard'},
+          {hash: 'new', module: 'App.Tasks.EditTask'},
+          {hash: 'edit\\?id=:id', module: 'App.Tasks.EditTask'}
         ];
     };
     
@@ -40,6 +41,8 @@ Ink.createModule('App.Tasks', '1', ['Ink.App_1', 'Ink.Data.Binding_1', 'Ink.Plug
      * 
      */
     Module.prototype.addCustomSignals = function() {
+    	this.signals.taskAdded = new Signal();
+    	this.signals.taskUpdated = new Signal();
     };
 
     /*
@@ -50,7 +53,7 @@ Ink.createModule('App.Tasks', '1', ['Ink.App_1', 'Ink.Data.Binding_1', 'Ink.Plug
         var self=this;
         
         if (window.location.hash=='') {
-            self.navigateTo('home');
+            self.navigateTo('todo');
         }
     };
     
