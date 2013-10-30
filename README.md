@@ -1,7 +1,7 @@
-ink-stamp
+Pink
 =========
 
-A STructured Approach at Modular Programming (with [Ink][i])
+Modular Programming (with [Ink][i]).
 
 # Goals
 
