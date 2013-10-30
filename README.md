@@ -1,7 +1,7 @@
 Pink
 =========
 
-Modular Programming (with [Ink][i]).
+An architectural Pattern for [Ink][i]).
 
 # Goals
 
