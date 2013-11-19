@@ -70,6 +70,29 @@ Ink.createModule('App.Tasks.Home', '1', ['App.Tasks', 'Ink.Data.Binding_1', 'App
     Module.prototype.afterRender = function() {
         document.getElementById('mainMenuDropDown').style.display = 'none';  
     };
+
+    Module.prototype.tasksMovedHandler = function(source, tasks) {
+    	var i;
+    	var task;
+    	var newStatus='todo';
+    	
+    	if (source==this.incompleteTasks) {
+    		newStatus='incomplete';
+    	} else if (source==this.completedTasks) {
+    		newStatus='completed';
+    	}
+
+    	for (i=0; i<tasks.length; i++) {
+    		task=tasks[i];
+    		task.status=newStatus;
+    	}
+
+    	for (i=0; i<source().length; i++) {
+    		task=source()[i];
+    		dataProvider.deleteTask(task);
+    		dataProvider.addTask(task);
+    	}
+    };
     
     Module.prototype.taskAddedHandler = function(task) {
     	this.loadTasks();
