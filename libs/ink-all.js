@@ -20,13 +20,12 @@
 
     // internal data
 
-    /**
+    /*
      * NOTE:
      * invoke Ink.setPath('Ink', '/Ink/'); before requiring local modules
      */
     var paths = {
-        Ink: window.location.protocol + '//js.ink.sapo.pt/Ink/' // TODO as soon as a production site exists, replace this default!
-	//Ink: ( ('INK_PATH' in window) ? window.INK_PATH :'http://inkjs.gamblap/Ink/' )
+	    Ink: ( ('INK_PATH' in window) ? window.INK_PATH : window.location.protocol + '//js.ink.sapo.pt/Ink/' )
     };
     var modules = {};
     var modulesLoadOrder = [];
@@ -34,12 +33,15 @@
     var pendingRMs = [];
 
 
+
     // auxiliary fns
     var isEmptyObject = function(o) {
         /*jshint unused:false */
         if (typeof o !== 'object') { return false; }
         for (var k in o) {
-            return false;
+            if (o.hasOwnProperty(k)) {
+                return false;
+            }
         }
         return true;
     };
@@ -50,27 +52,19 @@
 
         _checkPendingRequireModules: function() {
             var I, F, o, dep, mod, cb, pRMs = [];
-            
-            // INTRA: The pendingRMs 'ink global' variable causes a potential reentrance problem in requireModules 
-            // if the callback function makes itself another call to requireModules.
-            // eg.
-            // Ink.requireModules(['A', 'B'], function(a, b) {
-            //   Ink.requireModules(['C'], function(c) {
-            //     // This will never get invoked
-            //   });
-            // });
-            
             for (I = 0, F = pendingRMs.length; I < F; ++I) {
                 o = pendingRMs[I];
 
                 if (!o) { continue; }
-                
+
                 for (dep in o.left) {
-                    mod = modules[dep];
-                    if (mod) {
-                        o.args[o.left[dep] ] = mod;
-                        delete o.left[dep];
-                        --o.remaining;
+                    if (o.left.hasOwnProperty(dep)) {
+                        mod = modules[dep];
+                        if (mod) {
+                            o.args[o.left[dep] ] = mod;
+                            delete o.left[dep];
+                            --o.remaining;
+                        }
                     }
                 }
 
@@ -82,12 +76,11 @@
                     if (!cb) { continue; }
                     delete o.cb; // to make sure I won't call this more than once!
                     cb.apply(false, o.args);
-                    
                 }
             }
 
             pendingRMs = pRMs;
-            
+
             if (pendingRMs.length > 0) {
                 setTimeout( function() { Ink._checkPendingRequireModules(); }, 0 );
             }
@@ -195,15 +188,16 @@
          */
         createModule: function(mod, ver, deps, modFn) { // define
             var cb = function() {
-                /*global console:false */
-
                 //console.log(['createModule(', mod, ', ', ver, ', [', deps.join(', '), '], ', !!modFn, ')'].join(''));
 
+                if (typeof mod !== 'string') {
+                    throw new Error('module name must be a string!');
+                }
 
                 // validate version correctness
                 if (typeof ver === 'number' || (typeof ver === 'string' && ver.length > 0)) {
                 } else {
-                    throw new Error('version must be passed!');
+                    throw new Error('version number missing!');
                 }
 
                 var modAll = [mod, '_', ver].join('');
@@ -293,6 +287,13 @@
                 cb: cbFn
             };
 
+            if (!(typeof deps === 'object' && deps.length !== undefined)) {
+                throw new Error('Dependency list should be an array!');
+            }
+            if (typeof cbFn !== 'function') {
+                throw new Error('Callback should be a function!');
+            }
+
             for (i = 0; i < f; ++i) {
                 dep = deps[i];
                 mod = modules[dep];
@@ -330,6 +331,7 @@
 
         /**
          * returns the markup you should have to bundle your JS resources yourself
+         *
          * @return {String} scripts markup
          */
         getModuleScripts: function() {
@@ -349,12 +351,12 @@
         },
 
         /**
-         * Function.prototype.bind alternative
+         * Function.prototype.bind alternative.
+         * Additional arguments will be sent to the original function as prefix arguments.
          *
-         * @function bind
+         * @method bind
          * @param {Function}  fn
          * @param {Object}    context
-         * @param {any}       args*
          * @return {Function}
          */
         bind: function(fn, context) {
@@ -367,13 +369,38 @@
         },
 
         /**
-         * Function.prototype.bind alternative
-         * same as bind but keeps first argument of the call the original event
+         * Function.prototype.bind alternative for binding class methods
          *
-         * @function bindEvent
+         * @method bindMethod
+         * @param {Object}  object
+         * @param {String}  methodName
+         * @return {Function}
+         *  
+         * @example
+         *  // Build a function which calls Ink.Dom.Element.remove on an element.
+         *  var removeMyElem = Ink.bindMethod(Ink.Dom.Element, 'remove', someElement);
+         *
+         *  removeMyElem();  // no arguments, nor Ink.Dom.Element, needed
+         * @example
+         *  // (comparison with using Ink.bind to the same effect).
+         *  // The following two calls are equivalent
+         *
+         *  Ink.bind(this.remove, this, myElem);
+         *  Ink.bindMethod(this, 'remove', myElem);
+         */
+        bindMethod: function (object, methodName) {
+            return this.bind.apply(this,
+                [object[methodName], object].concat([].slice.call(arguments, 2)));
+        },
+
+        /**
+         * Function.prototype.bind alternative for event handlers.
+         * Same as bind but keeps first argument of the call the original event.
+         * Additional arguments will be sent to the original function as prefix arguments.
+         *
+         * @method bindEvent
          * @param {Function}  fn
          * @param {Object}    context
-         * @param {any}       args*
          * @return {Function}
          */
         bindEvent: function(fn, context) {
@@ -388,7 +415,7 @@
         /**
          * alias to document.getElementById
          *
-         * @function i
+         * @method i
          * @param {String} id
          */
         i: function(id) {
@@ -404,7 +431,7 @@
         /**
          * alias to sizzle or querySelector
          *
-         * @function s
+         * @method s
          * @param {String}     rule
          * @param {DOMElement} [from]
          * @return {DOMElement}
@@ -414,22 +441,13 @@
             if(typeof(Ink.Dom) === 'undefined' || typeof(Ink.Dom.Selector) === 'undefined') {
                 throw new Error('This method requires Ink.Dom.Selector');
             }
-            if(!document.querySelector) {
-                var aRes = Ink.Dom.Selector.select(rule, (from || document));
-                if(aRes.length > 0) {
-                    return aRes[0];
-                } else {
-                    return null;
-                }
-            } else {
-                return (from || document).querySelector(rule);
-            }
+            return Ink.Dom.Selector.select(rule, (from || document))[0] || null;
         },
 
         /**
          * alias to sizzle or querySelectorAll
          *
-         * @function ss
+         * @method ss
          * @param {String}     rule
          * @param {DOMElement} [from]
          * @return {Array} array of DOMElements
@@ -439,51 +457,33 @@
             if(typeof(Ink.Dom) === 'undefined' || typeof(Ink.Dom.Selector) === 'undefined') {
                 throw new Error('This method requires Ink.Dom.Selector');
             }
-            if(!document.querySelectorAll) {
-                return Ink.Dom.Selector.select(rule, (from || document));
-            } else {
-                var nodeList = (from || document).querySelectorAll(rule);
-                return Array.prototype.slice.call(nodeList); // to mimic selector, which returns an array
-            }
+            return Ink.Dom.Selector.select(rule, (from || document));
         },
 
         /**
-         * Enriches the destination object with values from source object whenever the key is missing in destination
+         * Enriches the destination object with values from source object whenever the key is missing in destination.
          *
-         * @function extendObj
+         * More than one object can be passed as source, in which case the rightmost objects have precedence.
+         *
+         * @method extendObj
          * @param {Object} destination
-         * @param {Object} source
-         * @return destination object, enriched with defaults from source
+         * @param {Object...} sources
+         * @return destination object, enriched with defaults from the sources
          */
         extendObj: function(destination, source)
         {
+            if (arguments.length > 2) {
+                source = Ink.extendObj.apply(this, [].slice.call(arguments, 1));
+            }
             if (source) {
                 for (var property in source) {
-                    if(source.hasOwnProperty(property)){
+                    if(Object.prototype.hasOwnProperty.call(source, property)) {
                         destination[property] = source[property];
                     }
                 }
             }
             return destination;
         }
-
-        /**
-         * TODO EH?!
-         */
-        /*
-        Browser: {
-            IE: true,
-            GECKO: true,
-            SAFARI: true,
-            OPERA: false,
-            CHROME: true,
-            KONQUEROR: true,
-            model: '',
-            version: '',
-            userAgent: ''
-        }
-        */
-
 
     };
 
@@ -661,7 +661,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
             if (!this.isHTTP || location.protocol === 'widget:' || typeof window.widget === 'object') {
                 this.isCrossDomain = false;
             } else {
-                this.isCrossDomain = location.protocol !== urlLocation.protocol || location.host !== urlLocation.host.split(':')[0];
+                this.isCrossDomain = location.protocol !== urlLocation.protocol || location.host !== urlLocation.host;
             }
             if(this.options.cors) {
                 this.isCrossDomain = false;
@@ -675,7 +675,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
         /**
          * Creates the appropriate XMLHttpRequest object
          *
-         * @function getTransport
+         * @method getTransport
          * @return {Object} XMLHttpRequest object
          */
         getTransport: function()
@@ -702,7 +702,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
         /**
          * Set the necessary headers for an ajax request
          *
-         * @function setHeaders
+         * @method setHeaders
          * @param {String} url - url for the request
          */
         setHeaders: function()
@@ -724,7 +724,9 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
 
                     if (this.options.requestHeaders && typeof this.options.requestHeaders === 'object') {
                         for(var headerReqName in this.options.requestHeaders) {
-                            headers[headerReqName] = this.options.requestHeaders[headerReqName];
+                            if (this.options.requestHeaders.hasOwnProperty(headerReqName)) {
+                                headers[headerReqName] = this.options.requestHeaders[headerReqName];
+                            }
                         }
                     }
 
@@ -744,7 +746,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
         /**
          * Converts an object with parameters to a querystring
          *
-         * @function paramsObjToStr
+         * @method paramsObjToStr
          * @param {Object|String}  optParams  parameters object
          * @return {String} querystring
          */
@@ -757,7 +759,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
                         if (Object.prototype.toString.call(a) === '[object Array]' && !isNaN(a.length)) {
                             for (k = 0, m = a.length; k < m; k++) {
                                 params = params.concat([
-                                    encodeURIComponent(p),    '=',
+                                    encodeURIComponent(p), '[]',   '=',
                                     encodeURIComponent(a[k]), '&'
                                 ]);
                             }
@@ -784,7 +786,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
         /**
          * set the url parameters for a GET request
          *
-         * @function setParams
+         * @method setParams
          */
         setParams: function()
         {
@@ -808,7 +810,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
         /**
          * Retrieves HTTP header from response
          *
-         * @function getHeader
+         * @method getHeader
          * @param {String}  name  header name
          * @return {String} header content
          */
@@ -827,7 +829,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
         /**
          * Returns all http headers from the response
          *
-         * @function getAllHeaders
+         * @method getAllHeaders
          * @return {String} the headers, each separated by a newline
          */
         getAllHeaders: function()
@@ -842,7 +844,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
         /**
          * Setup the response object
          *
-         * @function getResponse
+         * @method getResponse
          * @return {Object} the response object
          */
         getResponse: function(){
@@ -872,7 +874,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
         /**
          * Aborts the request if still running. No callbacks are called
          *
-         * @function abort
+         * @method abort
          */
         abort: function(){
             if (this.transport) {
@@ -886,7 +888,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
         /**
          * Executes the state changing phase of an ajax request
          *
-         * @function runStateChange
+         * @method runStateChange
          */
         runStateChange: function()
         {
@@ -980,7 +982,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
         /**
          * Last step after XHR is complete. Call onComplete and cleanup object
          *
-         * @function finish
+         * @method finish
          * @param {} response
          * @param {} responseContent
          */
@@ -1008,7 +1010,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
          * Safely calls a callback function.
          * Verifies that the callback is well defined and traps errors
          *
-         * @function safeCall
+         * @method safeCall
          * @param {Function}  listener
          */
         safeCall: function(listener, first/*, second*/) {
@@ -1038,7 +1040,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
         /**
          * Sets new request header for the subsequent http request
          *
-         * @function setRequestHeader
+         * @method setRequestHeader
          * @param {String} name
          * @param {String} value
          */
@@ -1052,7 +1054,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
         /**
          * Execute the request
          *
-         * @function request
+         * @method request
          */
         request: function()
         {
@@ -1143,7 +1145,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
         /**
          * Returns new exception object that can be thrown
          *
-         * @function makeError
+         * @method makeError
          * @param code
          * @param message
          * @returns {Object}
@@ -1160,7 +1162,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
         /**
          * Checks if a given string is valid JSON
          *
-         * @function isJSON
+         * @method isJSON
          * @param {String} str  String to be evaluated
          * @return {Boolean} True if the string is valid JSON
          */
@@ -1174,7 +1176,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
         /**
          * Evaluates a given string as JSON
          *
-         * @function evalJSON
+         * @method evalJSON
          * @param {String}  str       String to be evaluated
          * @param {Boolean} sanitize  whether to sanitize the content or not
          * @return {Object} Json content as an object
@@ -1199,7 +1201,7 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
      * Loads content from a given url through a XMLHttpRequest.
      * Shortcut function for simple AJAX use cases.
      *
-     * @function load
+     * @method load
      * @param {String}   url       request url
      * @param {Function} callback  callback to be executed if the request is successful
      * @return {Object} XMLHttpRequest object
@@ -1216,8 +1218,8 @@ Ink.createModule('Ink.Net.Ajax', '1', [], function() {
     /**
      * Loads content from a given url through a XMLHttpRequest.
      * Shortcut function for simple AJAX use cases.
-     * 
-     * @function ping
+     *
+     * @method ping
      * @param {String}   url       request url
      * @param {Function} callback  callback to be executed if the request is successful
      * @return {Object} XMLHttpRequest object
@@ -1251,21 +1253,38 @@ Ink.createModule('Ink.Net.JsonP', '1', [], function() {
      */
 
     /**
+     * This class takes care of the nitty-gritty details of doing jsonp requests: Storing
+     * a callback in a globally accessible manner, waiting for the timeout or completion
+     * of the request, and passing extra GET parameters to the server, is not so complicated
+     * but it's boring and repetitive to code and tricky to get right.
+     *
      * @class Ink.Net.JsonP
      * @constructor
      * @param {String} uri
      * @param {Object} options
-     * @param {Function}  [options.onComplete]        success callback
-     * @param {Function}  [options.onFailure]         failure callback
-     * @param {Object}    [options.failureObj]        object to be passed as argument to failure callback
-     * @param {Number}    [options.timeout]           timeout for request fail, in seconds. defaults to 10
-     * @param {Object}    [options.params]            object with the parameters and respective values to unfold
-     * @param {String}    [options.callbackParam]     parameter to use as callback. defaults to 'jsoncallback'
-     * @param {String}    [options.internalCallback]  x
+     * @param {Function}  options.onSuccess         success callback
+     * @param {Function}  [options.onFailure]       failure callback
+     * @param {Object}    [options.failureObj]      object to be passed as argument to failure callback
+     * @param {Number}    [options.timeout]         timeout for request fail, in seconds. defaults to 10
+     * @param {Object}    [options.params]          object with the parameters and respective values to unfold
+     * @param {String}    [options.callbackParam]   parameter to use as callback. defaults to 'jsoncallback'
+     * @param {String}    [options.internalCallback] *Advanced*: name of the callback function stored in the Ink.Net.JsonP object.
+     *
+     * @example
+     *      Ink.requireModules(['Ink.Net.JsonP_1'], function (JsonP) {
+     *          var jsonp = new JsonP('http://path.to.jsonp/endpoint', {
+     *              // When the JSONP response arrives, this callback is called:
+     *              onSuccess: function (gameData) {
+     *                  game.startGame(gameData);
+     *              },
+     *              // after options.timeout seconds, this callback gets called:
+     *              onFailure: function () {
+     *                  game.error('Could not load game data!');
+     *              },
+     *              timeout: 5
+     *          });
+     *      });
      */
-
-
-
     var JsonP = function(uri, options) {
         this.init(uri, options);
     };
@@ -1348,7 +1367,6 @@ Ink.createModule('Ink.Net.JsonP', '1', [], function() {
             this.options.params[this.options.callbackParam] = 'Ink.Net.JsonP.' + this.options.internalCallback;
             this.options.params.rnd_seed = this.randVar;
             this.uri = this._addParamsToGet(this.uri, this.options.params);
-
             // create script tag
             var scriptEl = document.createElement('script');
             scriptEl.type = 'text/javascript';
@@ -1369,9 +1387,11 @@ Ink.createModule('Ink.Net.JsonP', '1', [], function() {
         _removeScriptTag: function() {
             var scriptEl;
             var scriptEls = document.getElementsByTagName('script');
+            var scriptUri;
             for (var i = 0, f = scriptEls.length; i < f; ++i) {
                 scriptEl = scriptEls[i];
-                if (scriptEl.src === this.uri) {
+                scriptUri = scriptEl.getAttribute('src') || scriptEl.src;
+                if (scriptUri !== null && scriptUri === this.uri) {
                     scriptEl.parentNode.removeChild(scriptEl);
                     return;
                 }
@@ -1405,10 +1425,16 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
         /**
          * adds or removes a class to the given element according to addRemState
          *
-         * @function addRemoveClassName
+         * @method addRemoveClassName
          * @param {DOMElement|string}   elm          DOM element or element id
-         * @param {string}              className    class name
-         * @param {boolean}             addRemState  which method to apply
+         * @param {string}              className    class name to add or remove.
+         * @param {boolean}             addRemState  Whether to add or remove. `true` to add, `false` to remove.
+         *
+         * @example
+         *      Ink.requireModules(['Ink.Dom.Css_1'], function (Css) {
+         *          Css.addRemoveClassName(myElm, 'classss', true);  // Adds the `classss` class.
+         *          Css.addRemoveClassName(myElm, 'classss', false);  // Removes the `classss` class.
+         *      });
          */
         addRemoveClassName: function(elm, className, addRemState) {
             if (addRemState) {
@@ -1420,7 +1446,7 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
         /**
          * add a class to a given element
          *
-         * @function addClassName
+         * @method addClassName
          * @param {DOMElement|String}  elm        DOM element or element id
          * @param {String}             className
          */
@@ -1439,7 +1465,7 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
         /**
          * removes a class from a given element
          *
-         * @function removeClassName
+         * @method removeClassName
          * @param {DOMElement|String} elm        DOM element or element id
          * @param {String}            className
          */
@@ -1465,7 +1491,7 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
         /**
          * Alias to addRemoveClassName. Utility function, saves many if/elses.
          *
-         * @function setClassName
+         * @method setClassName
          * @param {DOMElement|String}  elm        DOM element or element id
          * @param {String}             className
          * @param {Boolean}            add        true to add, false to remove
@@ -1475,10 +1501,10 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
         },
 
         /**
-         * @function {Boolean} hasClassName
+         * @method hasClassName
          * @param {DOMElement|String}  elm        DOM element or element id
          * @param {String}             className
-         * @return true if a given class is applied to a given element
+         * @return {Boolean} true if a given class is applied to a given element
          */
         hasClassName: function(elm, className) {
             elm = Ink.i(elm);
@@ -1515,7 +1541,7 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
         /**
          * Add and removes the class from the element with a timeout, so it blinks
          *
-         * @function blinkClass
+         * @method blinkClass
          * @param {DOMElement|String}  elm        DOM element or element id
          * @param {String}             className  class name
          * @param {Boolean}            timeout    timeout in ms between adding and removing, default 100 ms
@@ -1539,7 +1565,7 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
         /**
          * Add or remove a class name from a given element
          *
-         * @function toggleClassName
+         * @method toggleClassName
          * @param {DOMElement|String}  elm        DOM element or element id
          * @param {String}             className  class name
          * @param {Boolean}            forceAdd   forces the addition of the class if it doesn't exists
@@ -1575,7 +1601,7 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
         /**
          * sets the opacity of given client a given element
          *
-         * @function setOpacity
+         * @method setOpacity
          * @param {DOMElement|String}  elm    DOM element or element id
          * @param {Number}             value  allows 0 to 1(default mode decimal) or percentage (warning using 0 or 1 will reset to default mode)
          */
@@ -1602,7 +1628,7 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
 
         /**
          * Converts a css property name to a string in camelcase to be used with CSSStyleDeclaration.
-         * @function _camelCase
+         * @method _camelCase
          * @private
          * @param {String} str  String to convert
          * @return {String} Converted string
@@ -1617,7 +1643,7 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
         /**
          * Gets the value for an element's style attribute
          *
-         * @function getStyle
+         * @method getStyle
          * @param {DOMElement|String}  elm    DOM element or element id
          * @param {String}             style  Which css attribute to fetch
          * @return Style value
@@ -1657,11 +1683,26 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
 
 
         /**
-         * Sets the value for an element's style attribute
+         * Adds CSS rules to an element's style attribute.
          *
-         * @function setStyle
+         * @method setStyle
          * @param {DOMElement|String}  elm    DOM element or element id
          * @param {String}             style  Which css attribute to set
+         *
+         * @example
+         *     <a href="#" class="change-color">Change his color</a>
+         *     <p class="him">"He" is me</p>
+         *     <script type="text/javascript">
+         *         Ink.requireModules(['Ink.Dom.Css_1', 'Ink.Dom.Event_1', 'Ink.Dom.Selector_1'], function (Css, InkEvent, Selector) {
+         *             var btn = Selector.select('.change-color')[0];
+         *             var other = Selector.select('.him')[0];
+         *             InkEvent.observe(btn, 'click', function () {
+         *                 Css.setStyle(other, 'background-color: black');
+         *                 Css.setStyle(other, 'color: white');
+         *             });
+         *         });
+         *     </script>
+         *
          */
         setStyle: function(elm, style) {
             elm = Ink.i(elm);
@@ -1701,7 +1742,7 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
         /**
          * Makes an element visible
          *
-         * @function show
+         * @method show
          * @param {DOMElement|String}  elm                   DOM element or element id
          * @param {String}             forceDisplayProperty  Css display property to apply on show
          */
@@ -1715,7 +1756,7 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
         /**
          * Hides an element
          *
-         * @function hide
+         * @method hide
          * @param {DOMElement|String}  elm  DOM element or element id
          */
         hide: function(elm) {
@@ -1728,9 +1769,9 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
         /**
          * shows or hides according to param show
          *
-         * @function showHide
-         * @param {DOMElement|String}  elm   DOM element or element id
-         * @param {boolean}            show
+         * @method showHide
+         * @param {DOMElement|String}  elm          DOM element or element id
+         * @param {boolean}            [show=false] Whether to show or hide `elm`.
          */
         showHide: function(elm, show) {
             elm = Ink.i(elm);
@@ -1741,7 +1782,7 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
 
         /**
          * Shows or hides an element depending on current state
-         * @function toggle
+         * @method toggle
          * @param {DOMElement|String}  elm        DOM element or element id
          * @param {Boolean}            forceShow  Forces showing if element is hidden
          */
@@ -1781,7 +1822,7 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
         /**
          * Adds css style tags to the head section of a page
          *
-         * @function appendStyleTag
+         * @method appendStyleTag
          * @param {String}  selector  The css selector for the rule
          * @param {String}  style     The content of the style rule
          * @param {Object}  options   Options for the tag
@@ -1835,12 +1876,12 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
         /**
          * Adds a link tag for a stylesheet to the head section of a page
          *
-         * @function appendStylesheet
+         * @method appendStylesheet
          * @param {String}  path     File path
          * @param {Object}  options  Options for the tag
-         *    @param {String}   [options.media]  media type
-         *    @param {String}   [options.type]   file type
-         *    @param {Boolean}  [options.force]  if true, tag will be appended to end of head
+         *    @param {String}   [options.media='screen']    media type
+         *    @param {String}   [options.type='text/css']   file type
+         *    @param {Boolean}  [options.force=false]       if true, tag will be appended to end of head
          */
         appendStylesheet: function(path, options){
             options = Ink.extendObj({
@@ -1876,7 +1917,7 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
          *   a) supports all browsers;
          *   b) supports optional callback which gets invoked once the CSS has been applied
          *
-         * @function appendStylesheetCb
+         * @method appendStylesheetCb
          * @param {String}            cssURI      URI of the CSS to load, if empty ignores and just calls back directly
          * @param {Function(cssURI)}  [callback]  optional callback which will be called once the CSS is loaded
          */
@@ -1938,9 +1979,9 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
         /**
          * Converts decimal to hexadecimal values, for use with colors
          *
-         * @function decToHex
-         * @param {String} dec - Either a single decimal value , an rgb(r, g, b) string
-         * or an Object with r, g and b properties
+         * @method decToHex
+         * @param {String} dec Either a single decimal value,
+         * an rgb(r, g, b) string or an Object with r, g and b properties
          * @return Hexadecimal value
          */
         decToHex: function(dec) {
@@ -1975,7 +2016,7 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
         /**
          * Converts hexadecimal values to decimal, for use with colors
          *
-         * @function hexToDec
+         * @method hexToDec
          * @param {String}  hex  hexadecimal value with 6, 3, 2 or 1 characters
          * @return {Number} Object with properties r, g, b if length of number is >= 3 or decimal value instead.
          */
@@ -2005,7 +2046,7 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
         /**
          * use this to obtain the value of a CSS property (searched from loaded CSS documents)
          *
-         * @function getPropertyFromStylesheet
+         * @method getPropertyFromStylesheet
          * @param {String}  selector  a CSS rule. must be an exact match
          * @param {String}  property  a CSS property
          * @return {String} value of the found property, or null if it wasn't matched
@@ -2161,7 +2202,7 @@ Ink.createModule( 'Ink.Dom.Css', 1, [], function() {
          * Changes the font size of the elements which match the given CSS rule
          * For this function to work, the CSS file must be in the same domain than the host page, otherwise JS can't access it.
          *
-         * @function changeFontSize
+         * @method changeFontSize
          * @param {String}  selector  CSS selector rule
          * @param {Number}  delta     number of pixels to change on font-size
          * @param {String}  [op]      supported operations are '+' and '*'. defaults to '+'
@@ -2217,12 +2258,12 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
 
     var Element = {
 
-        /** 
-         * Shortcut for document.getElementById
+        /**
+         * Shortcut for `document.getElementById`
          *
-         * @function get
-         * @param {String|Array} elm  Receives either an id or an Array of ids
-         * @return Either the DOM element for the given id or an array of elements for the given ids
+         * @method get
+         * @param {String|DOMElement} elm   Either an ID of an element, or an element.
+         * @return {DOMElement|null} The DOM element with the given id or null when it was not found
          */
         get: function(elm) {
             if(typeof elm !== 'undefined') {
@@ -2237,7 +2278,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Creates a DOM element
          *
-         * @function create
+         * @method create
          * @param {String} tag        tag name
          * @param {Object} properties  object with properties to be set on the element
          */
@@ -2256,10 +2297,10 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         },
 
         /**
-         * Removes DOM Element from DOM
+         * Removes a DOM Element from the DOM
          *
-         * @function remove
-         * @param  {DOMElement} el
+         * @method remove
+         * @param {DOMElement} elm  The element to remove
          */
         remove: function(el) {
             var parEl;
@@ -2269,9 +2310,9 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         },
 
         /**
-         * Scrolls to an element
+         * Scrolls the window to an element
          *
-         * @function scrollTo
+         * @method scrollTo
          * @param {DOMElement|String} elm  Element where to scroll
          */
         scrollTo: function(elm) {
@@ -2300,58 +2341,33 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Gets the top cumulative offset for an element
          *
-         * @function offsetTop
+         * Requires Ink.Dom.Browser
+         *
+         * @method offsetTop
          * @param {DOMElement|String} elm  target element
          * @return {Number} Offset from the target element to the top of the document
          */
         offsetTop: function(elm) {
-            elm = this.get(elm);
-
-            var offset = elm.offsetTop;
-
-            while(elm.offsetParent){
-                if(elm.offsetParent.tagName.toLowerCase() !== "body"){
-                    elm = elm.offsetParent;
-                    offset += elm.offsetTop;
-                } else {
-                    break;
-                }
-            }
-
-            return offset;
+            return this.offset(elm)[1];
         },
 
         /**
          * Gets the left cumulative offset for an element
          *
-         * @function offsetLeft
+         * Requires Ink.Dom.Browser
+         *
+         * @method offsetLeft
          * @param {DOMElement|String} elm  target element
          * @return {Number} Offset from the target element to the left of the document
          */
         offsetLeft: function(elm) {
-            /*
-                elm = this.get(elm);
-
-                var offset = elm.offsetLeft;
-
-                while(elm.offsetParent){
-                    if(elm.offsetParent.tagName.toLowerCase() !== "body"){
-                        elm = elm.offsetParent;
-                        offset += elm.offsetLeft;
-                    } else {
-                        break;
-                    }
-                }
-
-                return offset;
-            */
-           return this.offset2( elm );
+            return this.offset(elm)[0];
         },
 
         /**
         * Gets the element offset relative to its closest positioned ancestor
-        * 
-        * @function positionedOffset
+        *
+        * @method positionedOffset
         * @param {DOMElement|String} elm  target element
         * @return {Array} Array with the element offsetleft and offsettop relative to the closest positioned ancestor
         */
@@ -2382,21 +2398,57 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Gets the cumulative offset for an element
          *
-         * @function offset
-         * @param {DOMElement|String} elm  target element
-         * @return {Array} Array with offset from the target element to the top/left of the document
+         * Returns the top left position of the element on the page
+         *
+         * Requires Ink.Dom.Browser
+         *
+         * @method offset
+         * @param {DOMElement|String}   elm     Target element
+         * @return {[Number, Number]}   Array with pixel distance from the target element to the top left corner of the document
          */
-        offset: function(elm) {
-            return [
-                this.offsetLeft(elm),
-                this.offsetTop(elm)
-            ];
+        offset: function(el) {
+            /*jshint boss:true */
+            el = Ink.i(el);
+            var bProp = ['border-left-width', 'border-top-width'];
+            var res = [0, 0];
+            var dRes, bRes, parent, cs;
+            var getPropPx = this._getPropPx;
+
+            var InkBrowser = Ink.getModule('Ink.Dom.Browser', 1);
+
+            do {
+                cs = window.getComputedStyle ? window.getComputedStyle(el, null) : el.currentStyle;
+                dRes = [el.offsetLeft | 0, el.offsetTop | 0];
+
+                bRes = [getPropPx(cs, bProp[0]), getPropPx(cs, bProp[1])];
+                if( InkBrowser.OPERA ){
+                    res[0] += dRes[0];
+                    res[1] += dRes[1];
+                } else {
+                    res[0] += dRes[0] + bRes[0];
+                    res[1] += dRes[1] + bRes[1];
+                }
+                parent = el.offsetParent;
+            } while (el = parent);
+
+            bRes = [getPropPx(cs, bProp[0]), getPropPx(cs, bProp[1])];
+
+            if (InkBrowser.GECKO) {
+                res[0] += bRes[0];
+                res[1] += bRes[1];
+            }
+            else if( !InkBrowser.OPERA ) {
+                res[0] -= bRes[0];
+                res[1] -= bRes[1];
+            }
+
+            return res;
         },
 
         /**
          * Gets the scroll of the element
          *
-         * @function scroll
+         * @method scroll
          * @param {DOMElement|String} [elm] target element or document.body
          * @returns {Array} offset values for x and y scroll
          */
@@ -2426,54 +2478,19 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         },
 
         /**
-         * Returns the top left position of the element on the page
+         * Alias for offset()
          *
-         * @function offset2
-         * @param {String|DOMElement} el
-         * @return {Number[2]}
+         * @method offset2
+         * @deprecated Kept for historic reasons. Use offset() instead.
          */
         offset2: function(el) {
-            /*jshint boss:true */
-            el = Ink.i(el);
-            var bProp = ['border-left-width', 'border-top-width'];
-            var res = [0, 0];
-            var dRes, bRes, parent, cs;
-            var getPropPx = this._getPropPx;
-
-            var InkBrowser = Ink.getModule('Ink.Dom.Browser',1);
-
-            do {
-                cs = window.getComputedStyle ? window.getComputedStyle(el, null) : el.currentStyle;
-                dRes = [el.offsetLeft | 0, el.offsetTop | 0];
-                bRes = [getPropPx(cs, bProp[0]), getPropPx(cs, bProp[1])];
-                if( InkBrowser.OPERA ){
-                    res[0] += dRes[0];
-                    res[1] += dRes[1];
-                } else {
-                    res[0] += dRes[0] + bRes[0];
-                    res[1] += dRes[1] + bRes[1];
-                }
-                parent = el.offsetParent;
-            } while (el = parent);
-
-            bRes = [getPropPx(cs, bProp[0]), getPropPx(cs, bProp[1])];
-
-            if (InkBrowser.GECKO) {
-                res[0] += bRes[0];
-                res[1] += bRes[1];
-            }
-            else if( !InkBrowser.OPERA ) {
-                res[0] -= bRes[0];
-                res[1] -= bRes[1];
-            }
-            
-            return res;
+            return this.offset(el);
         },
 
         /**
          * Verifies the existence of an attribute
          *
-         * @function hasAttribute 
+         * @method hasAttribute
          * @param {Object} elm   target element
          * @param {String} attr  attribute name
          * @return {Boolean} Boolean based on existance of attribute
@@ -2484,7 +2501,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Inserts a element immediately after a target element
          *
-         * @function insertAfter
+         * @method insertAfter
          * @param {DOMElement}         newElm     element to be inserted
          * @param {DOMElement|String}  targetElm  key element
          */
@@ -2498,11 +2515,11 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Inserts a element at the top of the childNodes of a target element
          *
-         * @function insertTop
+         * @method insertTop
          * @param {DOMElement}         newElm     element to be inserted
          * @param {DOMElement|String}  targetElm  key element
          */
-        insertTop: function(newElm,targetElm) {
+        insertTop: function(newElm,targetElm) {  // TODO check first child exists
             /*jshint boss:true */
             if (targetElm = this.get(targetElm)) {
                 targetElm.insertBefore(newElm, targetElm.firstChild);
@@ -2512,7 +2529,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Retreives textContent from node
          *
-         * @function textContent
+         * @method textContent
          * @param {DOMNode} node from which to retreive text from. Can be any node type.
          * @return {String} the text
          */
@@ -2559,9 +2576,9 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Removes all nodes children and adds the text
          *
-         * @function setTextContent
-         * @param {DOMNode} node from which to retreive text from. Can be any node type.
-         * @param {String}  text to be appended to the node.
+         * @method setTextContent
+         * @param {DOMNode} node    node to add the text to. Can be any node type.
+         * @param {String}  text    text to be appended to the node.
          */
         setTextContent: function(node, text){
             node = Ink.i(node);
@@ -2599,8 +2616,8 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Tells if element is a clickable link
          *
-         * @function isLink
-         * @param {DOMNode} node to check if it's link
+         * @method isLink
+         * @param {DOMNode} node    node to check if it's link
          * @return {Boolean}
          */
         isLink: function(element){
@@ -2612,7 +2629,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Tells if ancestor is ancestor of node
          *
-         * @function isAncestorOf
+         * @method isAncestorOf
          * @param {DOMNode} ancestor  ancestor node
          * @param {DOMNode} node      descendant node
          * @return {Boolean}
@@ -2636,7 +2653,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Tells if descendant is descendant of node
          *
-         * @function descendantOf
+         * @method descendantOf
          * @param {DOMNode} node        the ancestor
          * @param {DOMNode} descendant  the descendant
          * @return {Boolean} true if 'descendant' is descendant of 'node'
@@ -2647,8 +2664,8 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
 
         /**
          * Get first child in document order of node type 1
-         * @function firstElementChild
-         * @param {DOMNode} parent node
+         * @method firstElementChild
+         * @param {DOMNode} elm parent node
          * @return {DOMNode} the element child
          */
         firstElementChild: function(elm){
@@ -2667,8 +2684,8 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
 
         /**
          * Get last child in document order of node type 1
-         * @function lastElementChild
-         * @param {DOMNode} parent node
+         * @method lastElementChild
+         * @param {DOMNode} elm parent node
          * @return {DOMNode} the element child
          */
         lastElementChild: function(elm){
@@ -2687,8 +2704,8 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
 
         /**
          * Get the first element sibling after the node
-         * 
-         * @function nextElementSibling
+         *
+         * @method nextElementSibling
          * @param {DOMNode} node  current node
          * @return {DOMNode|Null} the first element sibling after node or null if none is found
          */
@@ -2714,7 +2731,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Get the first element sibling before the node
          *
-         * @function previousElementSibling
+         * @method previousElementSibling
          * @param {DOMNode}        node  current node
          * @return {DOMNode|Null} the first element sibling before node or null if none is found
          */
@@ -2740,7 +2757,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Returns the width of the given element, in pixels
          *
-         * @function elementWidth
+         * @method elementWidth
          * @param {DOMElement|string} element target DOM element or target ID
          * @return {Number} the element's width
          */
@@ -2754,7 +2771,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Returns the height of the given element, in pixels
          *
-         * @function elementHeight
+         * @method elementHeight
          * @param {DOMElement|string} element target DOM element or target ID
          * @return {Number} the element's height
          */
@@ -2768,7 +2785,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Returns the element's left position in pixels
          *
-         * @function elementLeft
+         * @method elementLeft
          * @param {DOMElement|string} element target DOM element or target ID
          * @return {Number} element's left position
          */
@@ -2782,7 +2799,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Returns the element's top position in pixels
          *
-         * @function elementTop
+         * @method elementTop
          * @param {DOMElement|string} element target DOM element or target ID
          * @return {Number} element's top position
          */
@@ -2796,31 +2813,68 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Returns the dimensions of the given element, in pixels
          *
-         * @function elementDimensions
+         * @method elementDimensions
          * @param {element} element target element
          * @return {Array} array with element's width and height
          */
         elementDimensions: function(element) {
-            if(typeof element === "string") {
-                element = document.getElementById(element);
+            element = Ink.i(element);
+            return [element.offsetWidth, element.offsetHeight];
+        },
+
+        /**
+         * Returns the outer (width + margin + padding included) dimensions of an element, in pixels.
+         *
+         * Requires Ink.Dom.Css
+         *
+         * @method uterDimensions
+         * @param {DOMElement} element Target element
+         * @return {Array} Array with element width and height.
+         */
+        outerDimensions: function (element) {
+            var bbox = Element.elementDimensions(element);
+
+            var Css = Ink.getModule('Ink.Dom.Css_1');
+            
+            return [
+                bbox[0] + parseFloat(Css.getStyle(element, 'marginLeft') || 0) + parseFloat(Css.getStyle(element, 'marginRight') || 0),  // w
+                bbox[1] + parseFloat(Css.getStyle(element, 'marginTop') || 0) + parseFloat(Css.getStyle(element, 'marginBottom') || 0)  // h
+            ];
+        },
+
+        /**
+         * Check whether an element is inside the viewport
+         *
+         * @method inViewport
+         * @param {DOMElement} element Element to check
+         * @param {Boolean} [partial=false] Return `true` even if it is only partially visible.
+         * @return {Boolean}
+         */
+        inViewport: function (element, partial) {
+            var rect = Ink.i(element).getBoundingClientRect();
+            if (partial) {
+                return  rect.bottom > 0                        && // from the top
+                        rect.left < Element.viewportWidth()    && // from the right
+                        rect.top < Element.viewportHeight()    && // from the bottom
+                        rect.right  > 0;                          // from the left
+            } else {
+                return  rect.top > 0                           && // from the top
+                        rect.right < Element.viewportWidth()   && // from the right
+                        rect.bottom < Element.viewportHeight() && // from the bottom
+                        rect.left  > 0;                           // from the left
             }
-            return Array(element.offsetWidth, element.offsetHeight);
         },
 
         /**
          * Applies the cloneFrom's dimensions to cloneTo
          *
-         * @function clonePosition
+         * @method clonePosition
          * @param {DOMElement} cloneTo    element to be position cloned
          * @param {DOMElement} cloneFrom  element to get the cloned position
          * @return {DOMElement} the element with positionClone
          */
         clonePosition: function(cloneTo, cloneFrom){
-            /*
-            cloneTo.style.top = this.offsetTop(cloneFrom) + 'px';
-            cloneTo.style.left = this.offsetLeft(cloneFrom) + 'px';
-            */
-            var pos = this.offset2(cloneFrom);
+            var pos = this.offset(cloneFrom);
             cloneTo.style.left = pos[0]+'px';
             cloneTo.style.top = pos[1]+'px';
 
@@ -2831,7 +2885,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
          * Slices off a piece of text at the end of the element and adds the ellipsis
          * so all text fits in the element.
          *
-         * @function ellipsizeText
+         * @method ellipsizeText
          * @param {DOMElement} element     which text is to add the ellipsis
          * @param {String}     [ellipsis]  String to append to the chopped text
          */
@@ -2845,75 +2899,93 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         },
 
         /**
-         * Searches up the DOM tree for an element of specified class name
+         * Searches up the DOM tree for an element fulfilling the boolTest function (returning trueish)
          *
-         * @function findUpwardsByClass
-         * @param {DOMElement}  element
+         * @method findUpwardsHaving
+         * @param {HtmlElement} element
+         * @param {Function}    boolTest
+         * @return {HtmlElement|false} the matched element or false if did not match
+         */
+        findUpwardsHaving: function(element, boolTest) {
+            while (element && element.nodeType === 1) {
+                if (boolTest(element)) {
+                    return element;
+                }
+                element = element.parentNode;
+            }
+            return false;
+        },
+
+        /**
+         * Śearches up the DOM tree for an element of specified class name
+         *
+         * @method findUpwardsByClass
+         * @param {HtmlElement} element
          * @param {String}      className
-         * @return {DOMElement|Boolean} the found element or false
+         * @returns {HtmlElement|false} the matched element or false if did not match
          */
         findUpwardsByClass: function(element, className) {
             var re = new RegExp("(^|\\s)" + className + "(\\s|$)");
-            while (true) {
-                if (typeof(element.className) !== 'undefined' && re.test(element.className)) {
-                    return element;
-                }
-                else {
-                    element = element.parentNode;
-                    if (!element || element.nodeType !== 1) {
-                        return false;
-                    }
-                }
-            }
+            var tst = function(el) {
+                var cls = el.className;
+                return cls && re.test(cls);
+            };
+            return this.findUpwardsHaving(element, tst);
         },
 
         /**
-         * Searches up the DOM tree for an element of specified tag name
+         * Śearches up the DOM tree for an element of specified tag
          *
-         * @function findUpwardsByTag
-         * @param {DOMElement}  element
+         * @method findUpwardsByTag
+         * @param {HtmlElement} element
          * @param {String}      tag
-         * @return {DOMElement|Boolean} the found element or false
+         * @returns {HtmlElement|false} the matched element or false if did not match
          */
         findUpwardsByTag: function(element, tag) {
-            while (true) {
-                if (element && element.nodeName.toUpperCase() === tag.toUpperCase()) {
-                    return element;
-                } else {
-                    element = element.parentNode;
-                    if (!element || element.nodeType !== 1) {
-                        return false;
-                    }
-                }
-            }
+            tag = tag.toUpperCase();
+            var tst = function(el) {
+                return el.nodeName && el.nodeName.toUpperCase() === tag;
+            };
+            return this.findUpwardsHaving(element, tst);
         },
 
         /**
-         * Searches up the DOM tree for an element with the given id
+         * Śearches up the DOM tree for an element of specified id
          *
-         * @function findUpwardsById
-         * @param {DOMElement}  element
+         * @method findUpwardsById
+         * @param {HtmlElement} element
          * @param {String}      id
-         * @return {DOMElement|Boolean} the found element or false
+         * @returns {HtmlElement|false} the matched element or false if did not match
          */
         findUpwardsById: function(element, id) {
-            while (true) {
-                if (typeof(element.id) !== 'undefined' && element.id === id) {
-                    return element;
-                } else {
-                    element = element.parentNode;
-                    if (!element || element.nodeType !== 1) {
-                        return false;
-                    }
-                }
-            }
+            var tst = function(el) {
+                return el.id === id;
+            };
+            return this.findUpwardsHaving(element, tst);
         },
 
+        /**
+         * Śearches up the DOM tree for an element matching the given selector
+         *
+         * @method findUpwardsBySelector
+         * @param {HtmlElement} element
+         * @param {String}      sel
+         * @returns {HtmlElement|false} the matched element or false if did not match
+         */
+        findUpwardsBySelector: function(element, sel) {
+            if (typeof Ink.Dom === 'undefined' || typeof Ink.Dom.Selector === 'undefined') {
+                throw new Error('This method requires Ink.Dom.Selector');
+            }
+            var tst = function(el) {
+                return Ink.Dom.Selector.matchesSelector(el, sel);
+            };
+            return this.findUpwardsHaving(element, tst);
+        },
 
         /**
          * Returns trimmed text content of descendants
          *
-         * @function getChildrenText
+         * @method getChildrenText
          * @param {DOMElement}  el          element being seeked
          * @param {Boolean}     [removeIt]  whether to remove the found text nodes or not
          * @return {String} text found
@@ -2961,7 +3033,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Returns the values of a select element
          *
-         * @function getSelectValues
+         * @method getSelectValues
          * @param {DomElement|String} select element
          * @return {Array} selected values
          */
@@ -2996,7 +3068,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Fills select element with choices
          *
-         * @function fillSelect
+         * @method fillSelect
          * @param {DomElement|String}  container       select element which will get filled
          * @param {Array}              data            data which will populate the component
          * @param {Boolean}            [skipEmpty]     true to skip empty option
@@ -3039,8 +3111,8 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
 
         /**
          * Select element on steroids - allows the creation of new values
-         * 
-         * @function fillSelect2
+         *
+         * @method fillSelect2
          * @param {DomElement|String} ctn select element which will get filled
          * @param {Object} opts
          * @param {Array}                      [opts.data]               data which will populate the component
@@ -3142,7 +3214,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Creates set of radio buttons, returns wrapper
          *
-         * @function fillRadios
+         * @method fillRadios
          * @param {DomElement|String}  insertAfterEl   element which will precede the input elements
          * @param {String}             name            name to give to the form field ([] is added if not as suffix already)
          * @param {Array}              data            data which will populate the component
@@ -3205,7 +3277,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Creates set of checkbox buttons, returns wrapper
          *
-         * @function fillChecks
+         * @method fillChecks
          * @param {DomElement|String}  insertAfterEl   element which will precede the input elements
          * @param {String}             name            name to give to the form field ([] is added if not as suffix already)
          * @param {Array}              data            data which will populate the component
@@ -3258,7 +3330,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Returns index of element from parent, -1 if not child of parent...
          *
-         * @function parentIndexOf
+         * @method parentIndexOf
          * @param {DOMElement}  parentEl  Element to parse
          * @param {DOMElement}  childEl   Child Element to look for
          * @return {Number}
@@ -3279,7 +3351,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Returns an array of elements - the next siblings
          *
-         * @function nextSiblings
+         * @method nextSiblings
          * @param {String|DomElement} elm element
          * @return {Array} Array of next sibling elements
          */
@@ -3305,7 +3377,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Returns an array of elements - the previous siblings
          *
-         * @function previousSiblings
+         * @method previousSiblings
          * @param {String|DomElement} elm element
          * @return {Array} Array of previous sibling elements
          */
@@ -3331,7 +3403,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * Returns an array of elements - its siblings
          *
-         * @function siblings
+         * @method siblings
          * @param {String|DomElement} elm element
          * @return {Array} Array of sibling elements
          */
@@ -3357,7 +3429,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         /**
          * fallback to elem.childElementCount
          *
-         * @function childElementCount
+         * @method childElementCount
          * @param {String|DomElement} elm element
          * @return {Number} number of child elements
          */
@@ -3373,7 +3445,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
        /**
         * parses and appends an html string to a container, not destroying its contents
         *
-        * @function appendHTML
+        * @method appendHTML
         * @param {String|DomElement} elm   element
         * @param {String}            html  markup string
         */
@@ -3387,12 +3459,12 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         },
 
         /**
-        * parses and prepends an html string to a container, not destroying its contents
-        *
-        * @function prependHTML
-        * @param {String|DomElement} elm   element
-        * @param {String}            html  markup string
-        */
+         * parses and prepends an html string to a container, not destroying its contents
+         *
+         * @method prependHTML
+         * @param {String|DomElement} elm   element
+         * @param {String}            html  markup string
+         */
         prependHTML: function(elm, html){
             var temp = document.createElement('div');
             temp.innerHTML = html;
@@ -3405,8 +3477,28 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         },
 
         /**
+         * Removes direct children on type text.
+         * Useful to remove nasty layout gaps generated by whitespace on the markup.
+         *
+         * @method removeTextNodeChildren
+         * @param  {DOMElement} el
+         */
+        removeTextNodeChildren: function(el) {
+            var prevEl, toRemove, parent = el;
+            el = el.firstChild;
+            while (el) {
+                toRemove = (el.nodeType === 3);
+                prevEl = el;
+                el = el.nextSibling;
+                if (toRemove) {
+                    parent.removeChild(prevEl);
+                }
+            }
+        },
+
+        /**
          * Pass an HTML string and receive a documentFragment with the corresponding elements
-         * @function htmlToFragment
+         * @method htmlToFragment
          * @param  {String} html  html string
          * @return {DocumentFragment} DocumentFragment containing all of the elements from the html string
          */
@@ -3449,92 +3541,53 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
             return this.htmlToFragment.call(this, html);
         },
 
-        _camelCase: function(str) 
+        _camelCase: function(str)
         {
             return str ? str.replace(/-(\w)/g, function (_, $1){
-                    return $1.toUpperCase(); 
+                    return $1.toUpperCase();
             }) : str;
         },
 
         /**
          * Gets all of the data attributes from an element
          *
-         * @function data
+         * @method data
          * @param {String|DomElement} selector Element or CSS selector
-         * @return {Object} Object with the data-* properties or empty if none found.
+         * @return {Object} Object with the data-* properties. If no data-attributes are present, an empty object is returned.
         */
-        data: function( selector ){
-            if( typeof selector !== 'object' && typeof selector !== 'string'){
+        data: function(selector) {
+            var el;
+            if (typeof selector !== 'object' && typeof selector !== 'string') {
                 throw '[Ink.Dom.Element.data] :: Invalid selector defined';
             }
 
-            if( typeof selector === 'object' ){
-                //this._element = selector;
-                var _element = selector;
-            } else {
+            if (typeof selector === 'object') {
+                el = selector;
+            }
+            else {
                 var InkDomSelector = Ink.getModule('Ink.Dom.Selector', 1);
-                if(!InkDomSelector) {
+                if (!InkDomSelector) {
                     throw "[Ink.Dom.Element.data] :: This method requires Ink.Dom.Selector - v1";
                 }
-                //this._element = InkDomSelector.select( selector );
-                var _element = InkDomSelector.select( selector );
-                if( _element.length <= 0) {
+                el = InkDomSelector.select(selector);
+                if (el.length <= 0) {
                     throw "[Ink.Dom.Element.data] :: Can't find any element with the specified selector";
                 }
-                //this._element = this._element[0];
-                _element = _element[0];
+                el = el[0];
             }
 
             var dataset = {};
-            // var attributesElements = _element.dataset || _element.attributes || {}; 
-            var attributesElements = _element.attributes || []; 
-            var prop ;
+            var attrs = el.attributes || [];
 
             var curAttr, curAttrName, curAttrValue;
-            // if(_element.dataset) {
-            //     for( prop in attributesElements ){
-            //         if(attributesElements.hasOwnProperty && attributesElements.hasOwnProperty(prop)) {
-            //             //if(typeof(attributesElements[prop]) === 'object') {
-            //             dataset[prop] = attributesElements[prop];
-            //             //}
-            //         }
-            //     }
-            // } else {
-            if( attributesElements ){
-                for(var i=0, total=attributesElements.length; i < total; i++){
-                    curAttrName = attributesElements[i].name;
-                    curAttrValue = attributesElements[i].value;
-                    if(curAttrName && curAttrName.indexOf('data-') === 0) {
+            if (attrs) {
+                for (var i = 0, total = attrs.length; i < total; ++i) {
+                    curAttr = attrs[i];
+                    curAttrName = curAttr.name;
+                    curAttrValue = curAttr.value;
+                    if (curAttrName && curAttrName.indexOf('data-') === 0) {
                         dataset[this._camelCase(curAttrName.replace('data-', ''))] = curAttrValue;
                     }
-                    /*
-                       if(attributesElements.hasOwnProperty && attributesElements.hasOwnProperty(prop)) {
-                       if( typeof attributesElements[prop] === 'undefined' ){
-                       continue;
-                       } else if( typeof attributesElements[prop] === 'object' ){
-                       prop = attributesElements[prop].name || prop;
-                       if(
-                       ( ( attributesElements[prop].name || attributesElements[prop].nodeValue ) && ( prop.indexOf('data-') !== 0 ) ) ||
-                       !( attributesElements[prop].nodeValue || attributesElements[prop].value || attributesElements[prop] )
-                       ){
-                       continue;
-                       }
-                       }
-
-                       propName = prop.replace('data-','');
-                       if( propName.indexOf('-') !== -1 ){
-                       propName = propName.split("-");
-                       for( i=1; i<propName.length; i+=1 ){
-                       propName[i] = propName[i].substr(0,1).toUpperCase() + propName[i].substr(1);
-                       }
-                       propName = propName.join('');
-                       }
-                       dataset[propName] = attributesElements[prop].nodeValue || attributesElements[prop].value || attributesElements[prop];
-                       if( dataset[propName] === "true" || dataset[propName] === "false" ){
-                       dataset[propName] = ( dataset[propName] === 'true' );
-                       }
-                       }
-                     */
                 }
             }
 
@@ -3542,7 +3595,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         },
 
         /**
-         * @function moveCursorTo
+         * @method moveCursorTo
          * @param  {Input|Textarea}  el
          * @param  {Number}          t
          */
@@ -3561,7 +3614,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         },
 
         /**
-         * @function pageWidth
+         * @method pageWidth
          * @return {Number} page width
          */
         pageWidth: function() {
@@ -3597,7 +3650,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         },
 
         /**
-         * @function pageHeight
+         * @method pageHeight
          * @return {Number} page height
          */
         pageHeight: function() {
@@ -3629,7 +3682,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         },
 
        /**
-         * @function viewportWidth
+         * @method viewportWidth
          * @return {Number} viewport width
          */
         viewportWidth: function() {
@@ -3642,7 +3695,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         },
 
         /**
-         * @function viewportHeight
+         * @method viewportHeight
          * @return {Number} viewport height
          */
         viewportHeight: function() {
@@ -3655,7 +3708,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         },
 
         /**
-         * @function scrollWidth
+         * @method scrollWidth
          * @return {Number} scroll width
          */
         scrollWidth: function() {
@@ -3669,7 +3722,7 @@ Ink.createModule('Ink.Dom.Element', 1, [], function() {
         },
 
         /**
-         * @function scrollHeight
+         * @method scrollHeight
          * @return {Number} scroll height
          */
         scrollHeight: function() {
@@ -3719,12 +3772,71 @@ Ink.createModule('Ink.Dom.Event', 1, [], function() {
     KEY_PAGEUP:   33,
     KEY_PAGEDOWN: 34,
     KEY_INSERT:   45,
-
+    
+    /**
+     * Returns a function which calls `func`, waiting at least `wait`
+     * milliseconds between calls. This is useful for events such as `scroll`
+     * or `resize`, which can be triggered too many times per second, slowing
+     * down the browser with needless function calls.
+     *
+     * *note:* This does not delay the first function call to the function.
+     *
+     * @method throttle
+     * @param {Function} func   Function to call. Arguments and context are both passed.
+     * @param {Number} [wait=0] Milliseconds to wait between calls.
+     *
+     * @example
+     *  
+     *  // BEFORE
+     *  InkEvent.observe(window, 'scroll', function () {
+     *      ...
+     *  }); // When scrolling on mobile devices or on firefox's smooth scroll
+     *      // this is expensive because onscroll is called many times
+     *
+     *  // AFTER
+     *  InkEvent.observe(window, 'scroll', InkEvent.throttle(function () {
+     *      ...
+     *  }, 100)); // The event handler is called only every 100ms. Problem solved.
+     *
+     * @example
+     *  var handler = InkEvent.throttle(function () {
+     *      ...
+     *  }, 100);
+     *
+     *  InkEvent.observe(window, 'scroll', handler);
+     *  InkEvent.observe(window, 'resize', handler);
+     *
+     *  // on resize, both the "scroll" and the "resize" events are triggered
+     *  // a LOT of times. This prevents both of them being called a lot of
+     *  // times when the window is being resized by a user.
+     *
+     **/
+    throttle: function (func, wait) {
+        wait = wait || 0;
+        var lastCall = 0;  // Warning: This breaks on Jan 1st 1970 0:00
+        var timeout;
+        var throttled = function () {
+            var now = +new Date();
+            var timeDiff = now - lastCall;
+            if (timeDiff >= wait) {
+                lastCall = now;
+                return func.apply(this, [].slice.call(arguments));
+            } else {
+                var that = this;
+                var args = [].slice.call(arguments);
+                clearTimeout(timeout);
+                timeout = setTimeout(function () {
+                    return throttled.apply(that, args);
+                });
+            }
+        };
+        return throttled;
+    },
 
     /**
      * Returns the target of the event object
      *
-     * @function element
+     * @method element
      * @param {Object} ev  event object
      * @return {Node} The target
      */
@@ -3744,7 +3856,7 @@ Ink.createModule('Ink.Dom.Event', 1, [], function() {
     /**
      * Returns the related target of the event object
      *
-     * @function relatedTarget
+     * @method relatedTarget
      * @param {Object} ev event object
      * @return {Node} The related target
      */
@@ -3760,10 +3872,14 @@ Ink.createModule('Ink.Dom.Event', 1, [], function() {
     },
 
     /**
-     * @function findElement
-     * @param {Object}  ev          event object
-     * @param {String}  elmTagName  tag name to find
-     * @param {Boolean} [force]     force the return of the wanted type of tag, or false otherwise
+     * Navigate up the DOM tree, looking for a tag with the name `elmTagName`.
+     *
+     * If such tag is not found, `document` is returned.
+     *
+     * @method findElement
+     * @param {Object}  ev              event object
+     * @param {String}  elmTagName      tag name to find
+     * @param {Boolean} [force=false]   If this is true, never return `document`, and returns `false` instead.
      * @return {DOMElement} the first element which matches given tag name or the document element if the wanted tag is not found
      */
     findElement: function(ev, elmTagName, force)
@@ -3792,7 +3908,7 @@ Ink.createModule('Ink.Dom.Event', 1, [], function() {
     /**
      * Dispatches an event to element
      *
-     * @function fire
+     * @method fire
      * @param {DOMElement|String}  element    element id or element
      * @param {String}             eventName  event name
      * @param {Object}             [memo]     metadata for the event
@@ -3888,51 +4004,60 @@ Ink.createModule('Ink.Dom.Event', 1, [], function() {
         }
     },
 
+    _callbackForCustomEvents: function (element, eventName, callBack) {
+        var isHashChangeInIE = eventName === "hashchange" && element.attachEvent && !window.onhashchange;
+        var isCustomEvent = eventName.indexOf(':') !== -1;
+        if (isHashChangeInIE || isCustomEvent) {
+            /**
+             *
+             * prevent that each custom event fire without any test
+             * This prevents that if you have multiple custom events
+             * on dataavailable to trigger the callback event if it
+             * is a different custom event
+             *
+             */
+            var argCallback = callBack;
+            return Ink.bindEvent(function(ev, eventName, cb){
+
+              //tests if it is our event and if not
+              //check if it is IE and our dom:loaded was overrided (IE only supports one ondatavailable)
+              //- fix /opera also supports attachEvent and was firing two events
+              // if(ev.eventName === eventName || (Ink.Browser.IE && eventName === 'dom:loaded')){
+              if(ev.eventName === eventName){
+                //fix for FF since it loses the event in case of using a second binObjEvent
+                if(window.addEventListener){
+                  window.event = ev;
+                }
+                cb();
+              }
+
+            }, this, eventName, argCallback);
+        } else {
+            return null;
+        }
+    },
+
     /**
      * Attaches an event to element
      *
-     * @function observe
-     * @param {DOMElement|String}  element      element id or element
-     * @param {String}             eventName    event name
-     * @param {Function}           callBack     receives event object as a
+     * @method observe
+     * @param {DOMElement|String}  element      Element id or element
+     * @param {String}             eventName    Event name
+     * @param {Function}           callBack     Receives event object as a
      * parameter. If you're manually firing custom events, check the
      * eventName property of the event object to make sure you're handling
      * the right event.
-     * @param {Boolean}            [useCapture]  set to true to change event listening from bubbling to capture.
+     * @param {Boolean}            [useCapture] Set to true to change event listening from bubbling to capture.
+     * @return {Function} The event handler used. Hang on to this if you want to `stopObserving` later.
      */
     observe: function(element, eventName, callBack, useCapture)
     {
         element = Ink.i(element);
         if(element !== null && element !== undefined) {
-            if(eventName.indexOf(':') !== -1 ||
-                (eventName === "hashchange" && element.attachEvent && !window.onhashchange)
-                ) {
-
-                /**
-                 *
-                 * prevent that each custom event fire without any test
-                 * This prevents that if you have multiple custom events
-                 * on dataavailable to trigger the callback event if it
-                 * is a different custom event
-                 *
-                 */
-                var argCallback = callBack;
-                callBack = Ink.bindEvent(function(ev, eventName, cb){
-
-                  //tests if it is our event and if not
-                  //check if it is IE and our dom:loaded was overrided (IE only supports one ondatavailable)
-                  //- fix /opera also supports attachEvent and was firing two events
-                  // if(ev.eventName === eventName || (Ink.Browser.IE && eventName === 'dom:loaded')){
-                  if(ev.eventName === eventName){
-                    //fix for FF since it loses the event in case of using a second binObjEvent
-                    if(window.addEventListener){
-                      window.event = ev;
-                    }
-                    cb();
-                  }
-
-                }, this, eventName, argCallback);
-
+            /* rare corner case: some events need a different callback to be generated */
+            var callbackForCustomEvents = this._callbackForCustomEvents(element, eventName, callBack);
+            if (callbackForCustomEvents) {
+                callBack = callbackForCustomEvents;
                 eventName = 'dataavailable';
             }
 
@@ -3941,13 +4066,46 @@ Ink.createModule('Ink.Dom.Event', 1, [], function() {
             } else {
                 element.attachEvent('on' + eventName, callBack);
             }
+            return callBack;
         }
+    },
+
+    /**
+     * Attaches an event to a selector or array of elements.
+     *
+     * Requires Ink.Dom.Selector or a browser with Element.querySelectorAll.
+     *
+     * Ink.Dom.Event.observe
+     *
+     * @method observeMulti
+     * @param {Array|String} elements
+     * @param ... See the `observe` function.
+     * @return {Function} The used callback.
+     */
+    observeMulti: function (elements, eventName, callBack, useCapture) {
+        if (typeof elements === 'string') {
+            elements = Ink.ss(elements);
+        } else if (elements instanceof Element) {
+            elements = [elements];
+        }
+        if (!elements[0]) { return false; }
+
+        var callbackForCustomEvents = this._callbackForCustomEvents(elements[0], eventName, callBack);
+        if (callbackForCustomEvents) {
+            callBack = callbackForCustomEvents;
+            eventName = 'dataavailable';
+        }
+
+        for (var i = 0, len = elements.length; i < len; i++) {
+            this.observe(elements[i], eventName, callBack, useCapture);
+        }
+        return callBack;
     },
 
     /**
      * Remove an event attached to an element
      *
-     * @function stopObserving
+     * @method stopObserving
      * @param {DOMElement|String}  element       element id or element
      * @param {String}             eventName     event name
      * @param {Function}           callBack      callback function
@@ -3969,7 +4127,7 @@ Ink.createModule('Ink.Dom.Event', 1, [], function() {
     /**
      * Stops event propagation and bubbling
      *
-     * @function stop
+     * @method stop
      * @param {Object} event  event handle
      */
     stop: function(event)
@@ -3992,9 +4150,24 @@ Ink.createModule('Ink.Dom.Event', 1, [], function() {
     },
 
     /**
+     * Stops event propagation
+     *
+     * @method stopPropagation
+     * @param {Object} event  event handle
+     */
+    stopPropagation: function(event) {
+        if(event.cancelBubble !== null) {
+            event.cancelBubble = true;
+        }
+        if(event.stopPropagation) {
+            event.stopPropagation();
+        }
+    },
+
+    /**
      * Stops event default behaviour
      *
-     * @function stopDefault
+     * @method stopDefault
      * @param {Object} event  event handle
      */
     stopDefault: function(event)
@@ -4011,7 +4184,7 @@ Ink.createModule('Ink.Dom.Event', 1, [], function() {
     },
 
     /**
-     * @function pointer
+     * @method pointer
      * @param {Object} ev event object
      * @return {Object} an object with the mouse X and Y position
      */
@@ -4024,7 +4197,7 @@ Ink.createModule('Ink.Dom.Event', 1, [], function() {
     },
 
     /**
-     * @function pointerX
+     * @method pointerX
      * @param {Object} ev event object
      * @return {Number} mouse X position
      */
@@ -4034,7 +4207,7 @@ Ink.createModule('Ink.Dom.Event', 1, [], function() {
     },
 
     /**
-     * @function pointerY
+     * @method pointerY
      * @param {Object} ev event object
      * @return {Number} mouse Y position
      */
@@ -4044,9 +4217,9 @@ Ink.createModule('Ink.Dom.Event', 1, [], function() {
     },
 
     /**
-     * @function isLeftClick
+     * @method isLeftClick
      * @param {Object} ev  event object
-     * @return {Boolea} True if there is a left click on the event
+     * @return {Boolean} True if the event is a left mouse click
      */
     isLeftClick: function(ev) {
         if (window.addEventListener) {
@@ -4064,7 +4237,7 @@ Ink.createModule('Ink.Dom.Event', 1, [], function() {
     },
 
     /**
-     * @function isRightClick
+     * @method isRightClick
      * @param {Object} ev  event object
      * @return {Boolean} True if there is a right click on the event
      */
@@ -4073,7 +4246,7 @@ Ink.createModule('Ink.Dom.Event', 1, [], function() {
     },
 
     /**
-     * @function isMiddleClick
+     * @method isMiddleClick
      * @param {Object} ev  event object
      * @return {Boolean} True if there is a middle click on the event
      */
@@ -4091,7 +4264,7 @@ Ink.createModule('Ink.Dom.Event', 1, [], function() {
      * Work in Progress.
      * Used in SAPO.Component.MaskedInput
      *
-     * @function getCharFromKeyboardEvent
+     * @method getCharFromKeyboardEvent
      * @param {KeyboardEvent}     event           keyboard event
      * @param {optional Boolean}  [changeCasing]  if true uppercases, if false lowercases, otherwise keeps casing
      * @return {String} character representation of pressed key combination
@@ -4125,6 +4298,229 @@ return Event;
 });
 
 /**
+ * @module Ink.Dom.FormSerialize
+ * @author inkdev AT sapo.pt
+ */
+
+Ink.createModule('Ink.Dom.FormSerialize', 1, [], function () {
+    'use strict';
+    /**
+     * Supports serialization of form data to/from javascript Objects.
+     *
+     * Valid applications are ad hoc AJAX/syndicated submission of forms, restoring form values from server side state, etc.
+     *
+     * @class Ink.Dom.FormSerialize
+     *
+     */
+    var FormSerialize = {
+
+        /**
+         * Serializes a form into an object, turning field names into keys, and field values into values.
+         *
+         * note: Multi-select and checkboxes with multiple values will yield arrays
+         *
+         * @method serialize
+         * @return {Object} map of fieldName -> String|String[]|Boolean
+         * @param {DomElement|String}   form    form element from which the extraction is to occur
+         *
+         * @example
+         *     <form id="frm">
+         *         <input type="text" name="field1">
+         *         <button type="submit">Submit</button>
+         *     </form>
+         *     <script type="text/javascript">
+         *         Ink.requireModules(['Ink.Dom.FormSerialize_1', 'Ink.Dom.Event_1'], function (FormSerialize, InkEvent) {
+         *             InkEvent.observe('frm', 'submit', function (event) {
+         *                 var formData = FormSerialize.serialize('frm'); // -> {field1:"123"}
+         *                 InkEvent.stop(event);
+         *             });
+         *         });
+         *     </script>
+         */
+        serialize: function(form) {
+            form = Ink.i(form);
+            var map = this._getFieldNameInputsMap(form);
+
+            var map2 = {};
+            for (var k in map) if (map.hasOwnProperty(k)) {
+                if(k !== null) {
+                    var tmpK = k.replace(/\[\]$/, '');
+                    map2[tmpK] = this._getValuesOfField( map[k] );
+                } else {
+                    map2[k] = this._getValuesOfField( map[k] );
+                }
+            }
+
+            delete map2['null'];    // this can occur. if so, delete it...
+            return map2;
+        },
+
+
+
+
+        /**
+         * Sets form elements's values with values given from object
+         *
+         * One cannot restore the values of an input with `type="file"` (browser prohibits it)
+         *
+         * @method fillIn 
+         * @param {DomElement|String}   form    form element which is to be populated
+         * @param {Object}              map2    map of fieldName -> String|String[]|Boolean
+         * @example
+         *     <form id="frm">
+         *         <input type="text" name="field1">
+         *         <button type="submit">Submit</button>
+         *     </form>
+         *     <script type="text/javascript">
+         *         Ink.requireModules(['Ink.Dom.FormSerialize_1'], function (FormSerialize) {
+         *             var values = {field1: 'CTHULHU'};
+         *             FormSerialize.fillIn('frm', values);
+         *             // At this point the form is pre-filled with the values above.
+         *         });
+         *     </script>
+         */
+        fillIn: function(form, map2) {
+            form = Ink.i(form);
+            var map = this._getFieldNameInputsMap(form);
+            delete map['null']; // this can occur. if so, delete it...
+
+            for (var k in map2) if (map2.hasOwnProperty(k)) {
+                this._setValuesOfField( map[k], map2[k] );
+            }
+        },
+
+
+
+        _getFieldNameInputsMap: function(formEl) {
+            var name, nodeName, el, map = {};
+            for (var i = 0, f = formEl.elements.length; i < f; ++i) {
+                el = formEl.elements[i];
+                name = el.getAttribute('name');
+                nodeName = el.nodeName.toLowerCase();
+                if (nodeName === 'fieldset') {
+                    continue;
+                } else if (map[name] === undefined) {
+                    map[name] = [el];
+                } else {
+                    map[name].push(el);
+                }
+            }
+            return map;
+        },
+
+
+
+        _getValuesOfField: function(fieldInputs) {
+            var nodeName = fieldInputs[0].nodeName.toLowerCase();
+            var type = fieldInputs[0].getAttribute('type');
+            var value = fieldInputs[0].value;
+            var i, f, j, o, el, m, res = [];
+
+            switch(nodeName) {
+                case 'select':
+                    for (i = 0, f = fieldInputs.length; i < f; ++i) {
+                        res[i] = [];
+                        m = fieldInputs[i].getAttribute('multiple');
+                        for (j = 0, o = fieldInputs[i].options.length; j < o; ++j) {
+                            el = fieldInputs[i].options[j];
+                            if (el.selected) {
+                                if (m) {
+                                    res[i].push(el.value);
+                                } else {
+                                    res[i] = el.value;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    return ((fieldInputs.length > 0 && /\[[^\]]*\]$/.test(fieldInputs[0].getAttribute('name'))) ? res : res[0]);
+
+                case 'textarea':
+                case 'input':
+                    if (type === 'checkbox' || type === 'radio') {
+                        for (i = 0, f = fieldInputs.length; i < f; ++i) {
+                            el = fieldInputs[i];
+                            if (el.checked) {
+                                res.push(    el.value    );
+                            }
+                        }
+                        if (type === 'checkbox') {
+                            return (fieldInputs.length > 1) ? res : !!(res.length);
+                        }
+                        return (fieldInputs.length > 1) ? res[0] : !!(res.length);    // on radios only 1 option is selected at most
+                    }
+                    else {
+                        //if (fieldInputs.length > 1) {    throw 'Got multiple input elements with same name!';    }
+                        if(fieldInputs.length > 0 && /\[[^\]]*\]$/.test(fieldInputs[0].getAttribute('name'))) {
+                            var tmpValues = [];
+                            for(i=0, f = fieldInputs.length; i < f; ++i) {
+                                tmpValues.push(fieldInputs[i].value);
+                            }
+                            return tmpValues;
+                        } else {
+                            return value;
+                        }
+                    }
+                    break;    // to keep JSHint happy...  (reply to this comment by gamboa: - ROTFL)
+
+                default:
+                    //throw 'Unsupported element: "' + nodeName + '"!';
+                    return undefined;
+            }
+        },
+
+
+
+        _valInArray: function(val, arr) {
+            for (var i = 0, f = arr.length; i < f; ++i) {
+                if (arr[i] === val) {    return true;    }
+            }
+            return false;
+        },
+
+
+
+        _setValuesOfField: function(fieldInputs, fieldValues) {
+            if (!fieldInputs) {    return;    }
+            var nodeName = fieldInputs[0].nodeName.toLowerCase();
+            var type = fieldInputs[0].getAttribute('type');
+            var i, f, el;
+
+            switch(nodeName) {
+                case 'select':
+                    if (fieldInputs.length > 1) {    throw 'Got multiple select elements with same name!';    }
+                    for (i = 0, f = fieldInputs[0].options.length; i < f; ++i) {
+                        el = fieldInputs[0].options[i];
+                        el.selected = (fieldValues instanceof Array) ? this._valInArray(el.value, fieldValues) : el.value === fieldValues;
+                    }
+                    break;
+                case 'textarea':
+                case 'input':
+                    if (type === 'checkbox' || type === 'radio') {
+                        for (i = 0, f = fieldInputs.length; i < f; ++i) {
+                            el = fieldInputs[i];
+                            //el.checked = (fieldValues instanceof Array) ? this._valInArray(el.value, fieldValues) : el.value === fieldValues;
+                            el.checked = (fieldValues instanceof Array) ? this._valInArray(el.value, fieldValues) : (fieldInputs.length > 1 ? el.value === fieldValues : !!fieldValues);
+                        }
+                    }
+                    else {
+                        if (fieldInputs.length > 1) {    throw 'Got multiple input elements with same name!';    }
+                        if (type !== 'file') {
+                            fieldInputs[0].value = fieldValues;
+                        }
+                    }
+                    break;
+
+                default:
+                    throw 'Unsupported element: "' + nodeName + '"!';
+            }
+        }
+    };
+
+    return FormSerialize;
+});
+
+/**
  * @module Ink.Dom.Loaded_1
  * @author inkdev AT sapo.pt
  * @version 1
@@ -4144,25 +4540,25 @@ Ink.createModule('Ink.Dom.Loaded', 1, [], function() {
     var Loaded = {
 
         /**
-         * Functions queue.
+         * Callbacks and their contexts. Array of 2-arrays.
          *
-         * @property _cbQueue
-         * @type {Array}
+         * []
+         *
+         * @attribute _contexts Array
          * @private
-         * @static
-         * @readOnly
+         * 
          */
-        _cbQueue: [], // Callbacks' queue
+        _contexts: [], // Callbacks' queue
 
         /**
          * Adds a new function that will be invoked once the document is ready
          *
          * @method run
-         * @param {Object}   [win] Window object to attach/add the event
-         * @param {Function} fn  Callback function to be run after the page is loaded
+         * @param {Object}   [win=window]   Window object to attach/add the event
+         * @param {Function} fn             Callback function to be run after the page is loaded
          * @public
          * @example
-         *     Ink.requireModules(['Ink.Dom.Loaded_1'],function(Loaded){
+         *     Ink.requireModules(['Ink.Dom.Loaded_1'], function(Loaded){
          *         Loaded.run(function(){
          *             console.log('This will run when the page/document is ready/loaded');
          *         });
@@ -4174,46 +4570,65 @@ Ink.createModule('Ink.Dom.Loaded', 1, [], function() {
                 win = window;
             }
 
-            this._win  = win;
-            this._doc  = win.document;
-            this._root = this._doc.documentElement;
-            this._done = false;
-            this._top  = true;
+            var context;
 
-            this._handlers = {
-                checkState: Ink.bindEvent(this._checkState, this),
-                poll:       Ink.bind(this._poll, this)
-            };
-
-            var   ael = this._doc.addEventListener;
-            this._add = ael ? 'addEventListener' : 'attachEvent';
-            this._rem = ael ? 'removeEventListener' : 'detachEvent';
-            this._pre = ael ? '' : 'on';
-            this._det = ael ? 'DOMContentLoaded' : 'onreadystatechange';
-            this._wet = this._pre + 'load';
-
-            var csf = this._handlers.checkState;
-
-            if (this._doc.readyState === 'complete'){
-                fn.call(this._win, 'lazy');
+            for (var i = 0, len = this._contexts.length; i < len; i++) {
+                if (this._contexts[i][0] === win) {
+                    context = this._contexts[i][1];
+                    break;
+                }
             }
-            else {
-                this._cbQueue.push(fn);
+            if (!context) {
+                context = {
+                    cbQueue: [],
+                    win: win,
+                    doc: win.document,
+                    root: win.document.documentElement,
+                    done: false,
+                    top: true
+                };
+                context.handlers = {
+                    checkState: Ink.bindEvent(this._checkState, this, context),
+                    poll: Ink.bind(this._poll, this, context)
+                };
+                this._contexts.push(
+                    [win, context]  // Javascript Objects cannot map different windows to
+                                    // different values.
+                );
+            }
 
-                this._doc[this._add]( this._det , csf );
-                this._win[this._add]( this._wet , csf );
+            var   ael = context.doc.addEventListener;
+            context.add = ael ? 'addEventListener' : 'attachEvent';
+            context.rem = ael ? 'removeEventListener' : 'detachEvent';
+            context.pre = ael ? '' : 'on';
+            context.det = ael ? 'DOMContentLoaded' : 'onreadystatechange';
+            context.wet = context.pre + 'load';
+
+            var csf = context.handlers.checkState;
+            var alreadyLoaded = (
+                context.doc.readyState === 'complete' &&
+                context.win.location.toString() !== 'about:blank');  // https://code.google.com/p/chromium/issues/detail?id=32357
+
+            if (alreadyLoaded){
+                setTimeout(Ink.bind(function () {
+                    fn.call(context.win, 'lazy');
+                }, this), 0);
+            } else {
+                context.cbQueue.push(fn);
+
+                context.doc[context.add]( context.det , csf );
+                context.win[context.add]( context.wet , csf );
 
                 var frameElement = 1;
                 try{
-                    frameElement = this._win.frameElement;
+                    frameElement = context.win.frameElement;
                 } catch(e) {}
-
-                if ( !ael && this._root.doScroll ) { // IE HACK
+                if ( !ael && context.root && context.root.doScroll ) { // IE HACK
                     try {
-                        this._top = !frameElement;
+                        context.top = !frameElement;
                     } catch(e) { }
-                    if (this._top) {
-                        this._poll();
+                    if (context.top) {
+                        this._poll(context);
                     }
                 }
             }
@@ -4226,13 +4641,13 @@ Ink.createModule('Ink.Dom.Loaded', 1, [], function() {
          * @param {Event} event Triggered event
          * @private
          */
-        _checkState: function(event) {
-            if ( !event || (event.type === 'readystatechange' && this._doc.readyState !== 'complete')) {
+        _checkState: function(event, context) {
+            if ( !event || (event.type === 'readystatechange' && context.doc.readyState !== 'complete')) {
                 return;
             }
-            var where = (event.type === 'load') ? this._win : this._doc;
-            where[this._rem](this._pre+event.type, this._handlers.checkState, false);
-            this._ready();
+            var where = (event.type === 'load') ? context.win : context.doc;
+            where[context.rem](context.pre+event.type, context.handlers.checkState, false);
+            this._ready(context);
         },
 
         /**
@@ -4246,13 +4661,13 @@ Ink.createModule('Ink.Dom.Loaded', 1, [], function() {
          *
          * function _poll
          */
-        _poll: function() {
+        _poll: function(context) {
             try {
-                this._root.doScroll('left');
+                context.root.doScroll('left');
             } catch(e) {
-                return setTimeout(this._handlers.poll, 50);
+                return setTimeout(context.handlers.poll, 50);
             }
-            this._ready();
+            this._ready(context);
         },
 
         /**
@@ -4261,13 +4676,13 @@ Ink.createModule('Ink.Dom.Loaded', 1, [], function() {
          * @method _ready
          * @private
          */
-        _ready: function() {
-            if (!this._done) {
-                this._done = true;
-                for (var i = 0; i < this._cbQueue.length; ++i) {
-                    this._cbQueue[i].call(this._win);
+        _ready: function(context) {
+            if (!context.done) {
+                context.done = true;
+                for (var i = 0; i < context.cbQueue.length; ++i) {
+                    context.cbQueue[i].call(context.win);
                 }
-                this._cbQueue = [];
+                context.cbQueue = [];
             }
         }
     };
@@ -4282,6 +4697,7 @@ Ink.createModule('Ink.Dom.Loaded', 1, [], function() {
  * @version 1
  */
 Ink.createModule('Ink.Dom.Selector', 1, [], function() {
+    /*jshint forin:false, eqnull:true*/
 	'use strict';
 
     /**
@@ -4458,7 +4874,7 @@ try {
 	};
 }
 
-/**
+/*
  * For feature detection
  * @param {Function} fn The function to test for native support
  */
@@ -4466,7 +4882,7 @@ function isNative( fn ) {
 	return rnative.test( fn + "" );
 }
 
-/**
+/*
  * Create key-value caches of limited size
  * @returns {Function(string, Object)} Returns the Object data after storing it on itself with
  *	property name the (space-suffixed) string and (if the cache is larger than Expr.cacheLength)
@@ -4486,7 +4902,7 @@ function createCache() {
 	});
 }
 
-/**
+/*
  * Mark a function for special use by Sizzle
  * @param {Function} fn The function to mark
  */
@@ -4495,7 +4911,7 @@ function markFunction( fn ) {
 	return fn;
 }
 
-/**
+/*
  * Support testing using an element
  * @param {Function} fn Passed the created div and expects a boolean result
  */
@@ -4622,7 +5038,7 @@ function Sizzle( selector, context, results, seed ) {
 	return select( selector.replace( rtrim, "$1" ), context, results, seed );
 }
 
-/**
+/*
  * Detect xml
  * @param {Element|Object} elem An element or a document
  */
@@ -4633,7 +5049,7 @@ isXML = Sizzle.isXML = function( elem ) {
 	return documentElement ? documentElement.nodeName !== "HTML" : false;
 };
 
-/**
+/*
  * Sets document-related variables once based on the current document
  * @param {Element|Object} [doc] An element or document object to use to set the document
  * @returns {Object} Returns the current document
@@ -5090,7 +5506,7 @@ Sizzle.uniqueSort = function( results ) {
 	return results;
 };
 
-/**
+/*
  * Checks document order of two siblings
  * @param {Element} a
  * @param {Element} b
@@ -5152,7 +5568,7 @@ function createPositionalPseudo( fn ) {
 	});
 }
 
-/**
+/*
  * Utility function for retrieving the text value of an array of DOM nodes
  * @param {Array|Element} elem
  */
@@ -6198,28 +6614,38 @@ support.detectDuplicates = hasDuplicate;
 // EXPOSE
 
 /**
- * Alias for the Sizzle search engine
+ * Alias for the Sizzle selector engine
  *
  * @method select
  * @param {String} selector CSS selector to search for elements
  * @param {DOMElement} [context] By default the search is done in the document element. However, you can specify an element as search context
  * @param {Array} [results] By default this is considered an empty array. But if you want to merge it with other searches you did, pass their result array through here.
  * @param {Object} [seed]
- * @return {Array} Array of DOM Elements as results
+ * @return {Array} Array of resulting DOM Elements
  */
 
 /**
- * Retorna elementos que façam match com o 2º argumento da função
+ * Returns elements which match with the second argument to the function.
  *
  * @method matches
  * @param {String} selector CSS selector to search for elements
  * @param {Array} matches Elements to be 'matched' with
- * @result {Array} Elements that matched
+ * @return {Array} Elements that matched
+ */
+
+/**
+ * Returns true iif element matches given selector
+ *
+ * @method matchesSelector
+ * @param {DOMElement} element to test
+ * @param {String}     selector CSS selector to test the element with
+ * @return {Boolean} true iif element matches the CSS selector
  */
 
 return {
-    select: Sizzle,
-    matches: Sizzle.matches
+    select:          Sizzle,
+    matches:         Sizzle.matches,
+    matchesSelector: Sizzle.matchesSelector
 };
 
 
@@ -6309,7 +6735,7 @@ Ink.createModule('Ink.Dom.Browser', '1', [], function() {
         CHROME: false,
 
         /**
-         * The specific browser model. False if it is unable to get it.
+         * The specific browser model. False if it is unavailable.
          *
          * @property model
          * @type {Boolean|String}
@@ -6319,7 +6745,7 @@ Ink.createModule('Ink.Dom.Browser', '1', [], function() {
         model: false,
 
         /**
-         * The browser version. False if it is unable to get it.
+         * The browser version. False if it is unavailable.
          *
          * @property version
          * @type {Boolean|String}
@@ -6329,7 +6755,7 @@ Ink.createModule('Ink.Dom.Browser', '1', [], function() {
         version: false,
 
         /**
-         * The user agent string. False if it is unable to get it.
+         * The user agent string. False if it is unavailable.
          *
          * @property userAgent
          * @type {Boolean|String}
@@ -6339,7 +6765,9 @@ Ink.createModule('Ink.Dom.Browser', '1', [], function() {
         userAgent: false,
 
         /**
-         * Initialization function for the Browser object
+         * Initialization function for the Browser object.
+         *
+         * Is called automatically when this module is loaded, and calls setDimensions, setBrowser and setReferrer.
          *
          * @method init
          * @public
@@ -6352,7 +6780,7 @@ Ink.createModule('Ink.Dom.Browser', '1', [], function() {
         },
 
         /**
-         * Stores window dimensions
+         * Retrieves and stores window dimensions in this object. Called automatically when this module is loaded.
          *
          * @method setDimensions
          * @public
@@ -6377,7 +6805,7 @@ Ink.createModule('Ink.Dom.Browser', '1', [], function() {
         },
 
         /**
-         * Stores the referrer
+         * Stores the referrer. Called automatically when this module is loaded.
          *
          * @method setReferrer
          * @public
@@ -6388,7 +6816,7 @@ Ink.createModule('Ink.Dom.Browser', '1', [], function() {
         },
 
         /**
-         * Detects the browser and stores the found properties
+         * Detects the browser and stores the found properties. Called automatically when this module is loaded.
          *
          * @method detectBrowser
          * @public
@@ -6465,10 +6893,27 @@ Ink.createModule('Ink.Dom.Browser', '1', [], function() {
         },
 
         /**
-         * Debug function to help checking values.
+         * Debug function which displays browser (and Ink.Dom.Browser) information as an alert message.
          *
          * @method debug
          * @public
+         *
+         * @example
+         *  
+         *  The following code
+         *
+         *      Ink.requireModules(['Ink.Dom.Browser_1'], function (Browser) {
+         *          Browser.debug();
+         *      });
+         *
+         *  Alerts (On Firefox 22):
+         *
+         *      known browsers: (ie, gecko, opera, safari, konqueror) 
+         *      false,true,false,false,false
+         *      model -> firefox
+         *      version -> 22.0
+         *      
+         *      original UA -> Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:22.0) Gecko/20100101 Firefox/22.0
          */
         debug: function()
         {
@@ -6488,6 +6933,7 @@ Ink.createModule('Ink.Dom.Browser', '1', [], function() {
 
     return Browser;
 });
+
 /**
  * @module Ink.Util.Url_1
  * @author inkdev AT sapo.pt
@@ -6925,7 +7371,6 @@ Ink.createModule('Ink.Util.Swipe', '1', ['Ink.Dom.Event_1'], function(Event) {
      * @class Ink.Util.Swipe
      * @constructor
      * @version 1
-     * @uses Ink.Dom.Event
      *
      * @param {String|DOMElement} selector
      * @param {Object} [options] Options for the Swipe detection
@@ -7064,7 +7509,7 @@ Ink.createModule('Ink.Util.Swipe', '1', ['Ink.Dom.Event_1'], function(Event) {
         _onUp: function(ev) {
             if (!this._isOn || event.changedTouches.length !== 1) { return; }
 
-            if( this._options.stopEvents === true ){
+            if (this._options.stopEvents) {
                 Event.stop(ev);
             }
             ev = ev.changedTouches[0];   // TODO SHOULD CHECK IT IS THE SAME TOUCH
@@ -7088,6 +7533,7 @@ Ink.createModule('Ink.Util.Swipe', '1', ['Ink.Dom.Event_1'], function(Event) {
             if (o.forceAxis   && axis !== o.forceAxis) {   return; }
 
             var O = {
+                upEvent:   ev,
                 elementId: this._element.id,
                 duration:  dt,
                 dr:        dr,
@@ -7231,13 +7677,18 @@ Ink.createModule('Ink.Util.String', '1', [], function() {
          *
          * @method ucFirst
          * @param {String} string
+         * @param {Boolean} [firstWordOnly=false] capitalize only first word.
          * @return {String} string camel cased
          * @public
          * @static
+         *
+         * @example
+         *      InkString.ucFirst('hello world'); // -> 'Hello World'
+         *      InkString.ucFirst('hello world', true); // -> 'Hello world'
          */
-        ucFirst: function(string)
-        {
-            return string ? String(string).replace(/(^|\s)(\w)(\S{2,})/g, function(_, $1, $2, $3){
+        ucFirst: function(string, firstWordOnly) {
+            var replacer = firstWordOnly ? /(^|\s)(\w)(\S{2,})/ : /(^|\s)(\w)(\S{2,})/g;
+            return string ? String(string).replace(replacer, function(_, $1, $2, $3){
                 return $1 + $2.toUpperCase() + $3.toLowerCase();
             }) : string;
         },
@@ -7277,12 +7728,12 @@ Ink.createModule('Ink.Util.String', '1', [], function() {
         stripTags: function(string, allowed)
         {
             if (allowed && typeof allowed === 'string') {
-                var aAllowed = this.trim(allowed).split(',');
+                var aAllowed = InkUtilString.trim(allowed).split(',');
                 var aNewAllowed = [];
                 var cleanedTag = false;
                 for(var i=0; i < aAllowed.length; i++) {
-                    if(this.trim(aAllowed[i]) !== '') {
-                        cleanedTag = this.trim(aAllowed[i].replace(/(\<|\>)/g, '').replace(/\s/, ''));
+                    if(InkUtilString.trim(aAllowed[i]) !== '') {
+                        cleanedTag = InkUtilString.trim(aAllowed[i].replace(/(\<|\>)/g, '').replace(/\s/, ''));
                         aNewAllowed.push('(<'+cleanedTag+'\\s[^>]+>|<(\\s|\\/)?(\\s|\\/)?'+cleanedTag+'>)');
                     }
                 }
@@ -7315,9 +7766,9 @@ Ink.createModule('Ink.Util.String', '1', [], function() {
         {
             if (string && string.replace) {
                 var re = false;
-                for (var i = 0; i < this._chars.length; i++) {
-                    re = new RegExp(this._chars[i], "gm");
-                    string = string.replace(re, '&' + this._entities[i] + ';');
+                for (var i = 0; i < InkUtilString._chars.length; i++) {
+                    re = new RegExp(InkUtilString._chars[i], "gm");
+                    string = string.replace(re, '&' + InkUtilString._entities[i] + ';');
                 }
             }
             return string;
@@ -7336,9 +7787,9 @@ Ink.createModule('Ink.Util.String', '1', [], function() {
         {
             if (string && string.replace) {
                 var re = false;
-                for (var i = 0; i < this._entities.length; i++) {
-                    re = new RegExp("&"+this._entities[i]+";", "gm");
-                    string = string.replace(re, this._chars[i]);
+                for (var i = 0; i < InkUtilString._entities.length; i++) {
+                    re = new RegExp("&"+InkUtilString._entities[i]+";", "gm");
+                    string = string.replace(re, InkUtilString._chars[i]);
                 }
                 string = string.replace(/&#[^;]+;?/g, function($0){
                     if ($0.charAt(2) === 'x') {
@@ -7480,9 +7931,9 @@ Ink.createModule('Ink.Util.String', '1', [], function() {
         {
             var newString = string;
             var re = false;
-            for (var i = 0; i < this._accentedChars.length; i++) {
-                re = new RegExp(this._accentedChars[i], "gm");
-                newString = newString.replace(re, '' + this._accentedRemovedChars[i] + '');
+            for (var i = 0; i < InkUtilString._accentedChars.length; i++) {
+                re = new RegExp(InkUtilString._accentedChars[i], "gm");
+                newString = newString.replace(re, '' + InkUtilString._accentedRemovedChars[i] + '');
             }
             return newString;
         },
@@ -7512,9 +7963,9 @@ Ink.createModule('Ink.Util.String', '1', [], function() {
          * @public
          * @static
          */
-        evalJSON: function(strJSON, sanitize)
-        {
-            if( (typeof sanitize === 'undefined' || sanitize === null) || this.isJSON(strJSON)) {
+        evalJSON: function(strJSON, sanitize) {
+            /* jshint evil:true */
+            if( (typeof sanitize === 'undefined' || sanitize === null) || InkUtilString.isJSON(strJSON)) {
                 try {
                     if(typeof(JSON) !== "undefined" && typeof(JSON.parse) !== 'undefined'){
                         return JSON.parse(strJSON);
@@ -7551,7 +8002,7 @@ Ink.createModule('Ink.Util.String', '1', [], function() {
          * @static
          */
         htmlEscapeUnsafe: function(str){
-            var chars = this._htmlUnsafeChars;
+            var chars = InkUtilString._htmlUnsafeChars;
             return str != null ? String(str).replace(/[<>&'"]/g,function(c){return chars[c];}) : str;
         },
 
@@ -7567,7 +8018,7 @@ Ink.createModule('Ink.Util.String', '1', [], function() {
          * @static
          */
         normalizeWhitespace: function(str){
-            return str != null ? this.trim(String(str).replace(/\s+/g,' ')) : str;
+            return str != null ? InkUtilString.trim(String(str).replace(/\s+/g,' ')) : str;
         },
 
         /**
@@ -7640,7 +8091,7 @@ Ink.createModule('Ink.Util.String', '1', [], function() {
         /**
          * Escapes a unicode character. returns \xXX if hex smaller than 0x100, otherwise \uXXXX
          *
-         * @method ucFirst
+         * @method escape
          * @param {String} c Char
          * @return {String} escaped char
          * @public
@@ -7704,7 +8155,7 @@ Ink.createModule('Ink.Util.String', '1', [], function() {
                 c = txt[i];
                 C = c.charCodeAt(0);
                 if (C < 32 || C > 126 && whiteList.indexOf(c) === -1) {
-                    c = this.escape(c);
+                    c = InkUtilString.escape(c);
                 }
                 txt2.push(c);
             }
@@ -7734,10 +8185,10 @@ Ink.createModule('Ink.Util.String', '1', [], function() {
         unescapeText: function(txt) {
             /*jshint boss:true */
             var m;
-            while (m = this.escapedCharRegex.exec(txt)) {
+            while (m = InkUtilString.escapedCharRegex.exec(txt)) {
                 m = m[0];
-                txt = txt.replace(m, this.unescape(m));
-                this.escapedCharRegex.lastIndex = 0;
+                txt = txt.replace(m, InkUtilString.unescape(m));
+                InkUtilString.escapedCharRegex.lastIndex = 0;
             }
             return txt;
         },
@@ -7783,6 +8234,839 @@ Ink.createModule('Ink.Util.String', '1', [], function() {
 
     return InkUtilString;
 
+});
+
+/**
+ * @module Ink.Util.Json_1
+ *
+ * @author inkdev AT sapo.pt
+ */
+
+Ink.createModule('Ink.Util.Json', '1', [], function() {
+    'use strict';
+
+    var function_call = Function.prototype.call;
+    var cx = /[\u0000\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g;
+
+    function twoDigits(n) {
+        var r = '' + n;
+        if (r.length === 1) {
+            return '0' + r;
+        } else {
+            return r;
+        }
+    }
+
+    var date_toISOString = Date.prototype.toISOString ?
+        Ink.bind(function_call, Date.prototype.toISOString) :
+        function(date) {
+            // Adapted from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString
+            return date.getUTCFullYear()
+                + '-' + twoDigits( date.getUTCMonth() + 1 )
+                + '-' + twoDigits( date.getUTCDate() )
+                + 'T' + twoDigits( date.getUTCHours() )
+                + ':' + twoDigits( date.getUTCMinutes() )
+                + ':' + twoDigits( date.getUTCSeconds() )
+                + '.' + String( (date.getUTCMilliseconds()/1000).toFixed(3) ).slice( 2, 5 )
+                + 'Z';
+        };
+
+    /**
+     * Use this class to convert JSON strings to JavaScript objects
+     * `(Json.parse)` and also to do the opposite operation `(Json.stringify)`.
+     * Internally, the standard JSON implementation is used if available
+     * Otherwise, the functions mimic the standard implementation.
+     *
+     * Here's how to produce JSON from an existing object:
+     * 
+     *      Ink.requireModules(['Ink.Util.Json_1'], function (Json) {
+     *          var obj = {
+     *              key1: 'value1',
+     *              key2: 'value2',
+     *              keyArray: ['arrayValue1', 'arrayValue2', 'arrayValue3']
+     *          };
+     *          Json.stringify(obj);  // The above object as a JSON string
+     *      });
+     *
+     * And here is how to parse JSON:
+     *
+     *      Ink.requireModules(['Ink.Util.Json_1'], function (Json) {
+     *          var source = '{"key": "value", "array": [true, null, false]}';
+     *          Json.parse(source);  // The above JSON string as an object
+     *      });
+     * @class Ink.Util.Json
+     * @static
+     * 
+     */
+    var InkJson = {
+        _nativeJSON: window.JSON || null,
+
+        _convertToUnicode: false,
+
+        // Escape characters so as to embed them in JSON strings
+        _escape: function (theString) {
+            var _m = { '\b': '\\b', '\t': '\\t', '\n': '\\n', '\f': '\\f', '\r': '\\r', '"': '\\"',  '\\': '\\\\' };
+
+            if (/["\\\x00-\x1f]/.test(theString)) {
+                theString = theString.replace(/([\x00-\x1f\\"])/g, function(a, b) {
+                    var c = _m[b];
+                    if (c) {
+                        return c;
+                    }
+                    c = b.charCodeAt();
+                    return '\\u00' + Math.floor(c / 16).toString(16) + (c % 16).toString(16);
+                });
+            }
+
+            return theString;
+        },
+
+        // A character conversion map
+        _toUnicode: function (theString)
+        {
+            if(!this._convertToUnicode) {
+                return this._escape(theString);
+            } else {
+                var unicodeString = '';
+                var inInt = false;
+                var theUnicode = false;
+                var i = 0;
+                var total = theString.length;
+                while(i < total) {
+                    inInt = theString.charCodeAt(i);
+                    if( (inInt >= 32 && inInt <= 126) ||
+                            //(inInt >= 48 && inInt <= 57) ||
+                            //(inInt >= 65 && inInt <= 90) ||
+                            //(inInt >= 97 && inInt <= 122) ||
+                            inInt === 8 ||
+                            inInt === 9 ||
+                            inInt === 10 ||
+                            inInt === 12 ||
+                            inInt === 13 ||
+                            inInt === 32 ||
+                            inInt === 34 ||
+                            inInt === 47 ||
+                            inInt === 58 ||
+                            inInt === 92) {
+
+                        if(inInt === 34 || inInt === 92 || inInt === 47) {
+                            theUnicode = '\\'+theString.charAt(i);
+                        } else if(inInt === 8) {
+                            theUnicode = '\\b';
+                        } else if(inInt === 9) {
+                            theUnicode = '\\t';
+                        } else if(inInt === 10) {
+                            theUnicode = '\\n';
+                        } else if(inInt === 12) {
+                            theUnicode = '\\f';
+                        } else if(inInt === 13) {
+                            theUnicode = '\\r';
+                        } else {
+                            theUnicode = theString.charAt(i);
+                        }
+                    } else {
+                        if(this._convertToUnicode) {
+                            theUnicode = theString.charCodeAt(i).toString(16)+''.toUpperCase();
+                            while (theUnicode.length < 4) {
+                                theUnicode = '0' + theUnicode;
+                            }
+                            theUnicode = '\\u' + theUnicode;
+                        } else {
+                            theUnicode = theString.charAt(i);
+                        }
+                    }
+                    unicodeString += theUnicode;
+
+                    i++;
+                }
+
+                return unicodeString;
+            }
+
+        },
+
+        _stringifyValue: function(param) {
+            if (typeof param === 'string') {
+                return '"' + this._toUnicode(param) + '"';
+            } else if (typeof param === 'number' && (isNaN(param) || !isFinite(param))) {  // Unusable numbers go null
+                return 'null';
+            } else if (typeof param === 'undefined' || param === null) {  // And so does undefined
+                return 'null';
+            } else if (typeof param.toJSON === 'function') {
+                var t = param.toJSON();
+                if (typeof t === 'string') {
+                    return '"' + this._escape(t) + '"';
+                } else {
+                    return this._escape(t.toString());
+                }
+            } else if (typeof param === 'number' || typeof param === 'boolean') {  // These ones' toString methods return valid JSON.
+                return '' + param;
+            } else if (typeof param === 'function') {
+                return 'null';  // match JSON.stringify
+            } else if (param.constructor === Date) {
+                throw ''
+                return '"' + this._escape(date_toISOString(param)) + '"';
+            } else if (param.constructor === Array) {
+                var arrayString = '';
+                for (var i = 0, len = param.length; i < len; i++) {
+                    if (i > 0) {
+                        arrayString += ',';
+                    }
+                    arrayString += this._stringifyValue(param[i]);
+                }
+                return '[' + arrayString + ']';
+            } else {  // Object
+                var objectString = '';
+                for (var k in param)  {
+                    if ({}.hasOwnProperty.call(param, k)) {
+                        if (objectString !== '') {
+                            objectString += ',';
+                        }
+                        objectString += '"' + this._escape(k) + '": ' + this._stringifyValue(param[k]);
+                    }
+                }
+                return '{' + objectString + '}';
+            }
+        },
+
+        /**
+         * serializes a JSON object into a string.
+         *
+         * @method stringify
+         * @param {Object}      input               Data to be serialized into JSON
+         * @param {Boolean}     convertToUnicode    When `true`, converts string contents to unicode \uXXXX
+         * @return {String}     serialized string
+         *
+         * @example
+         *      Json.stringify({a:1.23}); // -> string: '{"a": 1.23}'
+         */
+        stringify: function(input, convertToUnicode) {
+            this._convertToUnicode = !!convertToUnicode;
+            if(!this._convertToUnicode && this._nativeJSON) {
+                return this._nativeJSON.stringify(input);
+            }
+            return this._stringifyValue(input);  // And recurse.
+        },
+        
+        /**
+         * @method parse
+         * @param text      {String}    Input string
+         * @param reviver   {Function}  Function receiving `(key, value)`, and `this`=(containing object), used to walk objects.
+         * 
+         * @example
+         * Simple example:
+         *
+         *      Json.parse('{"a": "3","numbers":false}',
+         *          function (key, value) {
+         *              if (!this.numbers && key === 'a') {
+         *                  return "NO NUMBERS";
+         *              } else {
+         *                  return value;
+         *              }
+         *          }); // -> object: {a: 'NO NUMBERS', numbers: false}
+         */
+        /* From https://github.com/douglascrockford/JSON-js/blob/master/json.js */
+        parse: function (text, reviver) {
+            /*jshint evil:true*/
+
+// The parse method takes a text and an optional reviver function, and returns
+// a JavaScript value if the text is a valid JSON text.
+
+            var j;
+
+            function walk(holder, key) {
+
+// The walk method is used to recursively walk the resulting structure so
+// that modifications can be made.
+
+                var k, v, value = holder[key];
+                if (value && typeof value === 'object') {
+                    for (k in value) {
+                        if (Object.prototype.hasOwnProperty.call(value, k)) {
+                            v = walk(value, k);
+                            if (v !== undefined) {
+                                value[k] = v;
+                            } else {
+                                delete value[k];
+                            }
+                        }
+                    }
+                }
+                return reviver.call(holder, key, value);
+            }
+
+
+// Parsing happens in four stages. In the first stage, we replace certain
+// Unicode characters with escape sequences. JavaScript handles many characters
+// incorrectly, either silently deleting them, or treating them as line endings.
+
+            text = String(text);
+            cx.lastIndex = 0;
+            if (cx.test(text)) {
+                text = text.replace(cx, function (a) {
+                    return '\\u' +
+                        ('0000' + a.charCodeAt(0).toString(16)).slice(-4);
+                });
+            }
+
+// In the second stage, we run the text against regular expressions that look
+// for non-JSON patterns. We are especially concerned with '()' and 'new'
+// because they can cause invocation, and '=' because it can cause mutation.
+// But just to be safe, we want to reject all unexpected forms.
+
+// We split the second stage into 4 regexp operations in order to work around
+// crippling inefficiencies in IE's and Safari's regexp engines. First we
+// replace the JSON backslash pairs with '@' (a non-JSON character). Second, we
+// replace all simple value tokens with ']' characters. Third, we delete all
+// open brackets that follow a colon or comma or that begin the text. Finally,
+// we look to see that the remaining characters are only whitespace or ']' or
+// ',' or ':' or '{' or '}'. If that is so, then the text is safe for eval.
+
+            if (/^[\],:{}\s]*$/
+                    .test(text.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g, '@')
+                        .replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']')
+                        .replace(/(?:^|:|,)(?:\s*\[)+/g, ''))) {
+
+// In the third stage we use the eval function to compile the text into a
+// JavaScript structure. The '{' operator is subject to a syntactic ambiguity
+// in JavaScript: it can begin a block or an object literal. We wrap the text
+// in parens to eliminate the ambiguity.
+
+                j = eval('(' + text + ')');
+
+// In the optional fourth stage, we recursively walk the new structure, passing
+// each name/value pair to a reviver function for possible transformation.
+
+                return typeof reviver === 'function'
+                    ? walk({'': j}, '')
+                    : j;
+            }
+
+// If the text is not JSON parseable, then a SyntaxError is thrown.
+
+            throw new SyntaxError('JSON.parse');
+        }
+    };
+
+    return InkJson;
+});
+
+/**
+ * @module Ink.Util.I18n_1
+ * @author inkdev AT sapo.pt
+ */
+
+Ink.createModule('Ink.Util.I18n', '1', [], function () {
+    'use strict';
+
+    var pattrText = /\{(?:(\{.*?})|(?:%s:)?(\d+)|(?:%s)?|([\w-]+))}/g;
+
+    var funcOrVal = function( ret , args ) {
+        if ( typeof ret === 'function' ) {
+            return ret.apply(this, args);
+        } else if (typeof ret !== undefined) {
+            return ret;
+        } else {
+            return '';
+        }
+    };
+
+    /**
+     * Creates a new internationalization helper object
+     *
+     * @class Ink.Util.I18n
+     * @constructor
+     *
+     * @param {Object} dict object mapping language codes (in the form of `pt_PT`, `pt_BR`, `fr`, `en_US`, etc.) to their Object dictionaries.
+     *     @param {Object} dict.(dictionaries...) 
+     * @param {String} [lang='pt_PT'] language code of the target language
+     *
+     * @example
+     *      var dictionaries = {    // This could come from a JSONP request from your server
+     *          'pt_PT': {
+     *              'hello': 'olá',
+     *              'me': 'eu',
+     *              'i have a {} for you': 'tenho um {} para ti' // Old syntax using `{%s}` tokens still available
+     *          },
+     *          'pt_BR': {
+     *              'hello': 'oi',
+     *              'me': 'eu',
+     *              'i have a {} for you': 'tenho um {} para você'
+     *          }
+     *      };
+     *      Ink.requireModules(['Ink.Util.I18n_1'], function (I18n) {
+     *          var i18n = new I18n(dictionaries, 'pt_PT');
+     *          i18n.text('hello');  // returns 'olá'
+     *          i18n.text('i have a {} for you', 'IRON SWORD'); // returns 'tenho um IRON SWORD' para ti
+     *          
+     *          i18n.lang('pt_BR');  // Changes language. pt_BR dictionary is loaded
+     *          i18n.text('hello');  // returns 'oi'
+     *
+     *          i18n.lang('en_US');  // Missing language.
+     *          i18n.text('hello');  // returns 'hello'. If testMode is on, returns '[hello]'
+     *      });
+     *      
+     *  @example
+     *      // The old {%s} syntax from libsapo's i18n is still supported
+     *      i18n.text('hello, {%s}!', 'someone'); // -> 'olá, someone!'
+     */
+    var I18n = function( dict , lang , testMode ) {
+        if ( !( this instanceof I18n ) ) { return new I18n( dict , lang , testMode ); }
+
+        this.reset( )
+            .lang( lang )
+            .testMode( testMode )
+            .append( dict || { } , lang );
+    };
+
+    I18n.prototype = {
+        reset: function( ) {
+            this._dicts    = [ ];
+            this._dict     = { };
+            this._testMode = false;
+            this._lang     = this._gLang;
+
+            return this;
+        },
+        /**
+         * Adds translation strings for this helper to use.
+         *
+         * @method append
+         * @param {Object} dict object containing language objects identified by their language code
+         * @example
+         *     var i18n = new I18n({}, 'pt_PT');
+         *     i18n.append({'pt_PT': {
+         *         'sfraggles': 'braggles'
+         *     }});
+         *     i18n.text('sfraggles') // -> 'braggles'
+         */
+        append: function( dict ) {
+            this._dicts.push( dict );
+
+            this._dict = Ink.extendObj(this._dict , dict[ this._lang ] );
+
+            return this;
+        },
+        /**
+         * Get the language code
+         *
+         * @returns {String} the language code for this instance
+         * @method {String} lang
+         */
+        /**
+         * Set the language. If there are more dictionaries available in cache, they will be loaded.
+         *
+         * @method  lang
+         * @param   lang    {String} Language code to set this instance to.
+         */
+        lang: function( lang ) {
+            if ( !arguments.length ) { return this._lang; }
+
+            if ( lang && this._lang !== lang ) {
+                this._lang = lang;
+
+                this._dict = { };
+
+                for ( var i = 0, l = this._dicts.length; i < l; i++ ) {
+                    this._dict = Ink.extendObj( this._dict , this._dicts[ i ][ lang ] || { } );
+                }
+            }
+
+            return this;
+        },
+        /**
+         * Get the testMode
+         *
+         * @returns {Boolean} the testMode for this instance
+         * @method {Boolean} testMode
+         */
+        /**
+         * Sets or unsets test mode. In test mode, unknown strings are wrapped
+         * in `[ ... ]`. This is useful for debugging your application and
+         * making sure all your translation keys are in place.
+         *
+         * @method testMode
+         * @param {Boolean} bool boolean value to set the test mode to.
+         */
+        testMode: function( bool ) {
+            if ( !arguments.length ) { return !!this._testMode; }
+
+            if ( bool !== undefined  ) { this._testMode = !!bool; }
+
+            return this;
+        },
+
+        /**
+         * Return an arbitrary key from the current language dictionary
+         *
+         * @method getKey
+         * @param {String} key
+         * @return {Any} The object which happened to be in the current language dictionary on the given key.
+         *
+         * @example
+         *      _.getKey('astring'); // -> 'a translated string'
+         *      _.getKey('anobject'); // -> {'a': 'translated object'}
+         *      _.getKey('afunction'); // -> function () { return 'this is a localized function' }
+         */
+        getKey: function( key ) {
+            var ret;
+            var gLang = this._gLang;
+            var lang  = this._lang;
+    
+            if ( key in this._dict ) {
+                ret = this._dict[ key ];
+            } else {
+                I18n.lang( lang );
+    
+                ret = this._gDict[ key ];
+    
+                I18n.lang( gLang );
+            }
+    
+            return ret;
+        },
+
+        /**
+         * Given a translation key, return a translated string, with replaced parameters.
+         * When a translated string is not available, the original string is returned unchanged.
+         *
+         * @method {String} text
+         * @param {String} str key to look for in i18n dictionary (which is returned verbatim if unknown)
+         * @param {Object} [namedParms] named replacements. Replaces {named} with values in this object.
+         * @param {String} [arg1] replacement #1 (replaces first {} and all {1})
+         * @param {String} [arg2] replacement #2 (replaces second {} and all {2})
+         * @param {String} [argn...] replacement #n (replaces nth {} and all {n})
+         *
+         * @example
+         *      _('Gosto muito de {} e o céu é {}.', 'carros', 'azul');
+         *      // returns 'Gosto muito de carros e o céu é azul.'
+         *
+         * @example
+         *      _('O {1} é {2} como {2} é a cor do {3}.', 'carro', 'azul', 'FCP');
+         *      // returns 'O carro é azul como azul é o FCP.'
+         *
+         *  @example
+         *      _('O {person1} dava-se com a {person2}', {person1: 'coisinho', person2: 'coisinha'});
+         *      // -> 'O coisinho dava-se com a coisinha'
+         *
+         *  @example
+         *      // This is a bit more complex
+         *      var i18n = make().lang('pt_PT').append({
+         *          pt_PT: {
+         *              array: [1, 2],
+         *              object: {'a': '-a-', 'b': '-b-'},
+         *              func: function (a, b) {return '[[' + a + ',' + b + ']]';}
+         *          }
+         *      });
+         *      i18n.text('array', 0); // -> '1'
+         *      i18n.text('object', 'a'); // -> '-a-'
+         *      i18n.text('func', 'a', 'b'); // -> '[[a,b]]'
+         */
+        text: function( str /*, replacements...*/ ) {
+            if ( typeof str !== 'string' ) { return; } // Backwards-compat
+
+            var pars = Array.prototype.slice.call( arguments , 1 );
+            var idx = 0;
+            var isObj = typeof pars[ 0 ] === 'object';
+
+            var original = this.getKey( str );
+            if ( original === undefined ) { original = this._testMode ? '[' + str + ']' : str; }
+            if ( typeof original === 'number' ) { original += ''; }
+
+            if (typeof original === 'string') {
+                original = original.replace( pattrText , function( m , $1 , $2 , $3 ) {
+                    var ret =
+                        $1 ? $1 :
+                        $2 ? pars[ $2 - ( isObj ? 0 : 1 ) ] :
+                        $3 ? pars[ 0 ][ $3 ] || '' :
+                             pars[ (idx++) + ( isObj ? 1 : 0 ) ]
+                    return funcOrVal( ret , [idx].concat(pars) );
+                });
+                return original;
+            }
+             
+            return (
+                typeof original === 'function' ? original.apply( this , pars ) :
+                original instanceof Array      ? funcOrVal( original[ pars[ 0 ] ] , pars ) :
+                typeof original === 'object'   ? funcOrVal( original[ pars[ 0 ] ] , pars ) :
+                                                 '');
+        },
+
+        /**
+         * Given a singular string, a plural string, and a number, translates
+         * either the singular or plural string.
+         *
+         * @method ntext
+         * @return {String}
+         *
+         * @param {String} strSin   word to use when count is 1
+         * @param {String} strPlur  word to use otherwise
+         * @param {Number} count    number which defines which word to use
+         * @param [...]             extra arguments, to be passed to `text()`
+         *
+         * @example
+         *     i18n.ntext('platypus', 'platypuses', 1); // returns 'ornitorrinco'
+         *     i18n.ntext('platypus', 'platypuses', 2); // returns 'ornitorrincos'
+         * 
+         * @example
+         *     // The "count" argument is passed to text()
+         *     i18n.ntext('{} platypus', '{} platypuses', 1); // returns '1 ornitorrinco'
+         *     i18n.ntext('{} platypus', '{} platypuses', 2); // returns '2 ornitorrincos'
+         */
+        ntext: function( strSin , strPlur , count ) {
+            var pars = Array.prototype.slice.apply( arguments );
+            var original;
+
+            if ( pars.length === 2 && typeof strPlur === 'number' ) {
+                original = this.getKey( strSin );
+                if ( !( original instanceof Array ) ) { return ''; }
+
+                pars.splice( 0 , 1 );
+                original = original[ strPlur === 1 ? 0 : 1 ];
+            } else {
+                pars.splice( 0 , 2 );
+                original = count === 1 ? strSin : strPlur;
+            }
+
+            return this.text.apply( this , [ original ].concat( pars ) );
+        },
+
+        /**
+         * Returns the ordinal suffix of `num` (For example, 1 > 'st', 2 > 'nd', 5 > 'th', ...).
+         *
+         * This works by using transforms (in the form of Objects or Functions) passed into the
+         * function or found in the special key `_ordinals` in the active language dictionary.
+         *
+         * @method ordinal
+         *
+         * @param {Number}          num             Input number
+         * 
+         * @param {Object|Function} [options={}]
+         *
+         *    Maps for translating. Each of these options' fallback is found in the current
+         *    language's dictionary. The lookup order is the following:
+         *   
+         *        1. `exceptions`
+         *        2. `byLastDigit`
+         *        3. `default`
+         *   
+         *    Each of these may be either an `Object` or a `Function`. If it's a function, it
+         *    is called (with `number` and `digit` for any function except for byLastDigit,
+         *    which is called with the `lastDigit` of the number in question), and if the
+         *    function returns a string, that is used. If it's an object, the property is
+         *    looked up using `[...]`. If what is found is a string, it is used.
+         *
+         * @param {Object|Function} [options.byLastDigit={}]
+         *    If the language requires the last digit to be considered, mappings of last digits
+         *    to ordinal suffixes can be created here.
+         *
+         * @param {Object|Function} [options.exceptions={}]
+         *    Map unique, special cases to their ordinal suffixes.
+         *
+         * @returns {String}        Ordinal suffix for `num`.
+         *
+         * @example
+         *     var i18n = new I18n({
+         *         pt_PT: {  // 1º, 2º, 3º, 4º, ...
+         *             _ordinal: {  // The _ordinals key each translation dictionary is special.
+         *                 'default': "º" // Usually the suffix is "º" in portuguese...
+         *             }
+         *         },
+         *         fr: {  // 1er, 2e, 3e, 4e, ...
+         *             _ordinal: {  // The _ordinals key is special.
+         *                 'default': "e", // Usually the suffix is "e" in french...
+         *                 exceptions: {
+         *                     1: "er"   // ... Except for the number one.
+         *                 }
+         *             }
+         *         },
+         *         en_US: {  // 1st, 2nd, 3rd, 4th, ..., 11th, 12th, ... 21st, 22nd...
+         *             _ordinal: {
+         *                 'default': "th",// Usually the digit is "th" in english...
+         *                 byLastDigit: {
+         *                     1: "st",  // When the last digit is 1, use "th"...
+         *                     2: "nd",  // When the last digit is 2, use "nd"...
+         *                     3: "rd"   // When the last digit is 3, use "rd"...
+         *                 },
+         *                 exceptions: { // But these numbers are special
+         *                     0: "",
+         *                     11: "th",
+         *                     12: "th",
+         *                     13: "th"
+         *                 }
+         *             }
+         *         }
+         *     }, 'pt_PT');
+         *
+         *     i18n.ordinal(1);    // returns 'º'
+         *     i18n.ordinal(2);    // returns 'º'
+         *     i18n.ordinal(11);   // returns 'º'
+         * 
+         *     i18n.lang('fr');
+         *     i18n.ordinal(1);    // returns 'er'
+         *     i18n.ordinal(2);    // returns 'e'
+         *     i18n.ordinal(11);   // returns 'e'
+         *
+         *     i18n.lang('en_US');
+         *     i18n.ordinal(1);    // returns 'st'
+         *     i18n.ordinal(2);    // returns 'nd'
+         *     i18n.ordinal(12);   // returns 'th'
+         *     i18n.ordinal(22);   // returns 'nd'
+         *     i18n.ordinal(3);    // returns 'rd'
+         *     i18n.ordinal(4);    // returns 'th'
+         *     i18n.ordinal(5);    // returns 'th'
+         *
+         **/
+        ordinal: function( num ) {
+            if ( num === undefined ) { return ''; }
+
+            var lastDig = +num.toString( ).slice( -1 );
+
+            var ordDict  = this.getKey( '_ordinals' );
+            if ( ordDict === undefined ) { return ''; }
+
+            if ( typeof ordDict === 'string' ) { return ordDict; }
+
+            var ret;
+
+            if ( typeof ordDict === 'function' ) {
+                ret = ordDict( num , lastDig );
+
+                if ( typeof ret === 'string' ) { return ret; }
+            }
+
+            if ( 'exceptions' in ordDict ) {
+                ret = typeof ordDict.exceptions === 'function' ? ordDict.exceptions( num , lastDig ) :
+                      num in ordDict.exceptions                ? funcOrVal( ordDict.exceptions[ num ] , [num , lastDig] ) :
+                                                                 undefined;
+
+                if ( typeof ret === 'string' ) { return ret; }
+            }
+
+            if ( 'byLastDigit' in ordDict ) {
+                ret = typeof ordDict.byLastDigit === 'function' ? ordDict.byLastDigit( lastDig , num ) :
+                      lastDig in ordDict.byLastDigit            ? funcOrVal( ordDict.byLastDigit[ lastDig ] , [lastDig , num] ) :
+                                                                  undefined;
+
+                if ( typeof ret === 'string' ) { return ret; }
+            }
+
+            if ( 'default' in ordDict ) {
+                ret = funcOrVal( ordDict['default'] , [ num , lastDig ] );
+
+                if ( typeof ret === 'string' ) { return ret; }
+            }
+
+            return '';
+        },
+
+        /**
+         * Returns an alias to `text()`, for convenience. The resulting function is
+         * traditionally assigned to "_".
+         *
+         * @method alias
+         * @returns {Function} an alias to `text()`. You can also access the rest of the translation API through this alias.
+         *
+         * @example
+         *     var i18n = new I18n({
+         *         'pt_PT': {
+         *             'hi': 'olá',
+         *             '{} day': '{} dia',
+         *             '{} days': '{} dias',
+         *             '_ordinals': {
+         *                 'default': 'º'
+         *             }
+         *         }
+         *     }, 'pt_PT');
+         *     var _ = i18n.alias();
+         *     _('hi');  // -> 'olá'
+         *     _('{} days', 3);  // -> '3 dias'
+         *     _.ntext('{} day', '{} days', 2);  // -> '2 dias'
+         *     _.ntext('{} day', '{} days', 1);  // -> '1 dia'
+         *     _.ordinal(3);  // -> 'º'
+         */
+        alias: function( ) {
+            var ret      = Ink.bind( I18n.prototype.text     , this );
+            ret.ntext    = Ink.bind( I18n.prototype.ntext    , this );
+            ret.append   = Ink.bind( I18n.prototype.append   , this );
+            ret.ordinal  = Ink.bind( I18n.prototype.ordinal  , this );
+            ret.testMode = Ink.bind( I18n.prototype.testMode , this );
+
+            return ret;
+        }
+    };
+
+    /**
+     * @static
+     * @method I18n.reset
+     *
+     * Reset I18n global state (global dictionaries, and default language for instances)
+     **/
+    I18n.reset = function( ) {
+        I18n.prototype._gDicts = [ ];
+        I18n.prototype._gDict  = { };
+        I18n.prototype._gLang  = 'pt_PT';
+    };
+    I18n.reset( );
+
+    /**
+     * @static
+     * @method I18n.append
+     *
+     * @param dict {Object}     Dictionary to be added
+     * @param lang {String}     Language to be added to
+     *
+     * Add a dictionary to be used in all I18n instances for the corresponding language
+     */
+    I18n.append = function( dict , lang ) {
+        if ( lang ) {
+            if ( !( lang in dict ) ) {
+                var obj = { };
+
+                obj[ lang ] = dict;
+
+                dict = obj;
+            }
+
+            if ( lang !== I18n.prototype._gLang ) { I18n.lang( lang ); }
+        }
+
+        I18n.prototype._gDicts.push( dict );
+
+        Ink.extendObj( I18n.prototype._gDict , dict[ I18n.prototype._gLang ] );
+    };
+
+    /**
+     * @static
+     * @method I18n.lang
+     * 
+     * @param lang {String} String in the format `"pt_PT"`, `"fr"`, etc.
+     *
+     * Set global default language of I18n instances to `lang`
+     */
+    /**
+     * @static
+     * @method I18n.lang
+     *
+     * Get the current default language of I18n instances.
+     *
+     * @return {String} language code
+     */
+    I18n.lang = function( lang ) {
+        if ( !arguments.length ) { return I18n.prototype._gLang; }
+
+        if ( lang && I18n.prototype._gLang !== lang ) {
+            I18n.prototype._gLang = lang;
+
+            I18n.prototype._gDict = { };
+
+            for ( var i = 0, l = I18n.prototype._gDicts.length; i < l; i++ ) {
+                Ink.extendObj( I18n.prototype._gDict , I18n.prototype._gDicts[ i ][ lang ] || { } );
+            }
+        }
+    };
+    
+    return I18n;
 });
 
 /**
@@ -8946,6 +10230,320 @@ Ink.createModule('Ink.Util.Cookie', '1', [], function() {
 });
 
 /**
+ * @module Ink.Util.BinPack_1
+ * @author inkdev AT sapo.pt
+ * @version 1
+ */
+Ink.createModule('Ink.Util.BinPack', '1', [], function() {
+
+    'use strict';
+
+    /*jshint boss:true */
+
+    // https://github.com/jakesgordon/bin-packing/
+
+    /*
+        Copyright (c) 2011, 2012, 2013 Jake Gordon and contributors
+
+        Permission is hereby granted, free of charge, to any person obtaining a copy
+        of this software and associated documentation files (the "Software"), to deal
+        in the Software without restriction, including without limitation the rights
+        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+        copies of the Software, and to permit persons to whom the Software is
+        furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be included in all
+        copies or substantial portions of the Software.
+
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        SOFTWARE.
+    */
+
+
+
+    var Packer = function(w, h) {
+        this.init(w, h);
+    };
+
+    Packer.prototype = {
+
+        init: function(w, h) {
+            this.root = { x: 0, y: 0, w: w, h: h };
+        },
+
+        fit: function(blocks) {
+            var n, node, block;
+            for (n = 0; n < blocks.length; ++n) {
+                block = blocks[n];
+                if (node = this.findNode(this.root, block.w, block.h)) {
+                    block.fit = this.splitNode(node, block.w, block.h);
+                }
+            }
+        },
+
+        findNode: function(root, w, h) {
+            if (root.used) {
+                return this.findNode(root.right, w, h) || this.findNode(root.down, w, h);
+            }
+            else if ((w <= root.w) && (h <= root.h)) {
+                return root;
+            }
+            else {
+                return null;
+            }
+        },
+
+        splitNode: function(node, w, h) {
+            node.used = true;
+            node.down  = { x: node.x,     y: node.y + h, w: node.w,     h: node.h - h };
+            node.right = { x: node.x + w, y: node.y,     w: node.w - w, h: h          };
+            return node;
+        }
+
+    };
+
+
+
+    var GrowingPacker = function() {};
+
+    GrowingPacker.prototype = {
+
+        fit: function(blocks) {
+            var n, node, block, len = blocks.length;
+            var w = len > 0 ? blocks[0].w : 0;
+            var h = len > 0 ? blocks[0].h : 0;
+            this.root = { x: 0, y: 0, w: w, h: h };
+            for (n = 0; n < len ; n++) {
+                block = blocks[n];
+                if (node = this.findNode(this.root, block.w, block.h)) {
+                    block.fit = this.splitNode(node, block.w, block.h);
+                }
+                else {
+                    block.fit = this.growNode(block.w, block.h);
+                }
+            }
+        },
+
+        findNode: function(root, w, h) {
+            if (root.used) {
+                return this.findNode(root.right, w, h) || this.findNode(root.down, w, h);
+            }
+            else if ((w <= root.w) && (h <= root.h)) {
+                return root;
+            }
+            else {
+                return null;
+            }
+        },
+
+        splitNode: function(node, w, h) {
+            node.used = true;
+            node.down  = { x: node.x,     y: node.y + h, w: node.w,     h: node.h - h };
+            node.right = { x: node.x + w, y: node.y,     w: node.w - w, h: h          };
+            return node;
+        },
+
+        growNode: function(w, h) {
+            var canGrowDown  = (w <= this.root.w);
+            var canGrowRight = (h <= this.root.h);
+
+            var shouldGrowRight = canGrowRight && (this.root.h >= (this.root.w + w)); // attempt to keep square-ish by growing right when height is much greater than width
+            var shouldGrowDown  = canGrowDown  && (this.root.w >= (this.root.h + h)); // attempt to keep square-ish by growing down  when width  is much greater than height
+
+            if (shouldGrowRight) {
+                return this.growRight(w, h);
+            }
+            else if (shouldGrowDown) {
+                return this.growDown(w, h);
+            }
+            else if (canGrowRight) {
+                return this.growRight(w, h);
+            }
+            else if (canGrowDown) {
+                return this.growDown(w, h);
+            }
+            else {
+                return null; // need to ensure sensible root starting size to avoid this happening
+            }
+        },
+
+        growRight: function(w, h) {
+            this.root = {
+                used: true,
+                x: 0,
+                y: 0,
+                w: this.root.w + w,
+                h: this.root.h,
+                down: this.root,
+                right: { x: this.root.w, y: 0, w: w, h: this.root.h }
+            };
+            var node;
+            if (node = this.findNode(this.root, w, h)) {
+                return this.splitNode(node, w, h);
+            }
+            else {
+                return null;
+            }
+        },
+
+        growDown: function(w, h) {
+            this.root = {
+                used: true,
+                x: 0,
+                y: 0,
+                w: this.root.w,
+                h: this.root.h + h,
+                down:  { x: 0, y: this.root.h, w: this.root.w, h: h },
+                right: this.root
+            };
+            var node;
+            if (node = this.findNode(this.root, w, h)) {
+                return this.splitNode(node, w, h);
+            }
+            else {
+                return null;
+            }
+        }
+
+    };
+
+
+
+    var sorts = {
+        random:  function() { return Math.random() - 0.5; },
+        w:       function(a, b) { return b.w - a.w; },
+        h:       function(a, b) { return b.h - a.h; },
+        a:       function(a, b) { return b.area - a.area; },
+        max:     function(a, b) { return Math.max(b.w, b.h) - Math.max(a.w, a.h); },
+        min:     function(a, b) { return Math.min(b.w, b.h) - Math.min(a.w, a.h); },
+        height:  function(a, b) { return sorts.msort(a, b, ['h', 'w']);               },
+        width:   function(a, b) { return sorts.msort(a, b, ['w', 'h']);               },
+        area:    function(a, b) { return sorts.msort(a, b, ['a', 'h', 'w']);          },
+        maxside: function(a, b) { return sorts.msort(a, b, ['max', 'min', 'h', 'w']); },
+        msort:   function(a, b, criteria) { /* sort by multiple criteria */
+            var diff, n;
+            for (n = 0; n < criteria.length; ++n) {
+                diff = sorts[ criteria[n] ](a, b);
+                if (diff !== 0) {
+                    return diff;
+                }
+            }
+            return 0;
+        }
+    };
+
+
+
+    // end of Jake's code
+
+
+
+    // aux, used to display blocks in unfitted property
+    var toString = function() {
+      return [this.w, ' x ', this.h].join('');
+    };
+
+
+
+    /**
+     * Binary Packing algorithm implementation
+     *
+     * Based on the work of Jake Gordon
+     *
+     * see https://github.com/jakesgordon/bin-packing/
+     *
+     * @class Ink.Util.BinPack
+     * @version 1
+     * @static
+     */
+    var BinPack = {
+
+        /**
+        * @method binPack
+        * @param {Object}      o              options
+        * @param {Object[]}    o.blocks       array of items with w and h integer attributes.
+        * @param {Number[2]}  [o.dimensions]  if passed, container has fixed dimensions
+        * @param {String}     [o.sorter]      sorter function. one of: random, height, width, area, maxside
+        * @return {Object}
+        *     * {Number[2]} dimensions - resulted container size,
+        *     * {Number}    filled     - filled ratio,
+        *     * {Object[]}  fitted,
+        *     * {Object[]}  unfitted,
+        *     * {Object[]}  blocks
+        * @static
+        */
+        binPack: function(o) {
+            var i, f, bl;
+
+
+
+            // calculate area if not there already
+            for (i = 0, f = o.blocks.length; i < f; ++i) {
+                bl = o.blocks[i];
+                if (! ('area' in bl) ) {
+                    bl.area = bl.w * bl.h;
+                }
+            }
+
+
+
+            // apply algorithm
+            var packer = o.dimensions ? new Packer(o.dimensions[0], o.dimensions[1]) : new GrowingPacker();
+
+            if (!o.sorter) { o.sorter = 'maxside'; }
+
+            o.blocks.sort( sorts[ o.sorter ] );
+
+            packer.fit(o.blocks);
+
+            var dims2 = [packer.root.w, packer.root.h];
+
+
+
+            // layout is done here, generating report data...
+            var fitted   = [];
+            var unfitted = [];
+
+            for (i = 0, f = o.blocks.length; i < f; ++i) {
+                bl = o.blocks[i];
+                if (bl.fit) {
+                    fitted.push(bl);
+                }
+                else {
+                    bl.toString = toString; // TO AID SERIALIZATION
+                    unfitted.push(bl);
+                }
+            }
+
+            var area = dims2[0] * dims2[1];
+            var fit = 0;
+            for (i = 0, f = fitted.length; i < f; ++i) {
+                bl = fitted[i];
+                fit += bl.area;
+            }
+
+            return {
+                dimensions: dims2,
+                filled:     fit / area,
+                blocks:     o.blocks,
+                fitted:     fitted,
+                unfitted:   unfitted
+            };
+        }
+    };
+
+
+
+    return BinPack;
+
+});
+
+/**
  * @module Ink.Util.Array_1
  * @author inkdev AT sapo.pt
  * @version 1
@@ -8953,6 +10551,8 @@ Ink.createModule('Ink.Util.Cookie', '1', [], function() {
 Ink.createModule('Ink.Util.Array', '1', [], function() {
 
     'use strict';
+
+    var arrayProto = Array.prototype;
 
     /**
      * Utility functions to use with Arrays
@@ -9091,9 +10691,9 @@ Ink.createModule('Ink.Util.Array', '1', [], function() {
         },
 
         /**
-         * Runs a functions through each of the elements of an array
+         * Runs a function through each of the elements of an array
          *
-         * @method each
+         * @method forEach
          * @param {Array} arr Array to be cycled/iterated
          * @param {Function} cb The function receives as arguments the value, index and array.
          * @return {Array} Array iterated.
@@ -9102,36 +10702,77 @@ Ink.createModule('Ink.Util.Array', '1', [], function() {
          * @example
          *     Ink.requireModules(['Ink.Util.Array_1'], function( InkArray ){
          *         var testArray = [ 'value1', 'value2', 'value3', 'value2' ];
-         *         InkArray.each( testArray, function( value, index, arr ){
+         *         InkArray.forEach( testArray, function( value, index, arr ){
          *             console.log( 'The value is: ' + value + ' | The index is: ' + index );
          *         });
          *     });
          */
-        each: function(arr, cb) {
-            var arrCopy    = arr.slice(0),
-                total      = arrCopy.length,
-                iterations = Math.floor(total / 8),
-                leftover   = total % 8,
-                i          = 0;
-
-            if (leftover > 0) { // Duff's device pattern
-                do {
-                    cb(arrCopy[i++], i-1, arr);
-                } while (--leftover > 0);
+        forEach: function(array, callback, context) {
+            if (arrayProto.forEach) {
+                return arrayProto.forEach.call(array, callback, context);
             }
-            if (iterations === 0) { return arr; }
-            do {
-                cb(arrCopy[i++], i-1, arr);
-                cb(arrCopy[i++], i-1, arr);
-                cb(arrCopy[i++], i-1, arr);
-                cb(arrCopy[i++], i-1, arr);
-                cb(arrCopy[i++], i-1, arr);
-                cb(arrCopy[i++], i-1, arr);
-                cb(arrCopy[i++], i-1, arr);
-                cb(arrCopy[i++], i-1, arr);
-            } while(--iterations > 0);
+            for (var i = 0, len = array.length >>> 0; i < len; i++) {
+                callback.call(context, array[i], i, array);
+            }
+        },
 
-            return arr;
+        /**
+         * Alias for backwards compatibility. See forEach
+         *
+         * @method forEach
+         */
+        each: function () {
+            InkArray.forEach.apply(InkArray, [].slice.call(arguments));
+        },
+
+        /**
+         * Run a `map` function for each item in the array. The function will receive each item as argument and its return value will change the corresponding array item.
+         * @method map
+         * @param {Array} array     The array to map over
+         * @param {Function} map    The map function. Will take `(item, index, array)` and `this` will be the `context` argument.
+         * @param {Object} [context]    Object to be `this` in the map function.
+         *
+         * @example
+         *      InkArray.map([1, 2, 3, 4], function (item) {
+         *          return item + 1;
+         *      }); // -> [2, 3, 4, 5]
+         */
+        map: function (array, callback, context) {
+            if (arrayProto.map) {
+                return arrayProto.map.call(array, callback, context);
+            }
+            var mapped = new Array(len);
+            for (var i = 0, len = array.length >>> 0; i < len; i++) {
+                mapped[i] = callback.call(context, array[i], i, array);
+            }
+            return mapped;
+        },
+
+        /**
+         * Run a test function through all the input array. Items which pass the test function (for which the test function returned `true`) are kept in the array. Other items are removed.
+         * @param {Array} array
+         * @param {Function} test       A test function taking `(item, index, array)`
+         * @param {Object} [context]    Object to be `this` in the test function.
+         * @return filtered array
+         *
+         * @example
+         *      InkArray.filter([1, 2, 3, 4, 5], function (val) {
+         *          return val > 2;
+         *      })  // -> [3, 4, 5]
+         */
+        filter: function (array, test, context) {
+            if (arrayProto.filter) {
+                return arrayProto.filter.call(array, test, context);
+            }
+            var filtered = [],
+                val = null;
+            for (var i = 0, len = array.length; i < len; i++) {
+                val = array[i]; // it might be mutated
+                if (test.call(context, val, i, array)) {
+                    filtered.push(val);
+                }
+            }
+            return filtered;
         },
 
         /**
@@ -9225,12 +10866,12 @@ Ink.createModule('Ink.Util.Array', '1', [], function() {
          *         testArray.myMethod = function(){
          *             console.log('stuff');
          *         }
-         *         
+         *
          *         console.log( InkArray.convert( testArray ) ); // Result: [ 'value1', 'value2' ]
          *     });
          */
         convert: function(arr) {
-            return Array.prototype.slice.call(arr || [], 0);
+            return arrayProto.slice.call(arr || [], 0);
         },
 
         /**
@@ -9288,82 +10929,6 @@ Ink.createModule('Ink.Util.Array', '1', [], function() {
 });
 
 
-/*
- *  TODO - INCLUDE THIS ON Ink.Util.Array
- *
-// Production steps of ECMA-262, Edition 5, 15.4.4.18
-// Reference: http://es5.github.com/#x15.4.4.18
-// https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/Array/forEach
-if (!Array.prototype.forEach) {
-    Array.prototype.forEach = function forEach(cb, thisArg) {
-        var O, len, T, k, kValue;
-
-        if (this === null || this === undefined) {
-            throw new TypeError('this is null or not defined');
-        }
-
-        O = Object(this);
-        len = O.length >>> 0;
-
-        if ({}.toString.call(cb) !== '[object Function]') {
-            throw new TypeError(cb + ' is not a function');
-        }
-
-        if (thisArg) {
-            T = thisArg;
-        }
-
-        k = 0;
-
-        while (k < len) {
-            if (Object.prototype.hasOwnProperty.call(O, k)) {
-                kValue = O[k];
-                cb.call(T, kValue, k, O);
-            }
-            ++k;
-        }
-    };
-}
-
-
-// Production steps of ECMA-262, Edition 5, 15.4.4.19
-// Reference: http://es5.github.com/#x15.4.4.19
-// https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/Array/map
-if (!Array.prototype.map) {
-    Array.prototype.map = function(callback, thisArg) {
-        var T, A, k;
-
-        if (this === null || this === undefined) {
-            new TypeError(" this is null or not defined");
-        }
-
-        var O = Object(this);
-        var len = O.length >>> 0;
-
-        if ({}.toString.call(callback) !== "[object Function]") {
-            throw new TypeError(callback + " is not a function");
-        }
-
-        if (thisArg) {
-            T = thisArg;
-        }
-        A = new Array(len);
-        k = 0;
-
-        while(k < len) {
-            var kValue, mappedValue;
-            if (k in O) {
-                kValue = O[ k ];
-                mappedValue = callback.call(T, kValue, k, O);
-                A[ k ] = mappedValue;
-            }
-            ++k;
-        }
-        return A;
-    };
-}
-
-*/
 
 /**
  * @module Ink.Util.Validator_1
@@ -9385,7 +10950,7 @@ Ink.createModule('Ink.Util.Validator', '1', [], function() {
 
         /**
          * List of country codes avaible for isPhone function
-         * 
+         *
          * @property _countryCodes
          * @type {Array}
          * @private
@@ -9401,7 +10966,7 @@ Ink.createModule('Ink.Util.Validator', '1', [], function() {
 
         /**
          * International number for portugal
-         * 
+         *
          * @property _internacionalPT
          * @type {Number}
          * @private
@@ -9413,7 +10978,7 @@ Ink.createModule('Ink.Util.Validator', '1', [], function() {
 
         /**
          * List of all portuguese number prefixes
-         * 
+         *
          * @property _indicativosPT
          * @type {Object}
          * @private
@@ -9491,7 +11056,7 @@ Ink.createModule('Ink.Util.Validator', '1', [], function() {
                           },
         /**
          * International number for Cabo Verde
-         * 
+         *
          * @property _internacionalCV
          * @type {Number}
          * @private
@@ -9502,7 +11067,7 @@ Ink.createModule('Ink.Util.Validator', '1', [], function() {
 
         /**
          * List of all Cabo Verde number prefixes
-         * 
+         *
          * @property _indicativosCV
          * @type {Object}
          * @private
@@ -9594,6 +11159,214 @@ Ink.createModule('Ink.Util.Validator', '1', [], function() {
                     },
 
         /**
+         * Regular expression groups for several groups of characters
+         *
+         * http://en.wikipedia.org/wiki/C0_Controls_and_Basic_Latin
+         * http://en.wikipedia.org/wiki/Plane_%28Unicode%29#Basic_Multilingual_Plane
+         * http://en.wikipedia.org/wiki/ISO_8859-1
+         *
+         * @property _characterGroups
+         * @type {Object}
+         * @private
+         * @static
+         * @readOnly
+         */
+        _characterGroups: {
+            numbers: ['0-9'],
+            asciiAlpha: ['a-zA-Z'],
+            latin1Alpha: ['a-zA-Z', '\u00C0-\u00FF'],
+            unicodeAlpha: ['a-zA-Z', '\u00C0-\u00FF', '\u0100-\u1FFF', '\u2C00-\uD7FF'],
+            /* whitespace characters */
+            space: [' '],
+            dash: ['-'],
+            underscore: ['_'],
+            nicknamePunctuation: ['_.-'],
+
+            singleLineWhitespace: ['\t '],
+            newline: ['\n'],
+            whitespace: ['\t\n\u000B\f\r\u00A0 '],
+
+            asciiPunctuation: ['\u0021-\u002F', '\u003A-\u0040', '\u005B-\u0060', '\u007B-\u007E'],
+            latin1Punctuation: ['\u0021-\u002F', '\u003A-\u0040', '\u005B-\u0060', '\u007B-\u007E', '\u00A1-\u00BF', '\u00D7', '\u00F7'],
+            unicodePunctuation: ['\u0021-\u002F', '\u003A-\u0040', '\u005B-\u0060', '\u007B-\u007E', '\u00A1-\u00BF', '\u00D7', '\u00F7', '\u2000-\u206F', '\u2E00-\u2E7F', '\u3000-\u303F'],
+        },
+
+        /**
+         * Create a regular expression for several character groups.
+         *
+         * @method createRegExp
+         *
+         * @param Groups... {Object}
+         *  Groups to build regular expressions for. Possible keys are:
+         *
+         * - **numbers**: 0-9
+         * - **asciiAlpha**: a-z, A-Z
+         * - **latin1Alpha**: asciiAlpha, plus printable characters in latin-1
+         * - **unicodeAlpha**: unicode alphanumeric characters.
+         * - **space**: ' ', the space character.
+         * - **dash**: dash character.
+         * - **underscore**: underscore character.
+         * - **nicknamePunctuation**: dash, dot, underscore
+         * - **singleLineWhitespace**: space and tab (whitespace which only spans one line).
+         * - **newline**: newline character ('\n')
+         * - **whitespace**: whitespace characters in the ASCII character set.
+         * - **asciiPunctuation**: punctuation characters in the ASCII character set.
+         * - **latin1Punctuation**: punctuation characters in latin-1.
+         * - **unicodePunctuation**: punctuation characters in unicode.
+         *
+         */
+        createRegExp: function (groups) {
+            var re = '^[';
+            for (var key in groups) if (groups.hasOwnProperty(key)) {
+                if (!(key in Validator._characterGroups)) {
+                    throw new Error('group ' + key + ' is not a valid character group');
+                } else if (groups[key]) {
+                    re += Validator._characterGroups[key].join('');
+                }
+            }
+            return new RegExp(re + ']*?$');
+        },
+
+        /**
+         * Checks if a field has the required groups. Takes an options object for further configuration.
+         *
+         * @method checkCharacterGroups
+         * @param {String}  s               The validation string
+         * @param {Object}  [groups={}]     What groups are included.
+         *  @param [options.*]              See createRegexp
+         */
+        checkCharacterGroups: function (s, groups) {
+            return Validator.createRegExp(groups).test(s);
+        },
+
+        /**
+         * Checks whether a field contains unicode printable characters. Takes an
+         * options object for further configuration
+         *
+         * @method unicode
+         * @param {String}  s               The validation string
+         * @param {Object}  [options={}]    Optional configuration object
+         *  @param [options.*]              See createRegexp
+         */
+        unicode: function (s, options) {
+            return Validator.checkCharacterGroups(s, Ink.extendObj({
+                unicodeAlpha: true}, options));
+        },
+
+        /**
+         * Checks that a field only contains only latin-1 alphanumeric
+         * characters. Takes options for allowing singleline whitespace,
+         * cross-line whitespace and punctuation.
+         *
+         * @method latin1
+         *
+         * @param {String}  s               The validation string
+         * @param {Object}  [options={}]    Optional configuration object
+         *  @param [options.*]              See createRegexp
+         */
+        latin1: function (s, options) {
+            return Validator.checkCharacterGroups(s, Ink.extendObj({
+                latin1Alpha: true}, options));
+        },
+
+        /**
+         * Checks that a field only contains only ASCII alphanumeric
+         * characters. Takes options for allowing singleline whitespace,
+         * cross-line whitespace and punctuation.
+         *
+         * @method ascii
+         *
+         * @param {String}  s               The validation string
+         * @param {Object}  [options={}]    Optional configuration object
+         *  @param [options.*]              See createRegexp
+         */
+        ascii: function (s, options) {
+            return Validator.checkCharacterGroups(s, Ink.extendObj({
+                asciiAlpha: true}, options));
+        },
+
+        /**
+         * Checks that the number is a valid number
+         *
+         * @method number
+         * @param {String} numb         The number
+         * @param {Object} [options]    Further options
+         *  @param  [options.decimalSep='.']    Allow decimal separator.
+         *  @param  [options.thousandSep=","]   Strip this character from the number.
+         *  @param  [options.negative=false]    Allow negative numbers.
+         *  @param  [options.decimalPlaces=0]   Maximum number of decimal places. `0` means integer number.
+         *  @param  [options.max=null]          Maximum number
+         *  @param  [options.min=null]          Minimum number
+         *  @param  [options.returnNumber=false] When this option is true, return the number itself when the value is valid.
+         */
+        number: function (numb, inOptions) {
+            numb = numb + '';
+            var options = Ink.extendObj({
+                decimalSep: '.',
+                thousandSep: '',
+                negative: true,
+                decimalPlaces: null,
+                maxDigits: null,
+                max: null,
+                min: null,
+                returnNumber: false
+            }, inOptions || {});
+            // smart recursion thing sets up aliases for options.
+            if (options.thousandSep) {
+                numb = numb.replace(new RegExp('\\' + options.thousandSep, 'g'), '');
+                options.thousandSep = '';
+                return Validator.number(numb, options);
+            }
+            if (options.negative === false) {
+                options.min = 0;
+                options.negative = true;
+                return Validator.number(numb, options);
+            }
+            if (options.decimalSep !== '.') {
+                numb = numb.replace(new RegExp('\\' + options.decimalSep, 'g'), '.');
+            }
+
+            if (!/^(-)?(\d+)?(\.\d+)?$/.test(numb) || numb === '') {
+                return false;  // forbidden character found
+            }
+            
+            var split;
+            if (options.decimalSep && numb.indexOf(options.decimalSep) !== -1) {
+                split = numb.split(options.decimalSep);
+                if (options.decimalPlaces !== null &&
+                        split[1].length > options.decimalPlaces) {
+                    return false;
+                }
+            } else {
+                split = ['' + numb, ''];
+            }
+            
+            if (options.maxDigits!== null) {
+                if (split[0].replace(/-/g, '').length > options.maxDigits) {
+                    return split
+                }
+            }
+            
+            // Now look at the actual float
+            var ret = parseFloat(numb);
+            
+            if (options.maxExcl !== null && ret >= options.maxExcl ||
+                    options.minExcl !== null && ret <= options.minExcl) {
+                return false;
+            }
+            if (options.max !== null && ret > options.max ||
+                    options.min !== null && ret < options.min) {
+                return false;
+            }
+            
+            if (options.returnNumber) {
+                return ret;
+            } else {
+                return true;
+            }
+        },
+
+        /**
          * Checks if a year is Leap "Bissexto"
          *
          * @method _isLeapYear
@@ -9620,7 +11393,7 @@ Ink.createModule('Ink.Util.Validator', '1', [], function() {
 
         /**
          * Object with the date formats available for validation
-         * 
+         *
          * @property _dateParsers
          * @type {Object}
          * @private
@@ -9720,11 +11493,11 @@ Ink.createModule('Ink.Util.Validator', '1', [], function() {
          * @static
          * @example
          *     Ink.requireModules(['Ink.Util.Validator_1'], function( InkValidator ){
-         *         console.log( InkValidator.mail( 'agfsdfgfdsgdsf' ) ); // Result: false
-         *         console.log( InkValidator.mail( 'inkdev@sapo.pt' ) ); // Result: true
+         *         console.log( InkValidator.email( 'agfsdfgfdsgdsf' ) ); // Result: false
+         *         console.log( InkValidator.email( 'inkdev\u0040sapo.pt' ) ); // Result: true (where \u0040 is at sign)
          *     });
          */
-        mail: function(email)
+        email: function(email)
         {
             var emailValido = new RegExp("^[_a-z0-9-]+((\\.|\\+)[_a-z0-9-]+)*@([\\w]*-?[\\w]*\\.)+[a-z]{2,4}$", "i");
             if(!emailValido.test(email)) {
@@ -9733,6 +11506,15 @@ Ink.createModule('Ink.Util.Validator', '1', [], function() {
                 return true;
             }
         },
+
+        /**
+         * Deprecated. Alias for email(). Use it instead.
+         *
+         * @method mail
+         * @public
+         * @static
+         */
+        mail: function (mail) { return Validator.email(mail); },
 
         /**
          * Checks if a url is valid
@@ -10280,13 +12062,191 @@ Ink.createModule('Ink.Util.Validator', '1', [], function() {
             }
 
             return valid;
+        },
+
+        /**
+         * Checks if the value is a valid IP. Supports ipv4 and ipv6
+         *
+         * @method validationFunctions.ip
+         * @param  {String} value   Value to be checked
+         * @param  {String} ipType Type of IP to be validated. The values are: ipv4, ipv6. By default is ipv4.
+         * @return {Boolean}         True if the value is a valid IP address. False if not.
+         */
+        isIP: function( value, ipType ){
+            if( typeof value !== 'string' ){
+                return false;
+            }
+
+            ipType = (ipType || 'ipv4').toLowerCase();
+
+            switch( ipType ){
+                case 'ipv4':
+                    return (/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/).test(value);
+                case 'ipv6':
+                    return (/^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$/).test(value);
+                default:
+                    return false;
+            }
+        },
+
+        /**
+         * Credit Card specifications, to be used in the credit card verification.
+         *
+         * @property _creditCardSpecs
+         * @type {Object}
+         * @private
+         */
+        _creditCardSpecs: {
+            'default': {
+                'length': '13,14,15,16,17,18,19',
+                'prefix': /^.+/,
+                'luhn': true
+            },
+
+            'american express': {
+                'length': '15',
+                'prefix': /^3[47]/,
+                'luhn'  : true
+            },
+
+            'diners club': {
+                'length': '14,16',
+                'prefix': /^36|55|30[0-5]/,
+                'luhn'  : true
+            },
+
+            'discover': {
+                'length': '16',
+                'prefix': /^6(?:5|011)/,
+                'luhn'  : true
+            },
+
+            'jcb': {
+                'length': '15,16',
+                'prefix': /^3|1800|2131/,
+                'luhn'  : true
+            },
+
+            'maestro': {
+                'length': '16,18',
+                'prefix': /^50(?:20|38)|6(?:304|759)/,
+                'luhn'  : true
+            },
+
+            'mastercard': {
+                'length': '16',
+                'prefix': /^5[1-5]/,
+                'luhn'  : true
+            },
+
+            'visa': {
+                'length': '13,16',
+                'prefix': /^4/,
+                'luhn'  : true
+            }
+        },
+
+        /**
+         * Luhn function, to be used when validating credit cards
+         *
+         */
+        _luhn: function (num){
+
+            num = parseInt(num,10);
+
+            if ( (typeof num !== 'number') && (num % 1 !== 0) ){
+                // Luhn can only be used on nums!
+                return false;
+            }
+
+            num = num+'';
+            // Check num length
+            var length = num.length;
+
+            // Checksum of the card num
+            var
+                i, checksum = 0
+            ;
+
+            for (i = length - 1; i >= 0; i -= 2)
+            {
+                // Add up every 2nd digit, starting from the right
+                checksum += parseInt(num.substr(i, 1),10);
+            }
+
+            for (i = length - 2; i >= 0; i -= 2)
+            {
+                // Add up every 2nd digit doubled, starting from the right
+                var dbl = parseInt(num.substr(i, 1) * 2,10);
+
+                // Subtract 9 from the dbl where value is greater than 10
+                checksum += (dbl >= 10) ? (dbl - 9) : dbl;
+            }
+
+            // If the checksum is a multiple of 10, the number is valid
+            return (checksum % 10 === 0);
+        },
+
+        /**
+         * Validates if a number is of a specific credit card
+         *
+         * @param  {String}  num            Number to be validates
+         * @param  {String|Array}  creditCardType Credit card type. See _creditCardSpecs for the list of supported values.
+         * @return {Boolean}
+         */
+        isCreditCard: function(num, creditCardType){
+
+            if ( /\d+/.test(num) === false ){
+                return false;
+            }
+
+            if ( typeof creditCardType === 'undefined' ){
+                creditCardType = 'default';
+            }
+            else if ( typeof creditCardType === 'array' ){
+                var i, ccLength = creditCardType.length;
+                for ( i=0; i < ccLength; i++ ){
+                    // Test each type for validity
+                    if (this.isCreditCard(num, creditCardType[i]) ){
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            // Check card type
+            creditCardType = creditCardType.toLowerCase();
+
+            if ( typeof this._creditCardSpecs[creditCardType] === 'undefined' ){
+                return false;
+            }
+
+            // Check card number length
+            var length = num.length+'';
+
+            // Validate the card length by the card type
+            if ( this._creditCardSpecs[creditCardType]['length'].split(",").indexOf(length) === -1 ){
+                return false;
+            }
+
+            // Check card number prefix
+            if ( !this._creditCardSpecs[creditCardType]['prefix'].test(num) ){
+                return false;
+            }
+
+            // No Luhn check required
+            if (this._creditCardSpecs[creditCardType]['luhn'] === false){
+                return true;
+            }
+
+            return this._luhn(num);
         }
     };
 
     return Validator;
 
 });
-
 /**
  * @module Ink.UI.Aux_1
  * @author inkdev AT sapo.pt
@@ -10304,10 +12264,6 @@ Ink.createModule('Ink.UI.Aux', '1', ['Ink.Net.Ajax_1','Ink.Dom.Css_1','Ink.Dom.S
      *
      * @class Ink.UI.Aux
      * @version 1
-     * @uses Ink.Net.Ajax
-     * @uses Ink.Dom.Css
-     * @uses Ink.Dom.Selector
-     * @uses Ink.Util.Url
      * @static
      */
     var Aux = {
@@ -10795,977 +12751,486 @@ Ink.createModule('Ink.UI.Aux', '1', ['Ink.Net.Ajax_1','Ink.Dom.Css_1','Ink.Dom.S
 });
 
 /**
- * @module Ink.UI.Modal_1
+ * @module Ink.UI.Pagination_1
  * @author inkdev AT sapo.pt
  * @version 1
  */
-Ink.createModule('Ink.UI.Modal', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Dom.Css_1','Ink.Dom.Element_1','Ink.Dom.Selector_1','Ink.Util.Array_1'], function(Aux, Event, Css, Element, Selector, InkArray ) {
+Ink.createModule('Ink.UI.Pagination', '1',
+    ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Dom.Css_1','Ink.Dom.Element_1','Ink.Dom.Selector_1'],
+    function(Aux, Event, Css, Element, Selector ) {
     'use strict';
 
     /**
-     * @class Ink.UI.Modal
+     * Function to create the pagination anchors
+     *
+     * @method genAel
+     * @param  {String} inner HTML to be placed inside the anchor.
+     * @return {DOMElement}  Anchor created
+     */
+    var genAEl = function(inner, index) {
+        var aEl = document.createElement('a');
+        aEl.setAttribute('href', '#');
+        if (index !== undefined) {
+            aEl.setAttribute('data-index', index);
+        }
+        aEl.innerHTML = inner;
+        return aEl;
+    };
+
+    /**
+     * @class Ink.UI.Pagination
      * @constructor
      * @version 1
-     * @uses Ink.UI.Aux
-     * @uses Ink.Dom.Event
-     * @uses Ink.Dom.Css
-     * @uses Ink.Dom.Element
-     * @uses Ink.Dom.Selector
-     * @uses Ink.Util.Array
      * @param {String|DOMElement} selector
-     * @param {Object} [options] Options
-     *      @param {String}    [options.width]             Default/Initial width. Ex: '600px'
-     *      @param {String}    [options.height]            Default/Initial height. Ex: '400px'
-     *      @param {String}    [options.shadeClass]        Custom class to be added to the div.ink-shade
-     *      @param {String}    [options.modalClass]        Custom class to be added to the div.ink-modal
-     *      @param {String}    [options.trigger]           CSS Selector to target elements that will trigger the Modal.
-     *      @param {String}    [options.triggerEvent]      Trigger's event to be listened. 'click' is the default value. Ex: 'mouseover', 'touchstart'...
-     *      @param {String}    [options.markup]            Markup to be placed in the Modal when created
-     *      @param {Function}  [options.onShow]            Callback function to run when the Modal is opened.
-     *      @param {Function}  [options.onDismiss]         Callback function to run when the Modal is closed.
-     *      @param {Boolean}   [options.closeOnClick]      Determines if the Modal should close when clicked outside of it. 'false' by default.
-     *      @param {Boolean}   [options.responsive]        Determines if the Modal should behave responsively (adapt to smaller viewports).
-     *      @param {Boolean}   [options.disableScroll]     Determines if the Modal should 'disable' the page's scroll (not the Modal's body).
-     *
-     * @example
-     *      <div class="ink-shade fade">
-     *          <div id="test" class="ink-modal fade" data-trigger="#bModal" data-width="800px" data-height="400px">
-     *              <div class="modal-header">
-     *                  <button class="modal-close ink-dismiss"></button>
-     *                  <h5>Modal windows can have headers</h5>
-     *              </div>
-     *              <div class="modal-body" id="modalContent">
-     *                  <h3>Please confirm your previous choice</h3>
-     *                  <p>"No," said Peleg, "and he hasn't been baptized right either, or it would have washed some of that devil's blue off his face."</p>
-     *                  <p>
-     *                      <img src="http://placehold.it/800x400" style="width: 100%;" alt="">
-     *                  </p>
-     *                  <p>"Do tell, now," cried Bildad, "is this Philistine a regular member of Deacon Deuteronomy's meeting? I never saw him going there, and I pass it every Lord's day."</p>
-     *                  <p>"I don't know anything about Deacon Deuteronomy or his meeting," said I; "all I know is, that Queequeg here is a born member of the First Congregational Church. He is a deacon himself, Queequeg is."</p>
-     *              </div>
-     *              <div class="modal-footer">
-     *                  <div class="push-right">
-     *                      <button class="ink-button info">Confirm</button>
-     *                      <button class="ink-button caution ink-dismiss">Cancel</button>
-     *                  </div>
-     *              </div>
-     *          </div>
-     *      </div>
-     *      <a href="#" id="bModal">Open modal</a>
-     *      <script>
-     *          Ink.requireModules( ['Ink.Dom.Selector_1','Ink.UI.Modal_1'], function( Selector, Modal ){
-     *              var modalElement = Ink.s('#test');
-     *              var modalObj = new Modal( modalElement );
-     *          });
-     *      </script>
+     * @param {Object} options Options
+     * @param {Number}   options.size                number of pages
+     * @param {Number}   [options.maxSize]           if passed, only shows at most maxSize items. displays also first|prev page and next page|last buttons
+     * @param {Number}   [options.start]             start page. defaults to 1
+     * @param {String}   [options.previousLabel]     label to display on previous page button
+     * @param {String}   [options.nextLabel]         label to display on next page button
+     * @param {String}   [options.previousPageLabel] label to display on previous page button
+     * @param {String}   [options.nextPageLabel]     label to display on next page button
+     * @param {String}   [options.firstLabel]        label to display on previous page button
+     * @param {String}   [options.lastLabel]         label to display on next page button
+     * @param {Function} [options.onChange]          optional callback
+     * @param {Function} [options.numberFormatter]   optional function which takes and 0-indexed number and returns the string which appears on a numbered button
+     * @param {Boolean}  [options.setHash]           if true, sets hashParameter on the location.hash. default is disabled
+     * @param {String}   [options.hashParameter]     parameter to use on setHash. by default uses 'page'
      */
-    var Modal = function(selector, options) {
+    var Pagination = function(selector, options) {
 
-        if( (typeof selector !== 'string') && (typeof selector !== 'object') && (typeof options.markup === 'undefined') ){
-            throw 'Invalid Modal selector';
-        } else if(typeof selector === 'string'){
-            if( selector !== '' ){
-                this._element = Selector.select(selector);
-                if( this._element.length === 0 ){
-                    /**
-                     * From a developer's perspective this should be like it is...
-                     * ... from a user's perspective, if it doesn't find elements, should just ignore it, no?
-                     */
-                    throw 'The Modal selector has not returned any elements';
-                } else {
-                    this._element = this._element[0];
-                }
-            }
-        } else if( !!selector ){
-            this._element = selector;
+        this._element = Aux.elOrSelector(selector, '1st argument');
+
+        this._options = Ink.extendObj(
+            {
+                size:          undefined,
+            start:         1,
+            firstLabel:    'First',
+            lastLabel:     'Last',
+            previousLabel: 'Previous',
+            nextLabel:     'Next',
+            onChange:      undefined,
+            setHash:       false,
+            hashParameter: 'page',
+            numberFormatter: function(i) { return i + 1; }
+            },
+            options || {},
+            Element.data(this._element)
+        );
+
+        if (!this._options.previousPageLabel) {
+            this._options.previousPageLabel = 'Previous ' + this._options.maxSize;
         }
 
-        this._options = {
-            /**
-             * Width, height and markup really optional, as they can be obtained by the element
-             */
-            width:        undefined,
-            height:       undefined,
-
-            /**
-             * To add extra classes
-             */
-            shadeClass: undefined,
-            modalClass: undefined,
-
-            /**
-             * Optional trigger properties
-             */
-            trigger:      undefined,
-            triggerEvent: 'click',
-
-            /**
-             * Remaining options
-             */
-            markup:       undefined,
-            onShow:       undefined,
-            onDismiss:    undefined,
-            closeOnClick: false,
-            responsive:    true,
-            disableScroll: true
-        };
+        if (!this._options.nextPageLabel) {
+            this._options.nextPageLabel = 'Next ' + this._options.maxSize;
+        }
 
 
         this._handlers = {
-            click:   Ink.bindEvent(this._onClick, this),
-            keyDown: Ink.bindEvent(this._onKeyDown, this),
-            resize:  Ink.bindEvent(this._onResize, this)
+            click: Ink.bindEvent(this._onClick,this)
         };
 
-        this._wasDismissed = false;
-
-        /**
-         * Modal Markup
-         */
-        if( this._element ){
-            this._markupMode = Css.hasClassName(this._element,'ink-modal'); // Check if the full modal comes from the markup
-        } else {
-            this._markupMode = false;
+        if (!Aux.isInteger(this._options.size)) {
+            throw new TypeError('size option is a required integer!');
         }
 
-
-
-
-        if( !this._markupMode ){
-
-
-            this._modalShadow      = document.createElement('div');
-            this._modalShadowStyle = this._modalShadow.style;
-
-            this._modalDiv         = document.createElement('div');
-            this._modalDivStyle    = this._modalDiv.style;
-
-            if( !!this._element ){
-                this._options.markup = this._element.innerHTML;
-            }
-
-            /**
-             * Not in full markup mode, let's set the classes and css configurations
-             */
-            Css.addClassName( this._modalShadow,'ink-shade' );
-            Css.addClassName( this._modalDiv,'ink-modal' );
-            Css.addClassName( this._modalDiv,'ink-space' );
-
-            /**
-             * Applying the main css styles
-             */
-            // this._modalDivStyle.position = 'absolute';
-            this._modalShadow.appendChild( this._modalDiv);
-            document.body.appendChild( this._modalShadow );
-        } else {
-            this._modalDiv         = this._element;
-            this._modalDivStyle    = this._modalDiv.style;
-            this._modalShadow      = this._modalDiv.parentNode;
-            this._modalShadowStyle = this._modalShadow.style;
-
-            this._contentContainer = Selector.select(".modal-body",this._modalDiv);
-            if( !this._contentContainer.length ){
-                throw 'Missing div with class "modal-body"';
-            }
-
-            this._contentContainer = this._contentContainer[0];
-            this._options.markup = this._contentContainer.innerHTML;
-
-            /**
-             * First, will handle the least important: The dataset
-             */
-            this._options = Ink.extendObj(this._options,Element.data(this._element));
-
+        if (!Aux.isInteger(this._options.start) && this._options.start > 0 && this._options.start <= this._options.size) {
+            throw new TypeError('start option is a required integer between 1 and size!');
         }
 
-        /**
-         * Now, the most important, the initialization options
-         */
-        this._options = Ink.extendObj(this._options,options || {});
-
-        if( !this._markupMode ){
-            this.setContentMarkup(this._options.markup);
+        if (this._options.maxSize && !Aux.isInteger(this._options.maxSize) && this._options.maxSize > 0) {
+            throw new TypeError('maxSize option is a positive integer!');
         }
 
-        if( typeof this._options.shadeClass === 'string' ){
-
-            InkArray.each( this._options.shadeClass.split(' '), Ink.bind(function( item ){
-                Css.addClassName( this._modalShadow, item.trim() );
-            }, this));
+        else if (this._options.size < 0) {
+            throw new RangeError('size option must be equal or more than 0!');
         }
 
-        if( typeof this._options.modalClass === 'string' ){
-            InkArray.each( this._options.modalClass.split(' '), Ink.bind(function( item ){
-                Css.addClassName( this._modalDiv, item.trim() );
-            }, this));
+        if (this._options.onChange !== undefined && typeof this._options.onChange !== 'function') {
+            throw new TypeError('onChange option must be a function!');
         }
 
-        if( ("trigger" in this._options) && ( typeof this._options.trigger !== 'undefined' ) ){
-            var triggerElement,i;
-            if( typeof this._options.trigger === 'string' ){
-                triggerElement = Selector.select( this._options.trigger );
-                if( triggerElement.length > 0 ){
-                    for( i=0; i<triggerElement.length; i++ ){
-                        Event.observe( triggerElement[i], this._options.triggerEvent, Ink.bindEvent(this._init, this) );
-                    }
-                }
-            }
-        } else {
-            this._init();
+        if (Css.hasClassName( Ink.s('ul', this._element), 'dotted')) {
+            this._options.numberFormatter = function() { return '<i class="icon-circle"></i>'; };
         }
+
+        this._current = this._options.start - 1;
+        this._itemLiEls = [];
+
+        this._init();
     };
 
-    Modal.prototype = {
+    Pagination.prototype = {
 
         /**
          * Init function called by the constructor
-         * 
+         *
          * @method _init
-         * @param {Event} [event] In case its fired by the trigger.
          * @private
          */
-        _init: function(event) {
-
-            if( event ){ Event.stop(event); }
-
-            var elem = (document.compatMode === "CSS1Compat") ?  document.documentElement : document.body;
-
-            this._resizeTimeout    = null;
-
-            Css.addClassName( this._modalShadow,'ink-shade' );
-            this._modalShadowStyle.display = this._modalDivStyle.display = 'block';
-            setTimeout(Ink.bind(function(){
-                Css.addClassName( this._modalShadow,'visible' );
-                Css.addClassName( this._modalDiv,'visible' );
-            }, this),100);
-
-            /**
-             * Fallback to the old one
-             */
-            this._contentElement = this._modalDiv;
-            this._shadeElement   = this._modalShadow;
-
-            /**
-             * Setting the content of the modal
-             */
-            this.setContentMarkup( this._options.markup );
-
-            /**
-             * If any size has been user-defined, let's set them as max-width and max-height
-             */
-            if( typeof this._options.width !== 'undefined' ){
-                this._modalDivStyle.width = this._options.width;
-                if( this._options.width.indexOf('%') === -1 ){
-                    this._modalDivStyle.maxWidth = Element.elementWidth(this._modalDiv) + 'px';
-                }
-            } else {
-                this._modalDivStyle.maxWidth = this._modalDivStyle.width = Element.elementWidth(this._modalDiv)+'px';
-            }
-
-            if( parseInt(elem.clientWidth,10) <= parseInt(this._modalDivStyle.width,10) ){
-                this._modalDivStyle.width = (~~(parseInt(elem.clientWidth,10)*0.9))+'px';
-            }
-
-            if( typeof this._options.height !== 'undefined' ){
-                this._modalDivStyle.height = this._options.height;
-                if( this._options.height.indexOf('%') === -1 ){
-                    this._modalDivStyle.maxHeight = Element.elementHeight(this._modalDiv) + 'px';
-                }
-            } else {
-                this._modalDivStyle.maxHeight = this._modalDivStyle.height = Element.elementHeight(this._modalDiv) + 'px';
-            }
-
-            if( parseInt(elem.clientHeight,10) <= parseInt(this._modalDivStyle.height,10) ){
-                this._modalDivStyle.height = (~~(parseInt(elem.clientHeight,10)*0.9))+'px';
-            }
-
-            this.originalStatus = {
-                viewportHeight:     parseInt(elem.clientHeight,10),
-                viewportWidth:      parseInt(elem.clientWidth,10),
-                width:              parseInt(this._modalDivStyle.maxWidth,10),
-                height:             parseInt(this._modalDivStyle.maxHeight,10)
-            };
-
-            /**
-             * Let's 'resize' it:
-             */
-            if(this._options.responsive) {
-                this._onResize(true);
-                Event.observe( window,'resize',this._handlers.resize );
-            } else {
-                this._resizeContainer();
-                this._reposition();
-            }
-
-            if (this._options.onShow) {
-                this._options.onShow(this);
-            }
-
-            if(this._options.disableScroll) {
-                this._disableScroll();
-            }
+        _init: function() {
+            // generate and apply DOM
+            this._generateMarkup(this._element);
+            this._updateItems();
 
             // subscribe events
-            Event.observe(this._shadeElement, 'click',   this._handlers.click);
-            Event.observe(document,           'keydown', this._handlers.keyDown);
+            this._observe();
 
-            Aux.registerInstance(this, this._shadeElement, 'modal');
+            Aux.registerInstance(this, this._element, 'pagination');
         },
 
         /**
-         * Responsible for repositioning the modal
-         * 
-         * @method _reposition
+         * Responsible for setting listener in the 'click' event of the Pagination element.
+         *
+         * @method _observe
          * @private
          */
-        _reposition: function(){
-
-            this._modalDivStyle.top = this._modalDivStyle.left = '50%';
-
-            this._modalDivStyle.marginTop = '-' + ( ~~( Element.elementHeight(this._modalDiv)/2) ) + 'px';
-            this._modalDivStyle.marginLeft = '-' + ( ~~( Element.elementWidth(this._modalDiv)/2) ) + 'px';
+        _observe: function() {
+            Event.observe(this._element, 'click', this._handlers.click);
         },
 
         /**
-         * Responsible for resizing the modal
-         * 
-         * @method _onResize
-         * @param {Boolean|Event} runNow Its executed in the begining to resize/reposition accordingly to the viewport. But usually it's an event object.
+         * Updates the markup everytime there's a change in the Pagination object.
+         *
+         * @method _updateItems
          * @private
          */
-        _onResize: function( runNow ){
+        _updateItems: function() {
+            var liEls = this._itemLiEls;
 
-            if( typeof runNow === 'boolean' ){
-                this._timeoutResizeFunction.call(this);
-            } else if( !this._resizeTimeout && (typeof runNow === 'object') ){
-                this._resizeTimeout = setTimeout(Ink.bind(this._timeoutResizeFunction, this),250);
+            var isSimpleToggle = this._options.size === liEls.length;
+
+            var i, f, liEl;
+
+            if (isSimpleToggle) {
+                // just toggle active class
+                for (i = 0, f = this._options.size; i < f; ++i) {
+                    Css.setClassName(liEls[i], 'active', i === this._current);
+                }
             }
+            else {
+                // remove old items
+                for (i = liEls.length - 1; i >= 0; --i) {
+                    this._ulEl.removeChild(liEls[i]);
+                }
+
+                // add new items
+                liEls = [];
+                for (i = 0, f = this._options.size; i < f; ++i) {
+                    liEl = document.createElement('li');
+                    liEl.appendChild( genAEl( this._options.numberFormatter(i), i) );
+                    Css.setClassName(liEl, 'active', i === this._current);
+                    this._ulEl.insertBefore(liEl, this._nextEl);
+                    liEls.push(liEl);
+                }
+                this._itemLiEls = liEls;
+            }
+
+            if (this._options.maxSize) {
+                // toggle visible items
+                var page = Math.floor( this._current / this._options.maxSize );
+                var pi = this._options.maxSize * page;
+                var pf = pi + this._options.maxSize - 1;
+
+                for (i = 0, f = this._options.size; i < f; ++i) {
+                    liEl = liEls[i];
+                    Css.setClassName(liEl, 'hide-all', i < pi || i > pf);
+                }
+
+                this._pageStart = pi;
+                this._pageEnd = pf;
+                this._page = page;
+
+                Css.setClassName(this._prevPageEl, 'disabled', !this.hasPreviousPage());
+                Css.setClassName(this._nextPageEl, 'disabled', !this.hasNextPage());
+
+                Css.setClassName(this._firstEl, 'disabled', this.isFirst());
+                Css.setClassName(this._lastEl, 'disabled', this.isLast());
+            }
+
+            // update prev and next
+            Css.setClassName(this._prevEl, 'disabled', !this.hasPrevious());
+            Css.setClassName(this._nextEl, 'disabled', !this.hasNext());
         },
 
         /**
-         * Timeout Resize Function
-         * 
-         * @method _timeoutResizeFunction
+         * Returns the top element for the gallery DOM representation
+         *
+         * @method _generateMarkup
+         * @param {DOMElement} el
          * @private
          */
-        _timeoutResizeFunction: function(){
-            /**
-             * Getting the current viewport size
-             */
+        _generateMarkup: function(el) {
+            Css.addClassName(el, 'ink-navigation');
+
             var
-                elem = (document.compatMode === "CSS1Compat") ?  document.documentElement : document.body,
-                currentViewportHeight = parseInt(elem.clientHeight,10),
-                currentViewportWidth = parseInt(elem.clientWidth,10)
+                ulEl,liEl,
+                hasUlAlready = false
             ;
-
-            if( ( currentViewportWidth > this.originalStatus.width ) /* && ( parseInt(this._modalDivStyle.maxWidth,10) >= Element.elementWidth(this._modalDiv) )*/ ){
-                /**
-                 * The viewport width has expanded
-                 */
-                this._modalDivStyle.width = this._modalDivStyle.maxWidth;
-
+            if( ( ulEl = Selector.select('ul.pagination',el)).length < 1 ){
+                ulEl = document.createElement('ul');
+                Css.addClassName(ulEl, 'pagination');
             } else {
-                /**
-                 * The viewport width has not changed or reduced
-                 */
-                //this._modalDivStyle.width = (( currentViewportWidth * this.originalStatus.width ) / this.originalStatus.viewportWidth ) + 'px';
-                this._modalDivStyle.width = (~~( currentViewportWidth * 0.9)) + 'px';
+                hasUlAlready = true;
+                ulEl = ulEl[0];
             }
 
-            if( (currentViewportHeight > this.originalStatus.height) && (parseInt(this._modalDivStyle.maxHeight,10) >= Element.elementHeight(this._modalDiv) ) ){
+            if (this._options.maxSize) {
+                liEl = document.createElement('li');
+                liEl.appendChild( genAEl(this._options.firstLabel) );
+                this._firstEl = liEl;
+                Css.addClassName(liEl, 'first');
+                ulEl.appendChild(liEl);
 
-                /**
-                 * The viewport height has expanded
-                 */
-                //this._modalDivStyle.maxHeight =
-                this._modalDivStyle.height = this._modalDivStyle.maxHeight;
-
-            } else {
-                /**
-                 * The viewport height has not changed, or reduced
-                 */
-                this._modalDivStyle.height = (~~( currentViewportHeight * 0.9)) + 'px';
+                liEl = document.createElement('li');
+                liEl.appendChild( genAEl(this._options.previousPageLabel) );
+                this._prevPageEl = liEl;
+                Css.addClassName(liEl, 'previousPage');
+                ulEl.appendChild(liEl);
             }
 
-            this._resizeContainer();
-            this._reposition();
-            this._resizeTimeout = undefined;
+            liEl = document.createElement('li');
+            liEl.appendChild( genAEl(this._options.previousLabel) );
+            this._prevEl = liEl;
+            Css.addClassName(liEl, 'previous');
+            ulEl.appendChild(liEl);
+
+            liEl = document.createElement('li');
+            liEl.appendChild( genAEl(this._options.nextLabel) );
+            this._nextEl = liEl;
+            Css.addClassName(liEl, 'next');
+            ulEl.appendChild(liEl);
+
+            if (this._options.maxSize) {
+                liEl = document.createElement('li');
+                liEl.appendChild( genAEl(this._options.nextPageLabel) );
+                this._nextPageEl = liEl;
+                Css.addClassName(liEl, 'nextPage');
+                ulEl.appendChild(liEl);
+
+                liEl = document.createElement('li');
+                liEl.appendChild( genAEl(this._options.lastLabel) );
+                this._lastEl = liEl;
+                Css.addClassName(liEl, 'last');
+                ulEl.appendChild(liEl);
+            }
+
+            if( !hasUlAlready ){
+                el.appendChild(ulEl);
+            }
+
+            this._ulEl = ulEl;
         },
 
         /**
-         * Navigation click handler
-         * 
+         * Click handler
+         *
          * @method _onClick
          * @param {Event} ev
          * @private
          */
         _onClick: function(ev) {
+            Event.stop(ev);
+
             var tgtEl = Event.element(ev);
+            if (tgtEl.nodeName.toLowerCase() !== 'a') {
+                do{
+                    tgtEl = tgtEl.parentNode;
+                }while( (tgtEl.nodeName.toLowerCase() !== 'a') && (tgtEl !== this._element) );
 
-            if (Css.hasClassName(tgtEl, 'ink-close') || Css.hasClassName(tgtEl, 'ink-dismiss') ||
-                (
-                    this._options.closeOnClick &&
-                    (!Element.descendantOf(this._shadeElement, tgtEl) || (tgtEl === this._shadeElement))
-                )
-            ) {
-                var 
-                    alertsInTheModal = Selector.select('.ink-alert',this._shadeElement),
-                    alertsLength = alertsInTheModal.length
-                ;
-                for( var i = 0; i < alertsLength; i++ ){
-                    if( Element.descendantOf(alertsInTheModal[i], tgtEl) ){
-                        return;
-                    }
+                if( tgtEl === this._element){
+                    return;
                 }
+            }
 
-                Event.stop(ev);
-                this.dismiss();
+            var liEl = tgtEl.parentNode;
+            if (liEl.nodeName.toLowerCase() !== 'li') { return; }
+
+            if ( Css.hasClassName(liEl, 'active') ||
+                 Css.hasClassName(liEl, 'disabled') ) { return; }
+
+            var isPrev = Css.hasClassName(liEl, 'previous');
+            var isNext = Css.hasClassName(liEl, 'next');
+            var isPrevPage = Css.hasClassName(liEl, 'previousPage');
+            var isNextPage = Css.hasClassName(liEl, 'nextPage');
+            var isFirst = Css.hasClassName(liEl, 'first');
+            var isLast = Css.hasClassName(liEl, 'last');
+
+            if (isFirst) {
+                this.setCurrent(0);
+            }
+            else if (isLast) {
+                this.setCurrent(this._options.size - 1);
+            }
+            else if (isPrevPage || isNextPage) {
+                this.setCurrent( (isPrevPage ? -1 : 1) * this._options.maxSize, true);
+            }
+            else if (isPrev || isNext) {
+                this.setCurrent(isPrev ? -1 : 1, true);
+            }
+            else {
+                var nr = parseInt( tgtEl.getAttribute('data-index'), 10);
+                this.setCurrent(nr);
             }
         },
 
-        /**
-         * Responsible for handling the escape key pressing.
-         *
-         * @method _onKeyDown
-         * @param  {Event} ev
-         * @private
-         */
-        _onKeyDown: function(ev) {
-            if (ev.keyCode !== 27 || this._wasDismissed) { return; }
-            this.dismiss();
-        },
 
-        /**
-         * Responsible for setting the size of the modal (and position) based on the viewport.
-         * 
-         * @method _resizeContainer
-         * @private
-         */
-        _resizeContainer: function()
-        {
-
-            this._contentElement.style.overflow = this._contentElement.style.overflowX = this._contentElement.style.overflowY = 'hidden';
-            var containerHeight = Element.elementHeight(this._modalDiv);
-
-            this._modalHeader = Selector.select('.modal-header',this._modalDiv);
-            if( this._modalHeader.length>0 ){
-                this._modalHeader = this._modalHeader[0];
-                containerHeight -= Element.elementHeight(this._modalHeader);
-            }
-
-            this._modalFooter = Selector.select('.modal-footer',this._modalDiv);
-            if( this._modalFooter.length>0 ){
-                this._modalFooter = this._modalFooter[0];
-                containerHeight -= Element.elementHeight(this._modalFooter);
-            }
-
-            this._contentContainer.style.height = containerHeight + 'px';
-            if( containerHeight !== Element.elementHeight(this._contentContainer) ){
-                this._contentContainer.style.height = ~~(containerHeight - (Element.elementHeight(this._contentContainer) - containerHeight)) + 'px';
-            }
-
-            if( this._markupMode ){ return; }
-
-            this._contentContainer.style.overflow = this._contentContainer.style.overflowX = 'hidden';
-            this._contentContainer.style.overflowY = 'auto';
-            this._contentElement.style.overflow = this._contentElement.style.overflowX = this._contentElement.style.overflowY = 'visible';
-        },
-
-        /**
-         * Responsible for 'disabling' the page scroll
-         * 
-         * @method _disableScroll
-         * @private
-         */
-        _disableScroll: function()
-        {
-            this._oldScrollPos = Element.scroll();
-            this._onScrollBinded = Ink.bindEvent(function(event) {
-                var tgtEl = Event.element(event);
-
-                if( !Element.descendantOf(this._modalShadow, tgtEl) ){
-                    Event.stop(event);
-                    window.scrollTo(this._oldScrollPos[0], this._oldScrollPos[1]);
-                }
-            },this);
-            Event.observe(window, 'scroll', this._onScrollBinded);
-            Event.observe(document, 'touchmove', this._onScrollBinded);
-        },
 
         /**************
          * PUBLIC API *
          **************/
 
         /**
-         * Dismisses the modal
-         * 
-         * @method dismiss
+         * Sets the number of pages
+         *
+         * @method setSize
+         * @param {Number} sz number of pages
          * @public
          */
-        dismiss: function() {
-            if (this._options.onDismiss) {
-                this._options.onDismiss(this);
+        setSize: function(sz) {
+            if (!Aux.isInteger(sz)) {
+                throw new TypeError('1st argument must be an integer number!');
             }
 
-            if(this._options.disableScroll) {
-                Event.stopObserving(window, 'scroll', this._onScrollBinded);
-                Event.stopObserving(document, 'touchmove', this._onScrollBinded);
-            }
-
-            if( this._options.responsive ){
-                Event.stopObserving(window, 'resize', this._handlers.resize);
-            }
-
-            // this._modalShadow.parentNode.removeChild(this._modalShadow);
-
-            if( !this._markupMode ){
-                this._modalShadow.parentNode.removeChild(this._modalShadow);
-                this.destroy();
-            } else {
-                Css.removeClassName( this._modalDiv, 'visible' );
-                Css.removeClassName( this._modalShadow, 'visible' );
-
-                var
-                    dismissInterval,
-                    transitionEndFn = Ink.bindEvent(function(){
-                        if( !dismissInterval ){ return; }
-                        this._modalShadowStyle.display = 'none';
-                        Event.stopObserving(document,'transitionend',transitionEndFn);
-                        Event.stopObserving(document,'oTransitionEnd',transitionEndFn);
-                        Event.stopObserving(document,'webkitTransitionEnd',transitionEndFn);
-                        clearInterval(dismissInterval);
-                        dismissInterval = undefined;
-                    }, this)
-                ;
-
-                Event.observe(document,'transitionend',transitionEndFn);
-                Event.observe(document,'oTransitionEnd',transitionEndFn);
-                Event.observe(document,'webkitTransitionEnd',transitionEndFn);
-
-                if( !dismissInterval ){
-                    dismissInterval = setInterval(Ink.bind(function(){
-                        if( this._modalShadowStyle.opacity > 0 ){
-                            return;
-                        } else {
-                            this._modalShadowStyle.display = 'none';
-                            clearInterval(dismissInterval);
-                            dismissInterval = undefined;
-                        }
-
-                    }, this),500);
-                }
-            }
+            this._options.size = sz;
+            this._updateItems();
+            this._current = 0;
         },
 
         /**
-         * Removes the modal from the DOM
-         * 
+         * Sets the current page
+         *
+         * @method setCurrent
+         * @param {Number} nr sets the current page to given number
+         * @param {Boolean} isRelative trueish to set relative change instead of absolute (default)
+         * @public
+         */
+        setCurrent: function(nr, isRelative) {
+            if (!Aux.isInteger(nr)) {
+                throw new TypeError('1st argument must be an integer number!');
+            }
+
+            if (isRelative) {
+                nr += this._current;
+            }
+
+            if (nr < 0) {
+                nr = 0;
+            }
+            else if (nr > this._options.size - 1) {
+                nr = this._options.size - 1;
+            }
+            this._current = nr;
+            this._updateItems();
+
+            /*if (this._options.setHash) {
+                var o = {};
+                o[this._options.hashParameter] = nr;
+                Aux.setHash(o);
+            }*/
+
+            if (this._options.onChange) { this._options.onChange(this); }
+        },
+
+        /**
+         * Returns the number of pages
+         *
+         * @method getSize
+         * @return {Number} Number of pages
+         * @public
+         */
+        getSize: function() {
+            return this._options.size;
+        },
+
+        /**
+         * Returns current page
+         *
+         * @method getCurrent
+         * @return {Number} Current page
+         * @public
+         */
+        getCurrent: function() {
+            return this._current;
+        },
+
+        /**
+         * Returns true iif at first page
+         *
+         * @method isFirst
+         * @return {Boolean} True if at first page
+         * @public
+         */
+        isFirst: function() {
+            return this._current === 0;
+        },
+
+        /**
+         * Returns true iif at last page
+         *
+         * @method isLast
+         * @return {Boolean} True if at last page
+         * @public
+         */
+        isLast: function() {
+            return this._current === this._options.size - 1;
+        },
+
+        /**
+         * Returns true iif has prior pages
+         *
+         * @method hasPrevious
+         * @return {Boolean} True if has prior pages
+         * @public
+         */
+        hasPrevious: function() {
+            return this._current > 0;
+        },
+
+        /**
+         * Returns true iif has pages ahead
+         *
+         * @method hasNext
+         * @return {Boolean} True if has pages ahead
+         * @public
+         */
+        hasNext: function() {
+            return this._current < this._options.size - 1;
+        },
+
+        /**
+         * Returns true iif has prior set of page(s)
+         *
+         * @method hasPreviousPage
+         * @return {Boolean} Returns true iif has prior set of page(s)
+         * @public
+         */
+        hasPreviousPage: function() {
+            return this._options.maxSize && this._current > this._options.maxSize - 1;
+        },
+
+        /**
+         * Returns true iif has set of page(s) ahead
+         *
+         * @method hasNextPage
+         * @return {Boolean} Returns true iif has set of page(s) ahead
+         * @public
+         */
+        hasNextPage: function() {
+            return this._options.maxSize && this._options.size - this._current >= this._options.maxSize + 1;
+        },
+
+        /**
+         * Unregisters the component and removes its markup from the DOM
+         *
          * @method destroy
          * @public
          */
-        destroy: function() {
-            Aux.unregisterInstance(this._instanceId);
-
-        },
-
-        /**
-         * Returns the content DOM element
-         * 
-         * @method getContentElement
-         * @return {DOMElement} Modal main cointainer.
-         * @public
-         */
-        getContentElement: function() {
-            return this._contentContainer;
-        },
-
-        /**
-         * Replaces the content markup
-         * 
-         * @method setContentMarkup
-         * @param {String} contentMarkup
-         * @public
-         */
-        setContentMarkup: function(contentMarkup) {
-            if( !this._markupMode ){
-                this._modalDiv.innerHTML = [contentMarkup].join('');
-                this._contentContainer = Selector.select(".modal-body",this._modalDiv);
-                if( !this._contentContainer.length ){
-                    // throw 'Missing div with class "modal-body"';
-                    var tempHeader = Selector.select(".modal-header",this._modalDiv);
-                    var tempFooter = Selector.select(".modal-footer",this._modalDiv);
-
-                    InkArray.each(tempHeader,Ink.bind(function( element ){ element.parentNode.removeChild(element); },this));
-                    InkArray.each(tempFooter,Ink.bind(function( element ){ element.parentNode.removeChild(element); },this));
-
-                    var body = document.createElement('div');
-                    Css.addClassName(body,'modal-body');
-                    body.innerHTML = this._modalDiv.innerHTML;
-                    this._modalDiv.innerHTML = '';
-
-                    InkArray.each(tempHeader,Ink.bind(function( element ){ this._modalDiv.appendChild(element); },this));
-                    this._modalDiv.appendChild(body);
-                    InkArray.each(tempFooter,Ink.bind(function( element ){ this._modalDiv.appendChild(element); },this));
-                    
-                    this._contentContainer = Selector.select(".modal-body",this._modalDiv);
-                }
-                this._contentContainer = this._contentContainer[0];
-            } else {
-                this._contentContainer.innerHTML = [contentMarkup].join('');
-            }
-            this._contentElement = this._modalDiv;
-            this._resizeContainer();
-        }
-
+        destroy: Aux.destroyComponent
     };
 
-    return Modal;
-
-});
-
-/**
- * @module Ink.UI.ProgressBar_1
- * @author inkdev AT sapo.pt
- * @version 1
- */
-Ink.createModule('Ink.UI.ProgressBar', '1', ['Ink.Dom.Selector_1','Ink.Dom.Element_1'], function( Selector, Element ) {
-    'use strict';
-
-    /**
-     * Associated to a .ink-progress-bar element, it provides the necessary
-     * method - setValue() - for the user to change the element's value.
-     * 
-     * @class Ink.UI.ProgressBar
-     * @constructor
-     * @version 1
-     * @uses Ink.Dom.Selector
-     * @uses Ink.Dom.Element
-     * @param {String|DOMElement} selector
-     * @param {Object} [options] Options
-     *     @param {Number}     [options.startValue]          Percentage of the bar that is filled. Range between 0 and 100. Default: 0
-     *     @param {Function}   [options.onStart]             Callback that is called when a change of value is started
-     *     @param {Function}   [options.onEnd]               Callback that is called when a change of value ends
-     *
-     * @example
-     *      <div class="ink-progress-bar grey" data-start-value="70%">
-     *          <span class="caption">I am a grey progress bar</span>
-     *          <div class="bar grey"></div>
-     *      </div>
-     *      <script>
-     *          Ink.requireModules( ['Ink.Dom.Selector_1','Ink.UI.ProgressBar_1'], function( Selector, ProgressBar ){
-     *              var progressBarElement = Ink.s('.ink-progress-bar');
-     *              var progressBarObj = new ProgressBar( progressBarElement );
-     *          });
-     *      </script>
-     */
-    var ProgressBar = function( selector, options ){
-
-        if( typeof selector !== 'object' ){
-            if( typeof selector !== 'string' ){
-                throw '[Ink.UI.ProgressBar] :: Invalid selector';
-            } else {
-                this._element = Selector.select(selector);
-                if( this._element.length < 1 ){
-                    throw "[Ink.UI.ProgressBar] :: Selector didn't find any elements";
-                }
-                this._element = this._element[0];
-            }
-        } else {
-            this._element = selector;
-        }
-
-
-        this._options = Ink.extendObj({
-            'startValue': 0,
-            'onStart': function(){},
-            'onEnd': function(){}
-        },Element.data(this._element));
-
-        this._options = Ink.extendObj( this._options, options || {});
-        this._value = this._options.startValue;
-
-        this._init();
-    };
-
-    ProgressBar.prototype = {
-
-        /**
-         * Init function called by the constructor
-         * 
-         * @method _init
-         * @private
-         */
-        _init: function(){
-            this._elementBar = Selector.select('.bar',this._element);
-            if( this._elementBar.length < 1 ){
-                throw '[Ink.UI.ProgressBar] :: Bar element not found';
-            }
-            this._elementBar = this._elementBar[0];
-
-            this._options.onStart = Ink.bind(this._options.onStart,this);
-            this._options.onEnd = Ink.bind(this._options.onEnd,this);
-            this.setValue( this._options.startValue );
-        },
-
-        /**
-         * Sets the value of the Progressbar
-         * 
-         * @method setValue
-         * @param {Number} newValue Numeric value, between 0 and 100, that represents the percentage of the bar.
-         * @public
-         */
-        setValue: function( newValue ){
-            this._options.onStart( this._value);
-
-            newValue = parseInt(newValue,10);
-            if( isNaN(newValue) || (newValue < 0) ){
-                newValue = 0;
-            } else if( newValue>100 ){
-                newValue = 100;
-            }
-            this._value = newValue;
-            this._elementBar.style.width =  this._value + '%';
-
-            this._options.onEnd( this._value );
-        }
-    };
-
-    return ProgressBar;
-
-});
-
-/**
- * @module Ink.UI.SmoothScroller_1
- * @author inkdev AT sapo.pt
- * @version 1
- */
-Ink.createModule('Ink.UI.SmoothScroller', '1', ['Ink.Dom.Event_1','Ink.Dom.Selector_1','Ink.Dom.Loaded_1'], function(Event, Selector, Loaded ) {
-    'use strict';
-
-    /**
-     * @class Ink.UI.SmoothScroller
-     * @version 1
-     * @uses Ink.Dom.Event
-     * @uses Ink.Dom.Selector
-     * @uses Ink.Dom.Loaded
-     * @static
-     */
-    var SmoothScroller = {
-
-        /**
-         * Sets the speed of the scrolling
-         *
-         * @property
-         * @type {Number}
-         * @readOnly
-         * @static
-         */
-        speed: 10,
-
-        /**
-         * Returns the Y position of the div
-         *
-         * @method gy
-         * @param  {DOMElement} d DOMElement to get the Y position from
-         * @return {Number}   Y position of div 'd'
-         * @public
-         * @static
-         */
-        gy: function(d) {
-            var gy;
-            gy = d.offsetTop;
-            if (d.offsetParent){
-                while ( (d = d.offsetParent) ){
-                    gy += d.offsetTop;
-                }
-            }
-            return gy;
-        },
-
-
-        /**
-         * Returns the current scroll position
-         *
-         * @method scrollTop
-         * @return {Number}  Current scroll position
-         * @public
-         * @static
-         */
-        scrollTop: function() {
-            var
-                body = document.body,
-                d = document.documentElement
-            ;
-            if (body && body.scrollTop){
-                return body.scrollTop;
-            }
-            if (d && d.scrollTop){
-                return d.scrollTop;
-            }
-            if (window.pageYOffset)
-            {
-                return window.pageYOffset;
-            }
-            return 0;
-        },
-
-        /**
-         * Attaches an event for an element
-         *
-         * @method add
-         * @param  {DOMElement} el DOMElement to make the listening of the event
-         * @param  {String} event Event name to be listened
-         * @param  {DOMElement} fn Callback function to run when the event is triggered.
-         * @public
-         * @static
-         */
-        add: function(el, event, fn) {
-            Event.observe(el,event,fn);
-            return;
-        },
-
-
-        /**
-         * Kill an event of an element
-         *
-         * @method end
-         * @param  {String} e Event to be killed/stopped
-         * @public
-         * @static
-         */
-        // kill an event of an element
-        end: function(e) {
-            if (window.event) {
-                window.event.cancelBubble = true;
-                window.event.returnValue = false;
-                return;
-            }
-            Event.stop(e);
-        },
-
-
-        /**
-         * Moves the scrollbar to the target element
-         *
-         * @method scroll
-         * @param  {Number} d Y coordinate value to stop
-         * @public
-         * @static
-         */
-        scroll: function(d) {
-            var a = Ink.UI.SmoothScroller.scrollTop();
-            if (d > a) {
-                a += Math.ceil((d - a) / Ink.UI.SmoothScroller.speed);
-            } else {
-                a = a + (d - a) / Ink.UI.SmoothScroller.speed;
-            }
-
-            window.scrollTo(0, a);
-            if ((a) === d || Ink.UI.SmoothScroller.offsetTop === a)
-            {
-                clearInterval(Ink.UI.SmoothScroller.interval);
-            }
-            Ink.UI.SmoothScroller.offsetTop = a;
-        },
-
-
-        /**
-         * Initializer that adds the rendered to run when the page is ready
-         *
-         * @method init
-         * @public
-         * @static
-         */
-        // initializer that adds the renderer to the onload function of the window
-        init: function() {
-            Loaded.run(Ink.UI.SmoothScroller.render);
-        },
-
-        /**
-         * This method extracts all the anchors and validates thenm as # and attaches the events
-         *
-         * @method render
-         * @public
-         * @static
-         */
-        render: function() {
-            var a = Selector.select('a.scrollableLink');
-
-            Ink.UI.SmoothScroller.end(this);
-
-            for (var i = 0; i < a.length; i++) {
-                var _elm = a[i];
-                if (_elm.href && _elm.href.indexOf('#') !== -1 && ((_elm.pathname === location.pathname) || ('/' + _elm.pathname === location.pathname))) {
-                    Ink.UI.SmoothScroller.add(_elm, 'click', Ink.UI.SmoothScroller.end);
-                    Event.observe(_elm,'click', Ink.bindEvent(Ink.UI.SmoothScroller.clickScroll, this, _elm));
-                }
-            }
-        },
-
-
-        /**
-         * Click handler
-         *
-         * @method clickScroll
-         * @public
-         * @static
-         */
-        clickScroll: function(event, _elm) {
-            /*
-            Ink.UI.SmoothScroller.end(this);
-            var hash = this.hash.substr(1);
-            var elm = Selector.select('a[name="' + hash + '"],#' + hash);
-
-            if (typeof(elm[0]) !== 'undefined') {
-
-                if (this.parentNode.className.indexOf('active') === -1) {
-                    var ul = this.parentNode.parentNode,
-                        li = ul.firstChild;
-                    do {
-                        if ((typeof(li.tagName) !== 'undefined') && (li.tagName.toUpperCase() === 'LI') && (li.className.indexOf('active') !== -1)) {
-                            li.className = li.className.replace('active', '');
-                            break;
-                        }
-                    } while ((li = li.nextSibling));
-                    this.parentNode.className += " active";
-                }
-                clearInterval(Ink.UI.SmoothScroller.interval);
-                Ink.UI.SmoothScroller.interval = setInterval('Ink.UI.SmoothScroller.scroll(' + Ink.UI.SmoothScroller.gy(elm[0]) + ')', 10);
-
-            }
-            */
-            Ink.UI.SmoothScroller.end(_elm);
-            if(_elm !== null && _elm.getAttribute('href') !== null) {
-                var hashIndex = _elm.href.indexOf('#');
-                if(hashIndex === -1) {
-                    return;
-                }
-                var hash = _elm.href.substr((hashIndex + 1));
-                var elm = Selector.select('a[name="' + hash + '"],#' + hash);
-
-                if (typeof(elm[0]) !== 'undefined') {
-
-                    if (_elm.parentNode.className.indexOf('active') === -1) {
-                        var ul = _elm.parentNode.parentNode,
-                            li = ul.firstChild;
-                        do {
-                            if ((typeof(li.tagName) !== 'undefined') && (li.tagName.toUpperCase() === 'LI') && (li.className.indexOf('active') !== -1)) {
-                                li.className = li.className.replace('active', '');
-                                break;
-                            }
-                        } while ((li = li.nextSibling));
-                        _elm.parentNode.className += " active";
-                    }
-                    clearInterval(Ink.UI.SmoothScroller.interval);
-                    Ink.UI.SmoothScroller.interval = setInterval('Ink.UI.SmoothScroller.scroll(' + Ink.UI.SmoothScroller.gy(elm[0]) + ')', 10);
-
-                }
-            }
-
-        }
-    };
-
-    return SmoothScroller;
+    return Pagination;
 
 });
 
@@ -11783,12 +13248,6 @@ Ink.createModule('Ink.UI.SortableList', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','
      * @class Ink.UI.SortableList
      * @constructor
      * @version 1
-     * @uses Ink.UI.Aux
-     * @uses Ink.Dom.Event
-     * @uses Ink.Dom.Css
-     * @uses Ink.Dom.Element
-     * @uses Ink.Dom.Selector
-     * @uses Ink.Util.Array
      * @param {String|DOMElement} selector
      * @param {Object} [options] Options
      *     @param {String} [options.dragObject] CSS Selector. The element that will trigger the dragging in the list. Default is 'li'.
@@ -12123,12 +13582,6 @@ Ink.createModule('Ink.UI.Spy', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Dom.C
      * @class Ink.UI.Spy
      * @constructor
      * @version 1
-     * @uses Ink.UI.Aux
-     * @uses Ink.Dom.Event
-     * @uses Ink.Dom.Css
-     * @uses Ink.Dom.Element
-     * @uses Ink.Dom.Selector
-     * @uses Ink.Util.Array
      * @param {String|DOMElement} selector
      * @param {Object} [options] Options
      *     @param {DOMElement|String}     options.target          Target menu on where the spy will highlight the right option.
@@ -12243,15 +13696,10 @@ Ink.createModule('Ink.UI.Sticky', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Do
     /**
      * The Sticky component takes an element and transforms it's behavior in order to, when the user scrolls he sets its position
      * to fixed and maintain it until the user scrolls back to the same place.
-     * 
+     *
      * @class Ink.UI.Sticky
      * @constructor
      * @version 1
-     * @uses Ink.UI.Aux
-     * @uses Ink.Dom.Event
-     * @uses Ink.Dom.Css
-     * @uses Ink.Dom.Element
-     * @uses Ink.Dom.Selector
      * @param {String|DOMElement} selector
      * @param {Object} [options] Options
      *     @param {Number}     options.offsetBottom       Number of pixels of distance from the bottomElement.
@@ -12321,7 +13769,7 @@ Ink.createModule('Ink.UI.Sticky', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Do
 
         /**
          * Init function called by the constructor
-         * 
+         *
          * @method _init
          * @private
          */
@@ -12337,7 +13785,7 @@ Ink.createModule('Ink.UI.Sticky', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Do
 
         /**
          * Scroll handler.
-         * 
+         *
          * @method _onScroll
          * @private
          */
@@ -12346,7 +13794,7 @@ Ink.createModule('Ink.UI.Sticky', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Do
 
             var viewport = (document.compatMode === "CSS1Compat") ?  document.documentElement : document.body;
 
-            if( 
+            if(
                 ( ( (Element.elementWidth(this._rootElement)*100)/viewport.clientWidth ) > 90 ) ||
                 ( viewport.clientWidth<=649 )
             ){
@@ -12362,35 +13810,42 @@ Ink.createModule('Ink.UI.Sticky', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Do
             }
 
             this._scrollTimeout = setTimeout(Ink.bind(function(){
-                    
+
                 var scrollHeight = Element.scrollHeight();
 
                 if( Element.hasAttribute(this._rootElement,'style') ){
-                    if( scrollHeight <= this._options.offsetTop){
+                    if( scrollHeight <= (this._options.originalTop-this._options.originalOffsetTop)){
                         this._rootElement.removeAttribute('style');
                     } else if( ((document.body.scrollHeight-(scrollHeight+parseInt(this._dims.height,10))) < this._options.offsetBottom) ){
+
                         this._rootElement.style.position = 'fixed';
                         this._rootElement.style.top = 'auto';
+                        this._rootElement.style.left = this._options.originalLeft + 'px';
+
                         if( this._options.offsetBottom < parseInt(document.body.scrollHeight - (document.documentElement.clientHeight+scrollHeight),10) ){
                             this._rootElement.style.bottom = this._options.originalOffsetBottom + 'px';
                         } else {
                             this._rootElement.style.bottom = this._options.offsetBottom - parseInt(document.body.scrollHeight - (document.documentElement.clientHeight+scrollHeight),10) + 'px';
                         }
                         this._rootElement.style.width = this._options.originalWidth + 'px';
+
                     } else if( ((document.body.scrollHeight-(scrollHeight+parseInt(this._dims.height,10))) >= this._options.offsetBottom) ){
+                        this._rootElement.style.left = this._options.originalLeft + 'px';
                         this._rootElement.style.position = 'fixed';
                         this._rootElement.style.bottom = 'auto';
+                        this._rootElement.style.left = this._options.originalLeft + 'px';
                         this._rootElement.style.top = this._options.originalOffsetTop + 'px';
                         this._rootElement.style.width = this._options.originalWidth + 'px';
                     }
                 } else {
-                    if(scrollHeight <= this._options.offsetTop ){
+                    if( scrollHeight <= (this._options.originalTop-this._options.originalOffsetTop)){
                         return;
                     }
-
+                    this._rootElement.style.left = this._options.originalLeft + 'px';
                     this._rootElement.style.position = 'fixed';
                     this._rootElement.style.bottom = 'auto';
-                    this._rootElement.style.top = this._options.offsetTop + 'px';
+                    this._rootElement.style.left = this._options.originalLeft + 'px';
+                    this._rootElement.style.top = this._options.originalOffsetTop + 'px';
                     this._rootElement.style.width = this._options.originalWidth + 'px';
                 }
 
@@ -12400,7 +13855,7 @@ Ink.createModule('Ink.UI.Sticky', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Do
 
         /**
          * Resize handler
-         * 
+         *
          * @method _onResize
          * @private
          */
@@ -12421,7 +13876,7 @@ Ink.createModule('Ink.UI.Sticky', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Do
         /**
          * On each resizing (and in the beginning) the component recalculates the offsets, since
          * the top and bottom element heights might have changed.
-         * 
+         *
          * @method _calculateOffsets
          * @private
          */
@@ -12472,9 +13927,13 @@ Ink.createModule('Ink.UI.Sticky', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Do
          * @private
          */
         _calculateOriginalSizes: function(){
-            this._options.originalOffsetTop = parseInt(this._options.offsetTop,10);
-            this._options.originalOffsetBottom = parseInt(this._options.offsetBottom,10);
+
+            if( typeof this._options.originalOffsetTop === 'undefined' ){
+                this._options.originalOffsetTop = parseInt(this._options.offsetTop,10);
+                this._options.originalOffsetBottom = parseInt(this._options.offsetBottom,10);
+            }
             this._options.originalTop = parseInt(this._rootElement.offsetTop,10);
+            this._options.originalLeft = parseInt(this._rootElement.offsetLeft,10);
             if(isNaN(this._options.originalWidth = parseInt(this._dims.width,10))) {
                 this._options.originalWidth = 0;
             }
@@ -12502,13 +13961,6 @@ Ink.createModule('Ink.UI.Table', '1', ['Ink.Net.Ajax_1','Ink.UI.Aux_1','Ink.Dom.
      * @class Ink.UI.Table
      * @constructor
      * @version 1
-     * @uses Ink.UI.Aux
-     * @uses Ink.Dom.Event
-     * @uses Ink.Dom.Css
-     * @uses Ink.Dom.Element
-     * @uses Ink.Dom.Selector
-     * @uses Ink.Util.Array
-     * @uses Ink.UI.Pagination
      * @param {String|DOMElement} selector
      * @param {Object} [options] Options
      *     @param {Number}     options.pageSize       Number of rows per page.
@@ -12695,7 +14147,7 @@ Ink.createModule('Ink.UI.Table', '1', ['Ink.Net.Ajax_1','Ink.UI.Aux_1','Ink.Dom.
          * @private
          */
         _onClick: function( event ){
-            Event.stop(event);
+            
             var
                 tgtEl = Event.element(event),
                 dataset = Element.data(tgtEl),
@@ -12706,6 +14158,8 @@ Ink.createModule('Ink.UI.Table', '1', ['Ink.Net.Ajax_1','Ink.UI.Aux_1','Ink.Dom.
                 return;
             }
 
+            Event.stop(event);
+            
             index = -1;
             if( InkArray.inArray( tgtEl,this._headers ) ){
                 for( i=0; i<this._headers.length; i++ ){
@@ -12737,7 +14191,7 @@ Ink.createModule('Ink.UI.Table', '1', ['Ink.Net.Ajax_1','Ink.UI.Aux_1','Ink.Dom.
 
                 this._pagination.setCurrent(this._pagination._current);
 
-            } else {
+            } else {
 
                 if( index === -1){
                     return;
@@ -12813,8 +14267,8 @@ Ink.createModule('Ink.UI.Table', '1', ['Ink.Net.Ajax_1','Ink.UI.Aux_1','Ink.Dom.
         _sort: function( index ){
             this._data.sort(Ink.bind(function(a,b){
                 var
-                    aValue = Selector.select('td',a)[index].innerText,
-                    bValue = Selector.select('td',b)[index].innerText
+                    aValue = Element.textContent(Selector.select('td',a)[index]),
+                    bValue = Element.textContent(Selector.select('td',b)[index])
                 ;
 
                 var regex = new RegExp(/\d/g);
@@ -12857,35 +14311,39 @@ Ink.createModule('Ink.UI.Table', '1', ['Ink.Net.Ajax_1','Ink.UI.Aux_1','Ink.Dom.
                 tr = thead.insertRow(0);
 
                 for( field in headers ){
+                    if (headers.hasOwnProperty(field)) {
 
-                    if( !!this._options.visibleFields && (this._options.visibleFields.indexOf(field) === -1) ){
-                        continue;
+                        if( !!this._options.visibleFields && (this._options.visibleFields.indexOf(field) === -1) ){
+                            continue;
+                        }
+
+                        // th = tr.insertCell(index++);
+                        th = document.createElement('th');
+                        header = headers[field];
+
+                        if( ("sortable" in header) && (header.sortable.toString() === 'true') ){
+                            th.setAttribute('data-sortable','true');
+                        }
+
+                        if( ("label" in header) ){
+                            Element.setTextContent(th, header.label);
+                        }
+
+                        this._originalFields.push(field);
+                        tr.appendChild(th);
                     }
-
-                    // th = tr.insertCell(index++);
-                    th = document.createElement('th');
-                    header = headers[field];
-
-                    if( ("sortable" in header) && (header.sortable.toString() === 'true') ){
-                        th.setAttribute('data-sortable','true');
-                    }
-
-                    if( ("label" in header) ){
-                        th.innerText = header.label;
-                    }
-
-                    this._originalFields.push(field);
-                    tr.appendChild(th);
                 }
             } else {
                 var firstLine = rows[0];
 
                 for( field in firstLine ){
-                    if( !!this._options.visibleFields && (this._options.visibleFields.indexOf(field) === -1) ){
-                        continue;
-                    }
+                    if (firstLine.hasOwnProperty(field)) {
+                        if( !!this._options.visibleFields && (this._options.visibleFields.indexOf(field) === -1) ){
+                            continue;
+                        }
 
-                    this._originalFields.push(field);
+                        this._originalFields.push(field);
+                    }
                 }
             }
         },
@@ -12901,14 +14359,18 @@ Ink.createModule('Ink.UI.Table', '1', ['Ink.Net.Ajax_1','Ink.UI.Aux_1','Ink.Dom.
             /**
              * Setting the sortable columns and its event listeners
              */
-            Event.observe(Selector.select('thead',this._rootElement)[0],'click',this._handlers.click);
+            var theads = Selector.select('thead', this._rootElement);
+            if (!theads.length) {
+                return;
+            }
+            Event.observe(theads[0],'click',this._handlers.click);
             this._headers = Selector.select('thead tr th',this._rootElement);
             InkArray.each(this._headers,Ink.bind(function(item, index){
                 var dataset = Element.data( item );
                 if( ('sortable' in dataset) && (dataset.sortable.toString() === 'true') ){
                     this._sortableFields['col_' + index] = 'none';
                 }
-            },this));
+            }, this));
 
         },
 
@@ -12941,19 +14403,23 @@ Ink.createModule('Ink.UI.Table', '1', ['Ink.Net.Ajax_1','Ink.UI.Aux_1','Ink.Dom.
 
 
             for( trIndex in rows ){
-                tr = document.createElement('tr');
-                tbody.appendChild( tr );
-                tdIndex = 0;
-                for( field in rows[trIndex] ){
+                if (rows.hasOwnProperty(trIndex)) {
+                    tr = document.createElement('tr');
+                    tbody.appendChild( tr );
+                    tdIndex = 0;
+                    for( field in rows[trIndex] ){
+                        if (rows[trIndex].hasOwnProperty(field)) {
 
-                    if( !!this._options.visibleFields && (this._options.visibleFields.indexOf(field) === -1) ){
-                        continue;
+                            if( !!this._options.visibleFields && (this._options.visibleFields.indexOf(field) === -1) ){
+                                continue;
+                            }
+
+                            td = tr.insertCell(tdIndex++);
+                            td.innerHTML = rows[trIndex][field];
+                        }
                     }
-
-                    td = tr.insertCell(tdIndex++);
-                    td.innerHTML = rows[trIndex][field];
+                    this._data.push(tr);
                 }
-                this._data.push(tr);
             }
 
             this._originalData = this._data.slice(0);
@@ -13123,12 +14589,6 @@ Ink.createModule('Ink.UI.Tabs', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Dom.
      * @class Ink.UI.Tabs
      * @constructor
      * @version 1
-     * @uses Ink.UI.Aux
-     * @uses Ink.Dom.Event
-     * @uses Ink.Dom.Css
-     * @uses Ink.Dom.Element
-     * @uses Ink.Dom.Selector
-     * @uses Ink.Util.Array
      * @param {String|DOMElement} selector
      * @param {Object} [options] Options
      *     @param {Boolean}      [options.preventUrlChange]        Flag that determines if follows the link on click or stops the event
@@ -13267,7 +14727,7 @@ Ink.createModule('Ink.UI.Tabs', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Dom.
 
             // INTRA: Changed the init order to first check the options.active attribute and only then the window.href.hash 
             this._activeContentTab = Selector.select(this._hashify(this._options.active), this._element)[0] ||
-                                     Selector.select(hash, this._element)[0] ||	
+                                     Selector.select(hash, this._element)[0] || 
                                      Selector.select('.tabs-content', this._element)[0];
 
             this._activeMenuLink = this._findLinkByHref(this._activeContentTab.getAttribute('id'));
@@ -13539,113 +14999,102 @@ Ink.createModule('Ink.UI.Tabs', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Dom.
 });
 
 /**
- * @module Ink.UI.ImageQuery_1
+ * @module Ink.UI.Toggle_1
  * @author inkdev AT sapo.pt
  * @version 1
  */
-Ink.createModule('Ink.UI.ImageQuery', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Dom.Css_1','Ink.Dom.Element_1','Ink.Dom.Selector_1','Ink.Util.Array_1'], function(Aux, Event, Css, Element, Selector, InkArray ) {
+Ink.createModule('Ink.UI.Toggle', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Dom.Css_1','Ink.Dom.Element_1','Ink.Dom.Selector_1','Ink.Util.Array_1'], function(Aux, Event, Css, Element, Selector, InkArray ) {
     'use strict';
 
     /**
-     * @class Ink.UI.ImageQuery
+     * Toggle component
+     * 
+     * @class Ink.UI.Toggle
      * @constructor
      * @version 1
-     * @uses Ink.UI.Aux
-     * @uses Ink.Dom.Event
-     * @uses Ink.Dom.Css
-     * @uses Ink.Dom.Element
-     * @uses Ink.Dom.Selector
-     * @uses Ink.Util.Array
-     *
      * @param {String|DOMElement} selector
      * @param {Object} [options] Options
-     *      @param {String|Function}    [options.src]             String or Callback function (that returns a string) with the path to be used to get the images.
-     *      @param {String|Function}    [options.retina]          String or Callback function (that returns a string) with the path to be used to get RETINA specific images.
-     *      @param {Array}              [options.queries]         Array of queries
-     *          @param {String}              [options.queries.label]         Label of the query. Ex. 'small'
-     *          @param {Number}              [options.queries.width]         Min-width to use this query
-     *      @param {Function}           [options.onLoad]          Date format string
-     *
+     *     @param {String}       options.target                    CSS Selector that specifies the elements that will toggle
+     *     @param {String}       [options.triggerEvent]            Event that will trigger the toggling. Default is 'click'
+     *     @param {Boolean}      [options.closeOnClick]            Flag that determines if, when clicking outside of the toggled content, it should hide it. Default: true.
      * @example
-     *      <div class="imageQueryExample large-100 medium-100 small-100 content-center clearfix vspace">
-     *          <img src="/assets/imgs/imagequery/small/image.jpg" />
+     *      <div class="ink-dropdown">
+     *          <button class="ink-button toggle" data-target="#dropdown">Dropdown <span class="icon-caret-down"></span></button>
+     *          <ul id="dropdown" class="dropdown-menu">
+     *              <li class="heading">Heading</li>
+     *              <li class="separator-above"><a href="#">Option</a></li>
+     *              <li><a href="#">Option</a></li>
+     *              <li class="separator-above disabled"><a href="#">Disabled option</a></li>
+     *              <li class="submenu">
+     *                  <a href="#" class="toggle" data-target="#submenu1">A longer option name</a>
+     *                  <ul id="submenu1" class="dropdown-menu">
+     *                      <li class="submenu">
+     *                          <a href="#" class="toggle" data-target="#ultrasubmenu">Sub option</a>
+     *                          <ul id="ultrasubmenu" class="dropdown-menu">
+     *                              <li><a href="#">Sub option</a></li>
+     *                              <li><a href="#" data-target="ultrasubmenu">Sub option</a></li>
+     *                              <li><a href="#">Sub option</a></li>
+     *                          </ul>
+     *                      </li>
+     *                      <li><a href="#">Sub option</a></li>
+     *                      <li><a href="#">Sub option</a></li>
+     *                  </ul>
+     *              </li>
+     *              <li><a href="#">Option</a></li>
+     *          </ul>
      *      </div>
-     *      <script type="text/javascript">
-     *      Ink.requireModules( ['Ink.Dom.Selector_1', 'Ink.UI.ImageQuery_1'], function( Selector, ImageQuery ){
-     *          var imageQueryElement = Ink.s('.imageQueryExample img');
-     *          var imageQueryObj = new ImageQuery('.imageQueryExample img',{
-     *              src: '/assets/imgs/imagequery/{:label}/{:file}',
-     *              queries: [
-     *                  {
-     *                      label: 'small',
-     *                      width: 480
-     *                  },
-     *                  {
-     *                      label: 'medium',
-     *                      width: 640
-     *                  },
-     *                  {
-     *                      label: 'large',
-     *                      width: 1024
-     *                  }   
-     *              ]
+     *      <script>
+     *          Ink.requireModules( ['Ink.Dom.Selector_1','Ink.UI.Toggle_1'], function( Selector, Toggle ){
+     *              var toggleElement = Ink.s('.toggle');
+     *              var toggleObj = new Toggle( toggleElement );
      *          });
-     *      } );
      *      </script>
      */
-    var ImageQuery = function(selector, options){
+    var Toggle = function( selector, options ){
 
-        /**
-         * Selector's type checking
-         */
-        if( !Aux.isDOMElement(selector) && (typeof selector !== 'string') ){
-            throw '[ImageQuery] :: Invalid selector';
-        } else if( typeof selector === 'string' ){
-            this._element = Selector.select( selector );
-
-            if( this._element.length < 1 ){
-                throw '[ImageQuery] :: Selector has returned no elements';
-            } else if( this._element.length > 1 ){
-                var i;
-                for( i=1;i<this._element.length;i+=1 ){
-                    new Ink.UI.ImageQuery(this._element[i],options);
-                }
-            }
-            this._element = this._element[0];
-
-        } else {
-            this._element = selector;
+        if( typeof selector !== 'string' && typeof selector !== 'object' ){
+            throw '[Ink.UI.Toggle] Invalid CSS selector to determine the root element';
         }
 
+        if( typeof selector === 'string' ){
+            this._rootElement = Selector.select( selector );
+            if( this._rootElement.length <= 0 ){
+                throw '[Ink.UI.Toggle] Root element not found';
+            }
 
-        /**
-         * Default options and they're overrided by data-attributes if any.
-         * The parameters are:
-         * @param {array} queries Array of objects that determine the label/name and its min-width to be applied.
-         * @param {boolean} allowFirstLoad Boolean flag to allow the loading of the first element.
-         */
-        this._options = Ink.extendObj({
-            queries:[],
-            onLoad: null
-        },Element.data(this._element));
-
-        this._options = Ink.extendObj(this._options, options || {});
-
-        /**
-         * Determining the original basename (with the querystring) of the file.
-         */
-        var pos;
-        if( (pos=this._element.src.lastIndexOf('?')) !== -1 ){
-            var search = this._element.src.substr(pos);
-            this._filename = this._element.src.replace(search,'').split('/').pop()+search;
+            this._rootElement = this._rootElement[0];
         } else {
-            this._filename = this._element.src.split('/').pop();
+            this._rootElement = selector;
+        }
+
+        this._options = Ink.extendObj({
+            target : undefined,
+            triggerEvent: 'click',
+            closeOnClick: true
+        },Element.data(this._rootElement));
+
+        this._options = Ink.extendObj(this._options,options || {});
+
+        this._targets = (function (target) {
+            if (typeof target === 'string') {
+                return Selector.select(target);
+            } else if (typeof target === 'object') {
+                if (target.constructor === Array) {
+                    return target;
+                } else {
+                    return [target];
+                }
+            }
+        }(this._options.target));
+
+        if (!this._targets.length) {
+            throw '[Ink.UI.Toggle] Toggle target was not found! Supply a valid selector, array, or element through the `target` option.';
         }
 
         this._init();
     };
 
-    ImageQuery.prototype = {
+    Toggle.prototype = {
 
         /**
          * Init function called by the constructor
@@ -13655,147 +15104,576 @@ Ink.createModule('Ink.UI.ImageQuery', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','In
          */
         _init: function(){
 
-            /**
-             * Sort queries by width, in descendant order.
-             */
-            this._options.queries = InkArray.sortMulti(this._options.queries,'width').reverse();
+            this._accordion = ( Css.hasClassName(this._rootElement.parentNode,'accordion') || Css.hasClassName(this._targets[0].parentNode,'accordion') );
 
-            /**
-             * Declaring the event handlers, in this case, the window.resize and the (element) load.
-             * @type {Object}
-             */
-            this._handlers = {
-                resize: Ink.bindEvent(this._onResize,this),
-                load: Ink.bindEvent(this._onLoad,this)
-            };
+            Event.observe( this._rootElement, this._options.triggerEvent, Ink.bindEvent(this._onTriggerEvent,this) );
+            if( this._options.closeOnClick.toString() === 'true' ){
+                Event.observe( document, 'click', Ink.bindEvent(this._onClick,this));
+            }
+        },
 
-            if( typeof this._options.onLoad === 'function' ){
-                Event.observe(this._element, 'onload', this._handlers.load);
+        /**
+         * Event handler. It's responsible for handling the <triggerEvent> defined in the options.
+         * This will trigger the toggle.
+         * 
+         * @method _onTriggerEvent
+         * @param {Event} event
+         * @private
+         */
+        _onTriggerEvent: function( event ){
+
+            if( this._accordion ){
+                var elms, i, accordionElement;
+                if( Css.hasClassName(this._targets[0].parentNode,'accordion') ){
+                    accordionElement = this._targets[0].parentNode;
+                } else {
+                    accordionElement = this._targets[0].parentNode.parentNode;
+                }
+                elms = Selector.select('.toggle',accordionElement);
+                for( i=0; i<elms.length; i+=1 ){
+                    var
+                        dataset = Element.data( elms[i] ),
+                        targetElm = Selector.select( dataset.target,accordionElement )
+                    ;
+                    if( (targetElm.length > 0) && (targetElm[0] !== this._targets[0]) ){
+                        targetElm[0].style.display = 'none';
+                    }
+                }
+            }
+            
+            var finalClass,
+                finalDisplay;
+
+
+            for (var j = 0, len = this._targets.length; j < len; j++) {
+                finalClass = ( Css.getStyle(this._targets[j],'display') === 'none') ? 'show-all' : 'hide-all';
+                finalDisplay = ( Css.getStyle(this._targets[j],'display') === 'none') ? 'block' : 'none';
+                Css.removeClassName(this._targets[j],'show-all');
+                Css.removeClassName(this._targets[j], 'hide-all');
+                Css.addClassName(this._targets[j], finalClass);
+                this._targets[j].style.display = finalDisplay;
             }
 
-            Event.observe(window, 'resize', this._handlers.resize);
-
-            // Imediate call to apply the right images based on the current viewport
-            this._handlers.resize.call(this);
-
+            if( finalClass === 'show-all' ){
+                Css.addClassName(this._rootElement,'active');
+            } else {
+                Css.removeClassName(this._rootElement,'active');
+            }
         },
 
         /**
-         * Handles the resize event (as specified in the _init function)
-         *
-         * @method _onResize
+         * Click handler. Will handle clicks outside the toggle component.
+         * 
+         * @method _onClick
+         * @param {Event} event
          * @private
          */
-        _onResize: function(){
+        _onClick: function( event ){
+            var
+                tgtEl = Event.element(event),
+                shades
+            ;
 
-            clearTimeout(timeout);
+            var ancestorOfTargets = InkArray.some(this._targets, function (target) {
+                return Element.isAncestorOf(target, tgtEl);
+            });
 
-            var timeout = setTimeout(Ink.bind(function(){
-
-                if( !this._options.queries || (this._options.queries === {}) ){
-                    clearTimeout(timeout);
-                    return;
-                }
-
+            if( (this._rootElement === tgtEl) || Element.isAncestorOf(this._rootElement, tgtEl) || ancestorOfTargets ) {
+                return;
+            } else if( (shades = Ink.ss('.ink-shade')).length ) {
                 var
-                    query, selected,
-                    viewportWidth
+                    shadesLength = shades.length
                 ;
 
-                /**
-                 * Gets viewport width
-                 */
-                if( typeof( window.innerWidth ) === 'number' ) {
-                   viewportWidth = window.innerWidth;
-                } else if( document.documentElement && ( document.documentElement.clientWidth || document.documentElement.clientHeight ) ) {
-                   viewportWidth = document.documentElement.clientWidth;
-                } else if( document.body && ( document.body.clientWidth || document.body.clientHeight ) ) {
-                   viewportWidth = document.body.clientWidth;
-                }
-
-                /**
-                 * Queries are in a descendant order. We want to find the query with the highest width that fits
-                 * the viewport, therefore the first one.
-                 */
-                for( query=0; query < this._options.queries.length; query+=1 ){
-                    if (this._options.queries[query].width <= viewportWidth){
-                        selected = query;
-                        break;
+                for( var i = 0; i < shadesLength; i++ ){
+                    if( Element.isAncestorOf(shades[i],tgtEl) && Element.isAncestorOf(shades[i],this._rootElement) ){
+                        return;
                     }
                 }
+            }
 
-                /**
-                 * If it doesn't find any selectable query (because they don't meet the requirements)
-                 * let's select the one with the smallest width
-                 */
-                if( typeof selected === 'undefined' ){ selected = this._options.queries.length-1; }
-
-                /**
-                 * Choosing the right src. The rule is:
-                 *
-                 *   "If there is specifically defined in the query object, use that. Otherwise uses the global src."
-                 *
-                 * The above rule applies to a retina src.
-                 */
-                var src = this._options.queries[selected].src || this._options.src;
-                if ( ("devicePixelRatio" in window && window.devicePixelRatio>1) && ('retina' in this._options ) ) {
-                    src = this._options.queries[selected].retina || this._options.retina;
-                }
-
-                /**
-                 * Injects the file variable for usage in the 'templating system' below
-                 */
-                this._options.queries[selected].file = this._filename;
-
-                /**
-                 * Since we allow the src to be a callback, let's run it and get the results.
-                 * For the inside, we're passing the element (img) being processed and the object of the selected
-                 * query.
-                 */
-                if( typeof src === 'function' ){
-                    src = src.apply(this,[this._element,this._options.queries[selected]]);
-                    if( typeof src !== 'string' ){
-                        throw '[ImageQuery] :: "src" callback does not return a string';
-                    }
-                }
-
-                /**
-                 * Replace the values of the existing properties on the query object (except src and retina) in the
-                 * defined src and/or retina.
-                 */
-                var property;
-                for( property in this._options.queries[selected] ){
-                    if( ( property === 'src' ) || ( property === 'retina' ) ){ continue; }
-                    src = src.replace("{:" + property + "}",this._options.queries[selected][property]);
-                }
-                this._element.src = src;
-
-                // Removes the injected file property
-                delete this._options.queries[selected].file;
-
-                timeout = undefined;
-
-            },this),300);
+            if(!Element.findUpwardsByClass(tgtEl, 'toggle')) {
+                return;
+            }
+            
+            this._dismiss( this._rootElement );
         },
 
         /**
-         * Handles the element loading (img onload) event
-         *
-         * @method _onLoad
+         * Dismisses the toggling.
+         * 
+         * @method _dismiss
          * @private
          */
-        _onLoad: function(){
-
-            /**
-             * Since we allow a callback for this let's run it.
-             */
-            this._options.onLoad.call(this);
+        _dismiss: function(){
+            if( ( Css.getStyle(this._targets[0],'display') === 'none') ){
+                return;
+            }
+            
+            for (var i = 0, len = this._targets.length; i < len; i++) {
+                Css.removeClassName(this._targets[i], 'show-all');
+                Css.addClassName(this._targets[i], 'hide-all');
+                this._targets[i].style.display = 'none';
+            }
+            Css.removeClassName(this._rootElement,'active');
         }
-
     };
 
-    return ImageQuery;
+    return Toggle;
 
+});
+
+/**
+ * @module Ink.UI.Tooltip_1
+ * @author inkdev AT sapo.pt
+ */
+Ink.createModule('Ink.UI.Tooltip', '1', ['Ink.UI.Aux_1', 'Ink.Dom.Event_1', 'Ink.Dom.Element_1', 'Ink.Dom.Selector_1', 'Ink.Util.Array_1', 'Ink.Dom.Css_1', 'Ink.Dom.Browser_1'], function (Aux, InkEvent, InkElement, Selector, InkArray, Css) {
+    'use strict';
+
+    /**
+     * @class Ink.UI.Tooltip
+     * @constructor
+     *
+     * @param {DOMElement|String} target Target element or selector of elements, to display the tooltips on.
+     * @param {Object} [options]
+     *     @param [options.text='']             Text content for the tooltip.
+     *     @param [options.where='up']          Positioning for the tooltip. Options:
+     *          @param options.where.up/down/left/right     Place above, below, to the left of, or to the right of, the target. Show an arrow.
+     *          @param options.where.mousemove  Place the tooltip to the bottom and to the right of the mouse when it hovers the element, and follow the mouse as it moves.
+     *          @param options.where.mousefix   Place the tooltip to the bottom and to the right of the mouse when it hovers the element, keep the tooltip there motionless.
+     *     
+     *     @param [options.color='']            Color of the tooltip. Options are red, orange, blue, green and black. Default is white.
+     *     @param [options.fade=0.3]            Fade time; Duration of the fade in/out effect.
+     *     @param [options.forever=0]           Set to 1/true to prevent the tooltip from being erased when the mouse hovers away from the target
+     *     @param [options.timeout=0]           Time for the tooltip to live. Useful together with [options.forever].
+     *     @param [options.delay]               Time the tooltip waits until it is displayed. Useful to avoid getting the attention of the user unnecessarily
+     *     @param [options.template=null]       Element or selector containing HTML to be cloned into the tooltips. Can be a hidden element, because CSS `display` is set to `block`.
+     *     @param [options.templatefield=null]  Selector within the template element to choose where the text is inserted into the tooltip. Useful when a wrapper DIV is required.
+     *
+     *     @param [options.left,top=10]         (Nitty-gritty) Spacing from the target to the tooltip, when `where` is `mousemove` or `mousefix`
+     *     @param [options.spacing=8]           (Nitty-gritty) Spacing between the tooltip and the target element, when `where` is `up`, `down`, `left`, or `right`
+     * 
+     * @example
+     *     <ul class="buttons">
+     *         <li class="button" data-tip-text="Create a new document">New</li>
+     *         <li class="button" data-tip-text="Exit the program">Quit</li>
+     *         <li class="button" data-tip-text="Save the document you are working on">Save</li>
+     *     </ul>
+     *     
+     *     [...]
+     *
+     *     <script>
+     *         Ink.requireModules(['Ink.UI.Tooltip_1'], function (Tooltip) {
+     *             new Tooltip('.button', {where: 'mousefix'});
+     *         });
+     *     </script>
+     */
+    function Tooltip(element, options) {
+        this._init(element, options || {});
+    }
+
+    function EachTooltip(root, elm) {
+        this._init(root, elm);
+    }
+
+    var transitionDurationName,
+        transitionPropertyName,
+        transitionTimingFunctionName;
+    (function () {  // Feature detection
+        var test = document.createElement('DIV');
+        var names = ['transition', 'oTransition', 'msTransition', 'mozTransition',
+            'webkitTransition'];
+        for (var i = 0; i < names.length; i++) {
+            if (typeof test.style[names[i] + 'Duration'] !== 'undefined') {
+                transitionDurationName = names[i] + 'Duration';
+                transitionPropertyName = names[i] + 'Property';
+                transitionTimingFunctionName = names[i] + 'TimingFunction';
+                break;
+            }
+        }
+    }());
+
+    // Body or documentElement
+    var bodies = document.getElementsByTagName('body');
+    var body = bodies && bodies.length ? bodies[0] : document.documentElement;
+
+    Tooltip.prototype = {
+        _init: function(element, options) {
+            var elements;
+
+            this.options = Ink.extendObj({
+                    where: 'up',
+                    zIndex: 10000,
+                    left: 10,
+                    top: 10,
+                    spacing: 8,
+                    forever: 0,
+                    color: '',
+                    timeout: 0,
+                    delay: 0,
+                    template: null,
+                    templatefield: null,
+                    fade: 0.3,
+                    text: ''
+                }, options || {});
+
+            if (typeof element === 'string') {
+                elements = Selector.select(element);
+            } else if (typeof element === 'object') {
+                elements = [element];
+            } else {
+                throw 'Element expected';
+            }
+
+            this.tooltips = [];
+
+            for (var i = 0, len = elements.length; i < len; i++) {
+                this.tooltips[i] = new EachTooltip(this, elements[i]);
+            }
+        },
+        /**
+         * Destroys the tooltips created by this instance
+         *
+         * @method destroy
+         */
+        destroy: function () {
+            InkArray.each(this.tooltips, function (tooltip) {
+                tooltip._destroy();
+            });
+            this.tooltips = null;
+            this.options = null;
+        }
+    };
+
+    EachTooltip.prototype = {
+        _oppositeDirections: {
+            left: 'right',
+            right: 'left',
+            up: 'down',
+            down: 'up'
+        },
+        _init: function(root, elm) {
+            InkEvent.observe(elm, 'mouseover', Ink.bindEvent(this._onMouseOver, this));
+            InkEvent.observe(elm, 'mouseout', Ink.bindEvent(this._onMouseOut, this));
+            InkEvent.observe(elm, 'mousemove', Ink.bindEvent(this._onMouseMove, this));
+
+            this.root = root;
+            this.element = elm;
+            this._delayTimeout = null;
+            this.tooltip = null;
+        },
+        _makeTooltip: function (mousePosition) {
+            if (!this._getOpt('text')) {
+                return false;
+            }
+
+            var tooltip = this._createTooltipElement();
+
+            if (this.tooltip) {
+                this._removeTooltip();
+            }
+
+            this.tooltip = tooltip;
+
+            this._fadeInTooltipElement(tooltip);
+            this._placeTooltipElement(tooltip, mousePosition);
+
+            InkEvent.observe(tooltip, 'mouseover', Ink.bindEvent(this._onTooltipMouseOver, this));
+
+            var timeout = this._getFloatOpt('timeout');
+            if (timeout) {
+                setTimeout(Ink.bind(function () {
+                    if (this.tooltip === tooltip) {
+                        this._removeTooltip();
+                    }
+                }, this), timeout * 1000);
+            }
+        },
+        _createTooltipElement: function () {
+            var template = this._getOpt('template'),  // User template instead of our HTML
+                templatefield = this._getOpt('templatefield'),
+                
+                tooltip,  // The element we float
+                field;  // Element where we write our message. Child or same as the above
+
+            if (template) {  // The user told us of a template to use. We copy it.
+                var temp = document.createElement('DIV');
+                temp.innerHTML = Aux.elOrSelector(template, 'options.template').outerHTML;
+                tooltip = temp.firstChild;
+                
+                if (templatefield) {
+                    field = Selector.select(templatefield, tooltip);
+                    if (field) {
+                        field = field[0];
+                    } else {
+                        throw 'options.templatefield must be a valid selector within options.template';
+                    }
+                } else {
+                    field = tooltip;  // Assume same element if user did not specify a field
+                }
+            } else {  // We create the default structure
+                tooltip = document.createElement('DIV');
+                Css.addClassName(tooltip, 'ink-tooltip');
+                Css.addClassName(tooltip, this._getOpt('color'));
+
+                field = document.createElement('DIV');
+                Css.addClassName(field, 'content');
+
+                tooltip.appendChild(field);
+            }
+            
+            InkElement.setTextContent(field, this._getOpt('text'));
+            tooltip.style.display = 'block';
+            tooltip.style.position = 'absolute';
+            tooltip.style.zIndex = this._getIntOpt('zIndex');
+
+            return tooltip;
+        },
+        _fadeInTooltipElement: function (tooltip) {
+            var fadeTime = this._getFloatOpt('fade');
+            if (transitionDurationName && fadeTime) {
+                tooltip.style.opacity = '0';
+                tooltip.style[transitionDurationName] = fadeTime + 's';
+                tooltip.style[transitionPropertyName] = 'opacity';
+                tooltip.style[transitionTimingFunctionName] = 'ease-in-out';
+                setTimeout(function () {
+                    tooltip.style.opacity = '1';
+                }, 0);
+            }
+        },
+        _placeTooltipElement: function (tooltip, mousePosition) {
+            var where = this._getOpt('where');
+
+            if (where === 'mousemove' || where === 'mousefix') {
+                var mPos = mousePosition;
+                this._setPos(mPos[0], mPos[1]);
+                body.appendChild(tooltip);
+            } else if (where.match(/(up|down|left|right)/)) {
+                body.appendChild(tooltip);
+                var targetElementPos = InkElement.offset(this.element);
+                var tleft = targetElementPos[0],
+                    ttop = targetElementPos[1];
+
+                if (tleft instanceof Array) {  // Work around a bug in Ink.Dom.Element.offsetLeft which made it return the result of offset() instead. TODO remove this check when fix is merged
+                    ttop = tleft[1];
+                    tleft = tleft[0];
+                }
+
+                var centerh = (InkElement.elementWidth(this.element) / 2) - (InkElement.elementWidth(tooltip) / 2),
+                    centerv = (InkElement.elementHeight(this.element) / 2) - (InkElement.elementHeight(tooltip) / 2);
+                var spacing = this._getIntOpt('spacing');
+
+                var tooltipDims = InkElement.elementDimensions(tooltip);
+                var elementDims = InkElement.elementDimensions(this.element);
+
+                var maxX = InkElement.scrollWidth() + InkElement.viewportWidth();
+                var maxY = InkElement.scrollHeight() + InkElement.viewportHeight();
+                
+                if (where === 'left' &&  tleft - tooltipDims[0] < 0) {
+                    where = 'right';
+                } else if (where === 'right' && tleft + tooltipDims[0] > maxX) {
+                    where = 'left';
+                } else if (where === 'up' && ttop - tooltipDims[1] < 0) {
+                    where = 'down';
+                } else if (where === 'down' && ttop + tooltipDims[1] > maxY) {
+                    where = 'up';
+                }
+                
+                if (where === 'up') {
+                    ttop -= tooltipDims[1];
+                    ttop -= spacing;
+                    tleft += centerh;
+                } else if (where === 'down') {
+                    ttop += elementDims[1];
+                    ttop += spacing;
+                    tleft += centerh;
+                } else if (where === 'left') {
+                    tleft -= tooltipDims[0];
+                    tleft -= spacing;
+                    ttop += centerv;
+                } else if (where === 'right') {
+                    tleft += elementDims[0];
+                    tleft += spacing;
+                    ttop += centerv;
+                }
+                
+                var arrow = null;
+                if (where.match(/(up|down|left|right)/)) {
+                    arrow = document.createElement('SPAN');
+                    Css.addClassName(arrow, 'arrow');
+                    Css.addClassName(arrow, this._oppositeDirections[where]);
+                    tooltip.appendChild(arrow);
+                }
+
+                var scrl = this._getLocalScroll();
+
+                var tooltipLeft = tleft - scrl[0];
+                var tooltipTop = ttop - scrl[1];
+
+                var toBottom = (tooltipTop + tooltipDims[1]) - maxY;
+                var toRight = (tooltipLeft + tooltipDims[0]) - maxX;
+                var toLeft = 0 - tooltipLeft;
+                var toTop = 0 - tooltipTop;
+
+                if (toBottom > 0) {
+                    if (arrow) { arrow.style.top = (tooltipDims[1] / 2) + toBottom + 'px'; }
+                    tooltipTop -= toBottom;
+                } else if (toTop > 0) {
+                    if (arrow) { arrow.style.top = (tooltipDims[1] / 2) - toTop + 'px'; }
+                    tooltipTop += toTop;
+                } else if (toRight > 0) {
+                    if (arrow) { arrow.style.left = (tooltipDims[0] / 2) + toRight + 'px'; }
+                    tooltipLeft -= toRight;
+                } else if (toLeft > 0) {
+                    if (arrow) { arrow.style.left = (tooltipDims[0] / 2) - toLeft + 'px'; }
+                    tooltipLeft += toLeft;
+                }
+
+                tooltip.style.left = tooltipLeft + 'px';
+                tooltip.style.top = tooltipTop + 'px';
+            }
+        },
+        _removeTooltip: function() {
+            var tooltip = this.tooltip;
+            if (!tooltip) {return;}
+
+            var remove = Ink.bind(InkElement.remove, {}, tooltip);
+
+            if (this._getOpt('where') !== 'mousemove' && transitionDurationName) {
+                tooltip.style.opacity = 0;
+                // remove() will operate on correct tooltip, although this.tooltip === null then
+                setTimeout(remove, this._getFloatOpt('fade') * 1000);
+            } else {
+                remove();
+            }
+            this.tooltip = null;
+        },
+        _getOpt: function (option) {
+            var dataAttrVal = InkElement.data(this.element)[InkElement._camelCase('tip-' + option)];
+            if (dataAttrVal /* either null or "" may signify the absense of this attribute*/) {
+                return dataAttrVal;
+            }
+            var instanceOption = this.root.options[option];
+            if (typeof instanceOption !== 'undefined') {
+                return instanceOption;
+            }
+        },
+        _getIntOpt: function (option) {
+            return parseInt(this._getOpt(option), 10);
+        },
+        _getFloatOpt: function (option) {
+            return parseFloat(this._getOpt(option), 10);
+        },
+        _destroy: function () {
+            if (this.tooltip) {
+                InkElement.remove(this.tooltip);
+            }
+            this.root = null;  // Cyclic reference = memory leaks
+            this.element = null;
+            this.tooltip = null;
+        },
+        _onMouseOver: function(e) {
+            // on IE < 10 you can't access the mouse event not even a tick after it fired
+            var mousePosition = this._getMousePosition(e);
+            var delay = this._getFloatOpt('delay');
+            if (delay) {
+                this._delayTimeout = setTimeout(Ink.bind(function () {
+                    if (!this.tooltip) {
+                        this._makeTooltip(mousePosition);
+                    }
+                    this._delayTimeout = null;
+                }, this), delay * 1000);
+            } else {
+                this._makeTooltip(mousePosition);
+            }
+        },
+        _onMouseMove: function(e) {
+            if (this._getOpt('where') === 'mousemove' && this.tooltip) {
+                var mPos = this._getMousePosition(e);
+                this._setPos(mPos[0], mPos[1]);
+            }
+        },
+        _onMouseOut: function () {
+            if (!this._getIntOpt('forever')) {
+                this._removeTooltip();
+            }
+            if (this._delayTimeout) {
+                clearTimeout(this._delayTimeout);
+                this._delayTimeout = null;
+            }
+        },
+        _onTooltipMouseOver: function () {
+            if (this.tooltip) {  // If tooltip is already being removed, this has no effect
+                this._removeTooltip();
+            }
+        },
+        _setPos: function(left, top) {
+            left += this._getIntOpt('left');
+            top += this._getIntOpt('top');
+            var pageDims = this._getPageXY();
+            if (this.tooltip) {
+                var elmDims = [InkElement.elementWidth(this.tooltip), InkElement.elementHeight(this.tooltip)];
+                var scrollDim = this._getScroll();
+
+                if((elmDims[0] + left - scrollDim[0]) >= (pageDims[0] - 20)) {
+                    left = (left - elmDims[0] - this._getIntOpt('left') - 10);
+                }
+                if((elmDims[1] + top - scrollDim[1]) >= (pageDims[1] - 20)) {
+                    top = (top - elmDims[1] - this._getIntOpt('top') - 10);
+                }
+
+                this.tooltip.style.left = left + 'px';
+                this.tooltip.style.top = top + 'px';
+            }
+        },
+        _getPageXY: function() {
+            var cWidth = 0;
+            var cHeight = 0;
+            if( typeof( window.innerWidth ) === 'number' ) {
+                cWidth = window.innerWidth;
+                cHeight = window.innerHeight;
+            } else if( document.documentElement && ( document.documentElement.clientWidth || document.documentElement.clientHeight ) ) {
+                cWidth = document.documentElement.clientWidth;
+                cHeight = document.documentElement.clientHeight;
+            } else if( document.body && ( document.body.clientWidth || document.body.clientHeight ) ) {
+                cWidth = document.body.clientWidth;
+                cHeight = document.body.clientHeight;
+            }
+            return [parseInt(cWidth, 10), parseInt(cHeight, 10)];
+        },
+        _getScroll: function() {
+            var dd = document.documentElement, db = document.body;
+            if (dd && (dd.scrollLeft || dd.scrollTop)) {
+                return [dd.scrollLeft, dd.scrollTop];
+            } else if (db) {
+                return [db.scrollLeft, db.scrollTop];
+            } else {
+                return [0, 0];
+            }
+        },
+        _getLocalScroll: function () {
+            var cumScroll = [0, 0];
+            var cursor = this.element.parentNode;
+            var left, top;
+            while (cursor && cursor !== document.documentElement && cursor !== document.body) {
+                left = cursor.scrollLeft;
+                top = cursor.scrollTop;
+                if (left) {
+                    cumScroll[0] += left;
+                }
+                if (top) {
+                    cumScroll[1] += top;
+                }
+                cursor = cursor.parentNode;
+            }
+            return cumScroll;
+        },
+        _getMousePosition: function(e) {
+            return [parseInt(InkEvent.pointerX(e), 10), parseInt(InkEvent.pointerY(e), 10)];
+        }
+    };
+
+    return Tooltip;
 });
 
 /**
@@ -13812,12 +15690,6 @@ Ink.createModule('Ink.UI.TreeView', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.
      * @class Ink.UI.TreeView
      * @constructor
      * @version 1
-     * @uses Ink.UI.Aux
-     * @uses Ink.Dom.Event
-     * @uses Ink.Dom.Css
-     * @uses Ink.Dom.Element
-     * @uses Ink.Dom.Selector
-     * @uses Ink.Util.Array
      * @param {String|DOMElement} selector
      * @param {Object} [options] Options
      *     @param {String} options.node        CSS selector that identifies the elements that are considered nodes.
@@ -13979,760 +15851,1389 @@ Ink.createModule('Ink.UI.TreeView', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.
 });
 
 /**
- * @module Ink.UI.Gallery_1
+ * @module Ink.UI.SmoothScroller_1
  * @author inkdev AT sapo.pt
  * @version 1
  */
-Ink.createModule('Ink.UI.Gallery', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Dom.Css_1','Ink.Dom.Element_1','Ink.Dom.Selector_1','Ink.Util.Array_1','Ink.Util.Swipe_1'], function(Aux, Event, Css, Element, Selector, InkArray, Swipe ) {
+Ink.createModule('Ink.UI.SmoothScroller', '1', ['Ink.Dom.Event_1','Ink.Dom.Selector_1','Ink.Dom.Loaded_1'], function(Event, Selector, Loaded ) {
     'use strict';
-    
+
     /**
-     * Function to calculate the size based on a given max. size and image size.
-     * 
-     * @function maximizeBox
-     * @param  {Number} maxSz
-     * @param  {Number} imageSz
-     * @param  {Boolean} forceMaximize
-     * @return {Number}
-     * @private
+     * @class Ink.UI.SmoothScroller
+     * @version 1
+     * @static
      */
-    var maximizeBox = function(maxSz, imageSz, forceMaximize) {
-        var w = imageSz[0];
-        var h = imageSz[1];
+    var SmoothScroller = {
 
-        if (forceMaximize || (w > maxSz[0] || h > maxSz[1]) ) {
-            var arImg = w / h;
-            var arMax = maxSz[0] / maxSz[1];
-            var s = (arImg > arMax) ? maxSz[0] / w : maxSz[1] / h;
-            return [parseInt(w * s + 0.5, 10), parseInt(h * s + 0.5, 10)];
+        /**
+         * Sets the speed of the scrolling
+         *
+         * @property speed
+         * @type {Number}
+         * @readOnly
+         * @static
+         */
+        speed: 10,
+
+        /**
+         * Returns the Y position of the div
+         *
+         * @method gy
+         * @param  {DOMElement} d DOMElement to get the Y position from
+         * @return {Number}   Y position of div 'd'
+         * @public
+         * @static
+         */
+        gy: function(d) {
+            var gy;
+            gy = d.offsetTop;
+            if (d.offsetParent){
+                while ( (d = d.offsetParent) ){
+                    gy += d.offsetTop;
+                }
+            }
+            return gy;
+        },
+
+
+        /**
+         * Returns the current scroll position
+         *
+         * @method scrollTop
+         * @return {Number}  Current scroll position
+         * @public
+         * @static
+         */
+        scrollTop: function() {
+            var
+                body = document.body,
+                d = document.documentElement
+            ;
+            if (body && body.scrollTop){
+                return body.scrollTop;
+            }
+            if (d && d.scrollTop){
+                return d.scrollTop;
+            }
+            if (window.pageYOffset)
+            {
+                return window.pageYOffset;
+            }
+            return 0;
+        },
+
+        /**
+         * Attaches an event for an element
+         *
+         * @method add
+         * @param  {DOMElement} el DOMElement to make the listening of the event
+         * @param  {String} event Event name to be listened
+         * @param  {DOMElement} fn Callback function to run when the event is triggered.
+         * @public
+         * @static
+         */
+        add: function(el, event, fn) {
+            Event.observe(el,event,fn);
+            return;
+        },
+
+
+        /**
+         * Kill an event of an element
+         *
+         * @method end
+         * @param  {String} e Event to be killed/stopped
+         * @public
+         * @static
+         */
+        // kill an event of an element
+        end: function(e) {
+            if (window.event) {
+                window.event.cancelBubble = true;
+                window.event.returnValue = false;
+                return;
+            }
+            Event.stop(e);
+        },
+
+
+        /**
+         * Moves the scrollbar to the target element
+         *
+         * @method scroll
+         * @param  {Number} d Y coordinate value to stop
+         * @public
+         * @static
+         */
+        scroll: function(d) {
+            var a = Ink.UI.SmoothScroller.scrollTop();
+            if (d > a) {
+                a += Math.ceil((d - a) / Ink.UI.SmoothScroller.speed);
+            } else {
+                a = a + (d - a) / Ink.UI.SmoothScroller.speed;
+            }
+
+            window.scrollTo(0, a);
+            if ((a) === d || Ink.UI.SmoothScroller.offsetTop === a)
+            {
+                clearInterval(Ink.UI.SmoothScroller.interval);
+            }
+            Ink.UI.SmoothScroller.offsetTop = a;
+        },
+
+
+        /**
+         * Initializer that adds the rendered to run when the page is ready
+         *
+         * @method init
+         * @public
+         * @static
+         */
+        // initializer that adds the renderer to the onload function of the window
+        init: function() {
+            Loaded.run(Ink.UI.SmoothScroller.render);
+        },
+
+        /**
+         * This method extracts all the anchors and validates thenm as # and attaches the events
+         *
+         * @method render
+         * @public
+         * @static
+         */
+        render: function() {
+            var a = Selector.select('a.scrollableLink');
+
+            Ink.UI.SmoothScroller.end(this);
+
+            for (var i = 0; i < a.length; i++) {
+                var _elm = a[i];
+                if (_elm.href && _elm.href.indexOf('#') !== -1 && ((_elm.pathname === location.pathname) || ('/' + _elm.pathname === location.pathname))) {
+                    Ink.UI.SmoothScroller.add(_elm, 'click', Ink.UI.SmoothScroller.end);
+                    Event.observe(_elm,'click', Ink.bindEvent(Ink.UI.SmoothScroller.clickScroll, this, _elm));
+                }
+            }
+        },
+
+
+        /**
+         * Click handler
+         *
+         * @method clickScroll
+         * @public
+         * @static
+         */
+        clickScroll: function(event, _elm) {
+            /*
+            Ink.UI.SmoothScroller.end(this);
+            var hash = this.hash.substr(1);
+            var elm = Selector.select('a[name="' + hash + '"],#' + hash);
+
+            if (typeof(elm[0]) !== 'undefined') {
+
+                if (this.parentNode.className.indexOf('active') === -1) {
+                    var ul = this.parentNode.parentNode,
+                        li = ul.firstChild;
+                    do {
+                        if ((typeof(li.tagName) !== 'undefined') && (li.tagName.toUpperCase() === 'LI') && (li.className.indexOf('active') !== -1)) {
+                            li.className = li.className.replace('active', '');
+                            break;
+                        }
+                    } while ((li = li.nextSibling));
+                    this.parentNode.className += " active";
+                }
+                clearInterval(Ink.UI.SmoothScroller.interval);
+                Ink.UI.SmoothScroller.interval = setInterval('Ink.UI.SmoothScroller.scroll(' + Ink.UI.SmoothScroller.gy(elm[0]) + ')', 10);
+
+            }
+            */
+            Ink.UI.SmoothScroller.end(_elm);
+            if(_elm !== null && _elm.getAttribute('href') !== null) {
+                var hashIndex = _elm.href.indexOf('#');
+                if(hashIndex === -1) {
+                    return;
+                }
+                var hash = _elm.href.substr((hashIndex + 1));
+                var elm = Selector.select('a[name="' + hash + '"],#' + hash);
+
+                if (typeof(elm[0]) !== 'undefined') {
+
+                    if (_elm.parentNode.className.indexOf('active') === -1) {
+                        var ul = _elm.parentNode.parentNode,
+                            li = ul.firstChild;
+                        do {
+                            if ((typeof(li.tagName) !== 'undefined') && (li.tagName.toUpperCase() === 'LI') && (li.className.indexOf('active') !== -1)) {
+                                li.className = li.className.replace('active', '');
+                                break;
+                            }
+                        } while ((li = li.nextSibling));
+                        _elm.parentNode.className += " active";
+                    }
+                    clearInterval(Ink.UI.SmoothScroller.interval);
+                    Ink.UI.SmoothScroller.interval = setInterval('Ink.UI.SmoothScroller.scroll(' + Ink.UI.SmoothScroller.gy(elm[0]) + ')', 10);
+
+                }
+            }
+
         }
-
-        return imageSz;
-    };
-    
-    /**
-     * @function maximizeBox
-     * @param  {Object} o
-     * @param  {Function} cb Callback function to run on each image loaded.
-     * @private
-     */
-    var getDimsAsync = function(o, cb) {
-        cb = Ink.bind(cb,o);
-
-        var dims = [o.img.offsetWidth, o.img.offsetHeight];
-        if (dims[0] && dims[1]) {
-            cb(dims);
-        }
-        o.img.onload = Ink.bindEvent(function() {
-            cb([this.img.offsetWidth, this.img.offsetHeight]);
-        },o);
     };
 
+    return SmoothScroller;
+
+});
+
+/**
+ * @module Ink.UI.ImageQuery_1
+ * @author inkdev AT sapo.pt
+ * @version 1
+ */
+Ink.createModule('Ink.UI.ImageQuery', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Dom.Css_1','Ink.Dom.Element_1','Ink.Dom.Selector_1','Ink.Util.Array_1'], function(Aux, Event, Css, Element, Selector, InkArray ) {
+    'use strict';
+
     /**
-     * @class Ink.UI.Gallery
+     * @class Ink.UI.ImageQuery
      * @constructor
      * @version 1
-     * @uses Ink.UI.Aux
-     * @uses Ink.Dom.Event
-     * @uses Ink.Dom.Css
-     * @uses Ink.Dom.Element
-     * @uses Ink.Dom.Selector
-     * @uses Ink.Util.Array
-     * @uses Ink.Util.Swipe
+     *
      * @param {String|DOMElement} selector
-     * @param {Object} [options] Options for the gallery
-     *      @param {Number}   [options.fullImageMaxWidth]       Default value is 400.
-     *      @param {Number}   [options.thumbnailMaxWidth]       Max. width of the thumbnail. Default value is 106.
-     *      @param {Number}   [options.layout]                  This determines what layout the gallery will have. Numeric value between 0 and 3.
-     *      @param {Boolean}  [options.circular]                Determines if the gallery behaves in a circular never ending cycle.
-     *      @param {Boolean}  [options.fixImageSizes]           Specifies if the images should be forced to have the gallery size.
+     * @param {Object} [options] Options
+     *      @param {String|Function}    [options.src]             String or Callback function (that returns a string) with the path to be used to get the images.
+     *      @param {String|Function}    [options.retina]          String or Callback function (that returns a string) with the path to be used to get RETINA specific images.
+     *      @param {Array}              [options.queries]         Array of queries
+     *          @param {String}              [options.queries.label]         Label of the query. Ex. 'small'
+     *          @param {Number}              [options.queries.width]         Min-width to use this query
+     *      @param {Function}           [options.onLoad]          Date format string
+     *
      * @example
-     *     <ul class="ink-gallery-source">
-     *         <li class="hentry hmedia">
-     *             <a rel="enclosure" href="http://imgs.sapo.pt/ink/assets/imgs_gal/1.1.png">
-     *                 <img alt="s1" src="http://imgs.sapo.pt/ink/assets/imgs_gal/thumb1.png">
-     *             </a>
-     *             <a class="bookmark" href="http://imgs.sapo.pt/ink/assets/imgs_gal/1.1.png">
-     *                 <span class="entry-title">s1</span>
-     *             </a>
-     *             <span class="entry-content"><p>hello world 1</p></span>
-     *         </li>
-     *         <li class="hentry hmedia">
-     *             <a rel="enclosure" href="http://imgs.sapo.pt/ink/assets/imgs_gal/1.2.png">
-     *                 <img alt="s1" src="http://imgs.sapo.pt/ink/assets/imgs_gal/thumb2.png">
-     *             </a>
-     *             <a class="bookmark" href="http://imgs.sapo.pt/ink/assets/imgs_gal/1.2.png">
-     *                 <span class="entry-title">s2</span>
-     *             </a>
-     *             <span class="entry-content"><p>hello world 2</p></span>
-     *         </li>
-     *     </ul>
-     *     <script>
-     *         Ink.requireModules(['Ink.Dom.Selector_1','Ink.UI.Gallery_1'],function( Selector, Gallery ){
-     *             var galleryElement = Ink.s('ul.ink-gallery-source');
-     *             var galleryObj = new Gallery( galleryElement );
-     *         });
-     *     </script>
+     *      <div class="imageQueryExample large-100 medium-100 small-100 content-center clearfix vspace">
+     *          <img src="/assets/imgs/imagequery/small/image.jpg" />
+     *      </div>
+     *      <script type="text/javascript">
+     *      Ink.requireModules( ['Ink.Dom.Selector_1', 'Ink.UI.ImageQuery_1'], function( Selector, ImageQuery ){
+     *          var imageQueryElement = Ink.s('.imageQueryExample img');
+     *          var imageQueryObj = new ImageQuery('.imageQueryExample img',{
+     *              src: '/assets/imgs/imagequery/{:label}/{:file}',
+     *              queries: [
+     *                  {
+     *                      label: 'small',
+     *                      width: 480
+     *                  },
+     *                  {
+     *                      label: 'medium',
+     *                      width: 640
+     *                  },
+     *                  {
+     *                      label: 'large',
+     *                      width: 1024
+     *                  }   
+     *              ]
+     *          });
+     *      } );
+     *      </script>
      */
-    var Gallery = function(selector, options) {
+    var ImageQuery = function(selector, options){
 
-        this._element = Aux.elOrSelector(selector, '1st argument');
+        /**
+         * Selector's type checking
+         */
+        if( !Aux.isDOMElement(selector) && (typeof selector !== 'string') ){
+            throw '[ImageQuery] :: Invalid selector';
+        } else if( typeof selector === 'string' ){
+            this._element = Selector.select( selector );
 
+            if( this._element.length < 1 ){
+                throw '[ImageQuery] :: Selector has returned no elements';
+            } else if( this._element.length > 1 ){
+                var i;
+                for( i=1;i<this._element.length;i+=1 ){
+                    new Ink.UI.ImageQuery(this._element[i],options);
+                }
+            }
+            this._element = this._element[0];
+
+        } else {
+            this._element = selector;
+        }
+
+
+        /**
+         * Default options and they're overrided by data-attributes if any.
+         * The parameters are:
+         * @param {array} queries Array of objects that determine the label/name and its min-width to be applied.
+         * @param {boolean} allowFirstLoad Boolean flag to allow the loading of the first element.
+         */
         this._options = Ink.extendObj({
-            fullImageMaxWidth:   600,
-            fullImageMaxHeight:  400,
-            thumbnailMaxWidth:   106,
-            layout:              0,
-            circular:            false,
-            fixImageSizes:       false
-        }, Element.data(this._element));
+            queries:[],
+            onLoad: null
+        },Element.data(this._element));
 
         this._options = Ink.extendObj(this._options, options || {});
 
-        this._handlers = {
-            navClick:        Ink.bindEvent(this._onNavClick,this),
-            paginationClick: Ink.bindEvent(this._onPaginationClick,this),
-            thumbsClick:     Ink.bindEvent(this._onThumbsClick,this),
-            focusBlur:       Ink.bindEvent(this._onFocusBlur,this),
-            keyDown:         Ink.bindEvent(this._onKeyDown,this)
-        };
-
-        this._isFocused = false;
-        this._model = [];
-
-        if (this._options.model instanceof Array) {
-            this._model = this._options.model;
-            this._createdFrom = 'JSON';
-        }
-        else if (this._element.nodeName.toLowerCase() === 'ul') {
-            this._createdFrom = 'DOM';
-        }
-        else {
-            throw new TypeError('You must pass a selector expression/DOM element as 1st option or provide a model on 2nd argument!');
-        }
-
-        this._index      = 0;
-        this._thumbIndex = 0;
-
-        if( !isNaN(this._options.layout) ){
-
-            this._options.layout = parseInt(this._options.layout,10);
-            if (this._options.layout === 0) {
-                this._showThumbs            = false;
-                this._showDescription       = false;
-                this._paginationHasPrevNext = false;
-            }
-            else if (this._options.layout === 1 || this._options.layout === 2 || this._options.layout === 3) {
-                this._showThumbs            = true;
-                this._showDescription       = true;
-                this._paginationHasPrevNext = true;
-            }
-            else {
-                throw new TypeError('supported layouts are 0-3!');
-            }
-        }
-
-        if (this._element.getAttribute('data-fix-image-sizes') !== null) {
-            this._options.fixImageSizes = true;
+        /**
+         * Determining the original basename (with the querystring) of the file.
+         */
+        var pos;
+        if( (pos=this._element.src.lastIndexOf('?')) !== -1 ){
+            var search = this._element.src.substr(pos);
+            this._filename = this._element.src.replace(search,'').split('/').pop()+search;
+        } else {
+            this._filename = this._element.src.split('/').pop();
         }
 
         this._init();
     };
 
-    Gallery.prototype = {
+    ImageQuery.prototype = {
 
         /**
-         * Init function called from the constructor.
-         *
-         * @method  _init
+         * Init function called by the constructor
+         * 
+         * @method _init
          * @private
          */
-        _init: function() {
-            // extract model
-            if (this._createdFrom === 'DOM') {
-                this._extractModelFromDOM();
+        _init: function(){
+
+            // Sort queries by width, in descendant order.
+            this._options.queries = InkArray.sortMulti(this._options.queries,'width').reverse();
+
+            // Declaring the event handlers, in this case, the window.resize and the (element) load.
+            this._handlers = {
+                resize: Ink.bindEvent(this._onResize,this),
+                load: Ink.bindEvent(this._onLoad,this)
+            };
+
+            if( typeof this._options.onLoad === 'function' ){
+                Event.observe(this._element, 'onload', this._handlers.load);
             }
 
-            // generate and apply DOM
-            var el = this._generateMarkup();
-            var parentEl = this._element.parentNode;
+            Event.observe(window, 'resize', this._handlers.resize);
 
-            if (!this._notFirstInit) {
-                Aux.storeIdAndClasses(this._element, this);
-                this._notFirstInit = true;
-            }
+            // Imediate call to apply the right images based on the current viewport
+            this._handlers.resize.call(this);
 
-            parentEl.insertBefore(el, this._element);
-            parentEl.removeChild(this._element);
-            this._element = el;
-
-            Aux.restoreIdAndClasses(this._element, this);
-
-            // subscribe events
-            Event.observe(this._paginationEl, 'click',     this._handlers.paginationClick);
-            Event.observe(this._navEl,        'click',     this._handlers.navClick);
-
-            if (this._showThumbs) {
-                Event.observe(this._thumbsUlEl,   'click',     this._handlers.thumbsClick);
-            }
-
-            Event.observe(this._element,      'mouseover', this._handlers.focusBlur);
-            Event.observe(this._element,      'mouseout',  this._handlers.focusBlur);
-            Event.observe(document,           'keydown',   this._handlers.keyDown);
-
-            Aux.registerInstance(this, this._element, 'gallery');
         },
 
         /**
-         * Updates the model from the UL representation
+         * Handles the resize event (as specified in the _init function)
          *
-         * @method _extractModelFromDOM
+         * @method _onResize
          * @private
          */
-        _extractModelFromDOM: function() {
-            /*global console:false */
-            var m = [];
-            var dims;
+        _onResize: function(){
 
-            var liEls = Selector.select('> li', this._element);
-            InkArray.each(liEls,function(liEl) {
-                try {
-                    var d = {
-                        image_full:  '',
-                        image_thumb: '',
-                        title_text:  '',
-                        title_link:  '',
-                        description: '',
-                        content_overlay: document.createDocumentFragment()
-                    };
+            clearTimeout(timeout);
 
-                    var enclosureAEl       = Selector.select('> a[rel=enclosure]',          liEl)[0];
-                    var thumbImgEl         = Selector.select('> img',                       enclosureAEl)[0];
-                    var bookmarkAEl        = Selector.select('> a[class=bookmark]',         liEl)[0];
-                    var titleSpanEl        = Selector.select('span[class=entry-title]',     liEl)[0];
-                    var entryContentSpanEl = Selector.select('> span[class=entry-content]', liEl)[0];
-                    var contentOverlayEl   = Selector.select('> .content-overlay',          liEl)[0];
+            var timeout = setTimeout(Ink.bind(function(){
 
-                    dims = enclosureAEl.getAttribute('data-dims');
-                    if (dims !== null) {
-                        dims = dims.split(',');
-                        dims[0] = parseInt(dims[0], 10);
-                        dims[1] = parseInt(dims[1], 10);
-                    }
-                    if (dims && !isNaN(dims[0]) && !isNaN(dims[1])) { d.dims = dims; }
-
-                    d.image_full  = enclosureAEl.getAttribute('href');
-                    d.image_thumb = thumbImgEl.getAttribute('src');
-                    if (bookmarkAEl) {
-                        d.title_link  = bookmarkAEl.getAttribute('href');
-                    }
-                    d.title_text  = titleSpanEl.innerHTML;
-                    if (entryContentSpanEl) {
-                        d.description = entryContentSpanEl.innerHTML;
-                    }
-
-                    if(contentOverlayEl){
-                        d.content_overlay.appendChild(contentOverlayEl);
-                    }
-
-                    m.push(d);
-                } catch(ex) {
-                    console.error('problematic element:');
-                    console.error(liEl);
-                    console.error(ex);
-                    throw new Error('Problem parsing gallery data from DOM!');
+                if( !this._options.queries || (this._options.queries === {}) ){
+                    clearTimeout(timeout);
+                    return;
                 }
-            });
 
-            this._model = m;
-        },
+                var
+                    query, selected,
+                    viewportWidth
+                ;
 
-        /**
-         * Returns the top element for the gallery DOM representation
-         *
-         * @method _generateMarkup
-         * @private
-         * @return {DOMElement} Returns the Gallery element totally rendered.
-         */
-        _generateMarkup: function() {
-            /*jshint maxstatements:80 */
-            var el = document.createElement('div');
-            el.className = 'ink-gallery';
+                /**
+                 * Gets viewport width
+                 */
+                if( typeof( window.innerWidth ) === 'number' ) {
+                   viewportWidth = window.innerWidth;
+                } else if( document.documentElement && ( document.documentElement.clientWidth || document.documentElement.clientHeight ) ) {
+                   viewportWidth = document.documentElement.clientWidth;
+                } else if( document.body && ( document.body.clientWidth || document.body.clientHeight ) ) {
+                   viewportWidth = document.body.clientWidth;
+                }
 
-            var stageEl = document.createElement('div');
-            stageEl.className = 'stage';
-
-            // nav
-            var navEl = document.createElement('nav');
-            navEl.innerHTML = [
-                '<ul class="unstyled">',
-                    '<li><a href="#" class="next"></a></li>',
-                    '<li><a href="#" class="previous"></a></li>',
-                '</ul>'
-            ].join('');
-            this._navEl = navEl;
-
-            // slider
-            var sliderEl = document.createElement('div');
-            sliderEl.className = 'slider';
-
-            var ulEl = document.createElement('ul');
-            this._sliderUlEl = ulEl;
-
-            var that = this;
-
-            var W = this._options.fullImageMaxWidth;
-            var H = this._options.fullImageMaxHeight;
-
-            InkArray.each(this._model,function(d, i) {
-                var liEl = document.createElement('li');
-                var imgEl = document.createElement('img');
-                imgEl.setAttribute('name', 'image ' + (i + 1));
-                imgEl.setAttribute('src',  d.image_full);
-                imgEl.setAttribute('alt',  d.title_text);
-                //imgEl.style.maxWidth = that._options.fullImageMaxWidth + 'px';
-                //imgEl.setAttribute('width', that._options.fullImageMaxWidth);       // TODO?
-                liEl.appendChild(imgEl);
-
-                if(d.content_overlay){
-                    if(d.content_overlay.nodeType === 1 || d.content_overlay.nodeType === 11){
-                        d.content_overlay = liEl.appendChild(d.content_overlay);
-                    } else if(typeof d.content_overlay === 'string'){
-                        var contentOverlayEl = document.createElement('div');
-
-                        contentOverlayEl.className = 'content-overlay';
-                        contentOverlayEl.innerHTML = d.content_overlay;
-
-                        d.content_overlay = liEl.appendChild(contentOverlayEl);
+                /**
+                 * Queries are in a descendant order. We want to find the query with the highest width that fits
+                 * the viewport, therefore the first one.
+                 */
+                for( query=0; query < this._options.queries.length; query+=1 ){
+                    if (this._options.queries[query].width <= viewportWidth){
+                        selected = query;
+                        break;
                     }
                 }
 
-                ulEl.appendChild(liEl);
+                /**
+                 * If it doesn't find any selectable query (because they don't meet the requirements)
+                 * let's select the one with the smallest width
+                 */
+                if( typeof selected === 'undefined' ){ selected = this._options.queries.length-1; }
 
-                if (that._options.fixImageSizes) {
-                    var dimsCb = function(dims) {
-                        //console.log(this, dims);
-                        var imgEl = this.img;
-                        var data  = this.data;
-
-                        if (!data.dims) { data.dims = dims; }
-
-                        var dims2 = maximizeBox([W, H], dims);
-
-                        var w = dims2[0];
-                        var h = dims2[1];
-                        var dw = Math.floor( (W - w)/2 );
-                        var dh = Math.floor( (H - h)/2 );
-
-                        if (w !== W || h !== H) {
-                            imgEl.setAttribute('width',  w);
-                            imgEl.setAttribute('height', h);
-
-                            var s = imgEl.style;
-                            if (dw > 0) { s.paddingLeft   = dw + 'px'; }
-                            if (dh > 0) { s.paddingBottom = dh + 'px'; }
-                        }
-                    };
-
-                    if (d.dims) { dimsCb.call( {img:imgEl, data:d}, d.dims); }
-                    else {        getDimsAsync({img:imgEl, data:d}, dimsCb); }
+                /**
+                 * Choosing the right src. The rule is:
+                 *
+                 *   "If there is specifically defined in the query object, use that. Otherwise uses the global src."
+                 *
+                 * The above rule applies to a retina src.
+                 */
+                var src = this._options.queries[selected].src || this._options.src;
+                if ( ("devicePixelRatio" in window && window.devicePixelRatio>1) && ('retina' in this._options ) ) {
+                    src = this._options.queries[selected].retina || this._options.retina;
                 }
-            });
 
-            sliderEl.appendChild(ulEl);
-            this._sliderEl = sliderEl;
+                /**
+                 * Injects the file variable for usage in the 'templating system' below
+                 */
+                this._options.queries[selected].file = this._filename;
 
-            // description
-            var articleTextDivEl;
-            if (this._showDescription) {
-                var d = this._model[this._index];
-                articleTextDivEl = document.createElement('div');
-                articleTextDivEl.className = ['article_text', 'example' + (this._options.layout === 3 ? 2 : this._options.layout)].join(' ');
-                if (d.title_link) {
-                    articleTextDivEl.innerHTML = ['<h1><a href="', d.title_link, '">', d.title_text, '</a></h1>', d.description].join('');
+                /**
+                 * Since we allow the src to be a callback, let's run it and get the results.
+                 * For the inside, we're passing the element (img) being processed and the object of the selected
+                 * query.
+                 */
+                if( typeof src === 'function' ){
+                    src = src.apply(this,[this._element,this._options.queries[selected]]);
+                    if( typeof src !== 'string' ){
+                        throw '[ImageQuery] :: "src" callback does not return a string';
+                    }
                 }
-                else {
-                    articleTextDivEl.innerHTML = ['<h1>', d.title_text, '</h1>', d.description].join('');
+
+                /**
+                 * Replace the values of the existing properties on the query object (except src and retina) in the
+                 * defined src and/or retina.
+                 */
+                var property;
+                for( property in this._options.queries[selected] ){
+                    if (this._options.queries[selected].hasOwnProperty(property)) {
+                        if( ( property === 'src' ) || ( property === 'retina' ) ){ continue; }
+                        src = src.replace("{:" + property + "}",this._options.queries[selected][property]);
+                    }
                 }
-                this._articleTextDivEl = articleTextDivEl;
-            }
+                this._element.src = src;
 
-            // thumbs
-            var thumbsDivEl;
-            if (this._showThumbs) {
-                thumbsDivEl = document.createElement('div');
-                thumbsDivEl.className = 'thumbs';
-                ulEl = document.createElement('ul');
-                ulEl.className = 'unstyled';
+                // Removes the injected file property
+                delete this._options.queries[selected].file;
 
-                InkArray.each(this._model,function(d, i) {
-                    var liEl = document.createElement('li');
-                    var aEl = document.createElement('a');
-                    aEl.setAttribute('href', '#');
-                    var imgEl = document.createElement('img');
-                    imgEl.setAttribute('name', 'thumb ' + (i + 1));
-                    imgEl.setAttribute('src', d.image_thumb);
-                    imgEl.setAttribute('alt', (i + 1));
-                    var spanEl = document.createElement('span');
-                    spanEl.innerHTML = d.title_text;
-                    aEl.appendChild(imgEl);
-                    aEl.appendChild(spanEl);
-                    liEl.appendChild(aEl);
-                    ulEl.appendChild(liEl);
-                });
-                thumbsDivEl.appendChild(ulEl);
+                timeout = undefined;
 
-                this._thumbsDivEl = thumbsDivEl;
-                this._thumbsUlEl = ulEl;
-            }
-
-
-            // pagination
-            var paginationEl = document.createElement('div');
-            paginationEl.className = 'pagination';
-
-            var aEl;
-            if (this._paginationHasPrevNext) {
-                aEl = document.createElement('a');
-                aEl.setAttribute('href', '#');
-                aEl.className = 'previous';
-                paginationEl.appendChild(aEl);
-            }
-
-            InkArray.each(this._model,function(d, i) {
-                var aEl = document.createElement('a');
-                aEl.setAttribute('href', '#');
-                aEl.setAttribute('data-index', i);
-                if (i === that._index) { aEl.className = 'active'; }
-                paginationEl.appendChild(aEl);
-            });
-
-            if (this._paginationHasPrevNext) {
-                aEl = document.createElement('a');
-                aEl.setAttribute('href', '#');
-                aEl.className = 'next';
-                paginationEl.appendChild(aEl);
-            }
-
-            this._paginationEl = paginationEl;
-
-            // last appends...
-            if (this._options.layout === 0) {
-                stageEl.appendChild(navEl);
-                stageEl.appendChild(sliderEl);
-                stageEl.appendChild(paginationEl);
-                el.appendChild(stageEl);
-            }
-            else if (this._options.layout === 1 || this._options.layout === 2 || this._options.layout === 3) {
-                stageEl.appendChild(navEl);
-                stageEl.appendChild(sliderEl);
-                stageEl.appendChild(articleTextDivEl);
-                el.appendChild(stageEl);
-
-                if (this._options.layout === 3) {
-                    //this._thumbsUlEl.appendChild(paginationEl);
-                    this._thumbsUlEl.className = 'thumbs unstyled';
-                    Css.addClassName(el, 'rightNav');
-                    el.appendChild(this._thumbsUlEl);
-                }
-                else {
-                    thumbsDivEl.appendChild(paginationEl);
-                    el.appendChild(thumbsDivEl);
-                }
-            }
-
-            this._swipeDir = 'x';
-            this._swipeThumbsDir = this._options.layout === 0 ? '' : (this._options.layout === 3 ? 'y' : 'x');
-
-            if (Swipe._supported) {
-                new Swipe(el, {
-                    callback:    Ink.bind(function(sw, o) {
-                        var th =              this._isMeOrParent(o.target, this._thumbsUlEl);
-                        var sl = th ? false : this._isMeOrParent(o.target, el);//this._sliderUlEl);
-                        if ( (!th && !sl) || (th && !this._swipeThumbsDir) ) { return; }
-                        if ( (sl && o.axis !== this._swipeDir) || (th && o.axis !== this._swipeThumbsDir) ) { return; }
-                        if (o.dr[0] < 0) { if (th) { this.thumbNext();     } else { this.next();     } }
-                        else {             if (th) { this.thumbPrevious(); } else { this.previous(); } }
-                    },this),
-                    maxDuration: 0.4,
-                    minDist:     50
-                });
-            }
-
-            return el;
+            },this),300);
         },
 
         /**
-         * Verifies if a given element is equals to its parent
+         * Handles the element loading (img onload) event
          *
-         * @method _isMeOrParent
-         * @param  {DOMElement}  el       Element to be compared with the parent element
-         * @param  {DOMElement}  parentEl Parent element to be compared with the element
-         * @return {Boolean|undefined}          In case the 'el' variable is not defined, it returns undefined. Otherwise, it will return true or false depending on the comparison.
+         * @method _onLoad
          * @private
          */
-        _isMeOrParent: function(el, parentEl) {
-            if (!el) {return;}
-            do {
-                if (el === parentEl) { return true; }
-                el = el.parentNode;
-            } while (el);
-            return false;
-        },
+        _onLoad: function(){
 
-        /**
-         * Navigation click handler
-         *
-         * @method _onNavClick
-         * @param {Event} ev
-         * @private
-         */
-        _onNavClick: function(ev) {
-            var tgtEl = Event.element(ev);
-            var delta;
-            if      (Css.hasClassName(tgtEl, 'previous')) { delta = -1; }
-            else if (Css.hasClassName(tgtEl, 'next')) {     delta =  1; }
-            else { return; }
-
-            Event.stop(ev);
-            this.goTo(delta, true);
-        },
-
-        /**
-         * Pagination click handler
-         *
-         * @method _onPaginationClick
-         * @param {Event} ev
-         * @private
-         */
-        _onPaginationClick: function(ev) {
-            var tgtEl = Event.element(ev);
-            var i = tgtEl.getAttribute('data-index');
-            var isRelative = false;
-            if      (Css.hasClassName(tgtEl, 'previous')) { i = -1; isRelative = true; }
-            else if (Css.hasClassName(tgtEl, 'next')) {     i =  1; isRelative = true; }
-            else if (i === null) { return; }
-            else { i = parseInt(i, 10); }
-            Event.stop(ev);
-
-            if (isRelative) { this.thumbGoTo(i, true); }
-            else {            this.goTo(i);            }
-        },
-
-        /**
-         * Thumbs click handler
-         *
-         * @method _onThumbsClick
-         * @param {Event} ev
-         * @private
-         */
-        _onThumbsClick: function(ev) {
-            var tgtEl = Event.element(ev);
-            if      (tgtEl.nodeName.toLowerCase() === 'img') {}
-            else if (tgtEl.nodeName.toLowerCase() === 'span') {
-                tgtEl = Selector.select('> img', tgtEl.parentNode)[0];
-            }
-            else { return; }
-
-            Event.stop(ev);
-            var i = parseInt(tgtEl.getAttribute('alt'), 10) - 1;
-            this.goTo(i);
-        },
-
-        /**
-         * Focus handler
-         *
-         * @method _onFocusBlur
-         * @param  {Event} ev
-         * @private
-         */
-        _onFocusBlur: function(ev) {
-            this._isFocused = (ev.type === 'mouseover');
-        },
-
-        /**
-         * Key handler
-         *
-         * @method _onKeyDown
-         * @param  {Event} ev
-         * @private
-         */
-        _onKeyDown: function(ev) {
-            if (!this._isFocused) { return; }
-            var kc = ev.keyCode;
-            if      (kc === 37) { this.previous(); }
-            else if (kc === 39) { this.next();     }
-            else { return; }
-            Event.stop(ev);
-        },
-
-        /**
-         * Validates the number of the item against the gallery items.
-         *
-         * @method _validateValue
-         * @param  {Number}  i  The number of the item being validated
-         * @param  {Boolean} [isRelative]
-         * @param  {Boolean} [isThumb]
-         * @return {Number|Boolean}
-         * @private
-         */
-        _validateValue: function(i, isRelative, isThumb) {
-            // check arguments
-            if (!Aux.isInteger(i)) {
-                throw new TypeError('1st parameter must be an integer number!');
-            }
-            if ( isRelative !== undefined &&
-                 isRelative !== false     &&
-                 isRelative !== true ) {
-                throw new TypeError('2nd parameter must either be boolean or ommitted!');
-            }
-
-            var val = isThumb ? this._thumbIndex : this._index;
-
-            // compute new index
-            if (isRelative) { i += val; }
-
-            if (this._options.circular) {
-                if      (i < 0) {                   i = this._model.length - 1; }
-                else if (i >= this._model.length) { i = 0;                      }
-            }
-            else {
-                if (i < 0 || i >= this._model.length || i === val) { return false; }
-            }
-
-            return i;
-        },
-
-
-
-        /**************
-         * PUBLIC API *
-         **************/
-
-        /**
-         * Returns the index of the current image
-         *
-         * @method getIndex
-         * @return {Number} Index of the current image
-         * @public
-         */
-        getIndex: function() {
-            return this._index;
-        },
-
-        /**
-         * Returns the number of images in the gallery
-         *
-         * @method getLength
-         * @return {Number} Number of images in the gallery
-         * @public
-         */
-        getLength: function() {
-            return this._model.length;
-        },
-
-        /**
-         * Moves gallery to the nth - 1 image
-         *
-         * @method goTo
-         * @param  {Number} i Absolute or relative index
-         * @param  {Boolean} [isRelative] pass true for relative movement, otherwise absolute
-         * @public
-         */
-        goTo: function(i, isRelative) {
-            i = this._validateValue(i, isRelative, false);
-            if (i === false) { return; }
-            this._index = i;
-
-            // update DOM representation
-            var paginationAEls = Selector.select('> a', this._paginationEl);
-            var that = this;
-            InkArray.each(paginationAEls,function(aEl, i) {
-                Css.setClassName(aEl, 'active', (i - (that._paginationHasPrevNext ? 1 : 0)) === that._index);
-            });
-
-            this._sliderUlEl.style.marginLeft = ['-', this._options.fullImageMaxWidth * this._index, 'px'].join('');
-
-            if (this._showDescription) {
-                var d = this._model[this._index];
-                if (d.title_link) {
-                    this._articleTextDivEl.innerHTML = ['<h1><a href="', d.title_link, '">', d.title_text, '</a></h1>', d.description].join('');
-                }
-                else {
-                    this._articleTextDivEl.innerHTML = ['<h1>', d.title_text, '</h1>', d.description].join('');
-                }
-            }
-        },
-
-        /**
-         * Moves gallery to the nth - 1 thumb
-         *
-         * @method thumbGoTo
-         * @param  {Number} i Absolute or relative index
-         * @param  {Boolean} [isRelative] pass true for relative movement, otherwise absolute
-         * @public
-         */
-        thumbGoTo: function(i, isRelative) {
-            i = this._validateValue(i, isRelative, true);
-            if (i === false) { return; }
-            this._thumbIndex = i;
-
-            // update DOM representation
-            var prop = 'margin' + (this._swipeThumbsDir === 'x' ? 'Left' : 'Top');
-            this._thumbsUlEl.style[prop] = ['-', this._options.thumbnailMaxWidth * this._thumbIndex, 'px'].join('');
-        },
-
-        /**
-         * Move to the previous image
-         *
-         * @method previous
-         * @public
-         */
-        previous: function() {
-            this.goTo(-1, true);
-        },
-
-        /**
-         * Move to the next image
-         *
-         * @method next
-         * @public
-         */
-        next: function() {
-            this.goTo(1, true);
-        },
-
-        /**
-         * Move to the previous thumb
-         *
-         * @method thumbPrevious
-         * @public
-         */
-        thumbPrevious: function() {
-            this.thumbGoTo(-1, true);
-        },
-
-        /**
-         * Move to the next thumb
-         *
-         * @method thumbNext
-         * @public
-         */
-        thumbNext: function() {
-            this.thumbGoTo(1, true);
-        },
-
-        /**
-         * Unregisters the component and removes its markup from the DOM
-         *
-         * @method destroy
-         * @public
-         */
-        destroy: Aux.destroyComponent
+            /**
+             * Since we allow a callback for this let's run it.
+             */
+            this._options.onLoad.call(this);
+        }
 
     };
 
-    return Gallery;
+    return ImageQuery;
+
+});
+
+/**
+ * @module Ink.UI.FormValidator_2
+ * @author inkdev AT sapo.pt
+ * @version 2
+ */
+Ink.createModule('Ink.UI.FormValidator', '2', [ 'Ink.UI.Aux_1','Ink.Dom.Element_1','Ink.Dom.Event_1','Ink.Dom.Selector_1','Ink.Dom.Css_1','Ink.Util.Array_1','Ink.Util.I18n_1','Ink.Util.Validator_1'], function( Aux, Element, Event, Selector, Css, InkArray, I18n, InkValidator ) {
+    'use strict';
+
+    /**
+     * Validation Functions to be used
+     * Some functions are a port from PHP, others are the 'best' solutions available
+     *
+     * @type {Object}
+     * @private
+     * @static
+     */
+    var validationFunctions = {
+
+        /**
+         * Checks if the value is actually defined and is not empty
+         *
+         * @method validationFunctions.required
+         * @param  {String} value Value to be checked
+         * @return {Boolean}       True case is defined, false if it's empty or not defined.
+         */
+        'required': function( value ){
+            return ( (typeof value !== 'undefined') && ( !(/^\s*$/).test(value) ) );
+        },
+
+        /**
+         * Checks if the value has a minimum length
+         *
+         * @method validationFunctions.min_length
+         * @param  {String} value   Value to be checked
+         * @param  {String|Number} minSize Number of characters that the value at least must have.
+         * @return {Boolean}         True if the length of value is equal or bigger than the minimum chars defined. False if not.
+         */
+        'min_length': function( value, minSize ){
+            return ( (typeof value === 'string') && ( value.length >= parseInt(minSize,10) ) );
+        },
+
+        /**
+         * Checks if the value has a maximum length
+         *
+         * @method validationFunctions.max_length
+         * @param  {String} value   Value to be checked
+         * @param  {String|Number} maxSize Number of characters that the value at maximum can have.
+         * @return {Boolean}         True if the length of value is equal or smaller than the maximum chars defined. False if not.
+         */
+        'max_length': function( value, maxSize ){
+            return ( (typeof value === 'string') && ( value.length <= parseInt(maxSize,10) ) );
+        },
+
+        /**
+         * Checks if the value has an exact length
+         *
+         * @method validationFunctions.exact_length
+         * @param  {String} value   Value to be checked
+         * @param  {String|Number} exactSize Number of characters that the value must have.
+         * @return {Boolean}         True if the length of value is equal to the size defined. False if not.
+         */
+        'exact_length': function( value, exactSize ){
+            return ( (typeof value === 'string') && ( value.length === parseInt(exactSize,10) ) );
+        },
+
+        /**
+         * Checks if the value has a valid e-mail address
+         *
+         * @method validationFunctions.email
+         * @param  {String} value   Value to be checked
+         * @return {Boolean}         True if the value is a valid e-mail address. False if not.
+         */
+        'email': function( value ){
+            return ( ( typeof value === 'string' ) && InkValidator.mail( value ) );
+        },
+
+        /**
+         * Checks if the value has a valid URL
+         *
+         * @method validationFunctions.url
+         * @param  {String} value   Value to be checked
+         * @param  {Boolean} fullCheck Flag that specifies if the value must be validated as a full url (with the protocol) or not.
+         * @return {Boolean}         True if the URL is considered valid. False if not.
+         */
+        'url': function( value, fullCheck ){
+            fullCheck = fullCheck || false;
+            return ( (typeof value === 'string') && InkValidator.url( value, fullCheck ) );
+        },
+
+        /**
+         * Checks if the value is a valid IP. Supports ipv4 and ipv6
+         *
+         * @method validationFunctions.ip
+         * @param  {String} value   Value to be checked
+         * @param  {String} ipType Type of IP to be validated. The values are: ipv4, ipv6. By default is ipv4.
+         * @return {Boolean}         True if the value is a valid IP address. False if not.
+         */
+        'ip': function( value, ipType ){
+            if( typeof value !== 'string' ){
+                return false;
+            }
+
+            return InkValidator.isIP(value, ipType);
+        },
+
+        /**
+         * Checks if the value is a valid phone number. Supports several countries, based in the Ink.Util.Validator class.
+         *
+         * @method validationFunctions.phone
+         * @param  {String} value   Value to be checked
+         * @param  {String} phoneType Country's initials to specify the type of phone number to be validated. Ex: 'AO'.
+         * @return {Boolean}         True if it's a valid phone number. False if not.
+         */
+        'phone': function( value, phoneType ){
+            if( typeof value !== 'string' ){
+                return false;
+            }
+
+            var countryCode = phoneType ? phoneType.toUpperCase() : '';
+
+            return InkValidator['is' + countryCode + 'Phone'](value);
+        },
+
+        /**
+         * Checks if it's a valid credit card.
+         *
+         * @method validationFunctions.credit_card
+         * @param  {String} value   Value to be checked
+         * @param  {String} cardType Type of credit card to be validated. The card types available are in the Ink.Util.Validator class.
+         * @return {Boolean}         True if the value is a valid credit card number. False if not.
+         */
+        'credit_card': function( value, cardType ){
+            if( typeof value !== 'string' ){
+                return false;
+            }
+
+            return InkValidator.isCreditCard( value, cardType || 'default' );
+        },
+
+        /**
+         * Checks if the value is a valid date.
+         *
+         * @method validationFunctions.date
+         * @param  {String} value   Value to be checked
+         * @param  {String} format Specific format of the date.
+         * @return {Boolean}         True if the value is a valid date. False if not.
+         */
+        'date': function( value, format ){
+            return ( (typeof value === 'string' ) && InkValidator.isDate(format, value) );
+        },
+
+        /**
+         * Checks if the value only contains alphabetical values.
+         *
+         * @method validationFunctions.alpha
+         * @param  {String} value           Value to be checked
+         * @param  {Boolean} supportSpaces  Allow whitespace
+         * @return {Boolean}                True if the value is alphabetical-only. False if not.
+         */
+        'alpha': function( value, supportSpaces ){
+            return InkValidator.ascii(value, {singleLineWhitespace: supportSpaces});
+        },
+
+        /*
+         * Check that the value contains only printable unicode text characters
+         * from the Basic Multilingual plane (BMP)
+         * Optionally allow punctuation and whitespace
+         *
+         * @method validationFunctions.text
+         * @param {String} value    Value to be checked
+         * @return {Boolean}        Whether the value only contains printable text characters
+         **/
+        'text': function (value, whitespace, punctuation) {
+            return InkValidator.unicode(value, {
+                singleLineWhitespace: whitespace,
+                unicodePunctuation: punctuation});
+        },
+
+        /*
+         * Check that the value contains only printable text characters 
+         * available in the latin-1 encoding.
+         *
+         * Optionally allow punctuation and whitespace
+         *
+         * @method validationFunctions.text
+         * @param {String} value    Value to be checked
+         * @return {Boolean}        Whether the value only contains printable text characters
+         **/
+        'latin': function (value, punctuation, whitespace) {
+            if ( typeof value !== 'string') { return false; }
+            return InkValidator.latin1(value, {latin1Punctuation: punctuation, singleLineWhitespace: whitespace});
+        },
+
+        /**
+         * Checks if the value only contains alphabetical and numerical characters.
+         *
+         * @method validationFunctions.alpha_numeric
+         * @param  {String} value   Value to be checked
+         * @return {Boolean}         True if the value is a valid alphanumerical. False if not.
+         */
+        'alpha_numeric': function( value ){
+            return InkValidator.ascii(value, {numbers: true});
+        },
+
+        /**
+         * Checks if the value only contains alphabetical, dash or underscore characteres.
+         *
+         * @method validationFunctions.alpha_dashes
+         * @param  {String} value   Value to be checked
+         * @return {Boolean}         True if the value is a valid. False if not.
+         */
+        'alpha_dash': function( value ){
+            return InkValidator.ascii(value, {dash: true, underscore: true});
+        },
+
+        /**
+         * Checks if the value is a digit (an integer of length = 1).
+         *
+         * @method validationFunctions.digit
+         * @param  {String} value   Value to be checked
+         * @return {Boolean}         True if the value is a valid digit. False if not.
+         */
+        'digit': function( value ){
+            return ((typeof value === 'string') && /^[0-9]{1}$/.test(value));
+        },
+
+        /**
+         * Checks if the value is a valid integer.
+         *
+         * @method validationFunctions.integer
+         * @param  {String} value   Value to be checked
+         * @param  {String} positive Flag that specifies if the integer is must be positive (unsigned).
+         * @return {Boolean}         True if the value is a valid integer. False if not.
+         */
+        'integer': function( value, positive ){
+            return InkValidator.number(value, {
+                negative: !positive,
+                decimalPlaces: 0
+            });
+        },
+
+        /**
+         * Checks if the value is a valid decimal number.
+         *
+         * @method validationFunctions.decimal
+         * @param  {String} value   Value to be checked
+         * @param  {String} decimalSeparator Character that splits the integer part from the decimal one. By default is '.'.
+         * @param  {String} [decimalPlaces] Maximum number of digits that the decimal part must have.
+         * @param  {String} [leftDigits] Maximum number of digits that the integer part must have, when provided.
+         * @return {Boolean}         True if the value is a valid decimal number. False if not.
+         */
+        'decimal': function( value, decimalSeparator, decimalPlaces, leftDigits ){
+            return InkValidator.number(value, {
+                decimalSep: decimalSeparator || '.',
+                decimalPlaces: +decimalPlaces || null,
+                maxDigits: +leftDigits
+            });
+        },
+
+        /**
+         * Checks if it is a numeric value.
+         *
+         * @method validationFunctions.numeric
+         * @param  {String} value   Value to be checked
+         * @param  {String} decimalSeparator Verifies if it's a valid decimal. Otherwise checks if it's a valid integer.
+         * @param  {String} [decimalPlaces] (when the number is decimal) Maximum number of digits that the decimal part must have.
+         * @param  {String} [leftDigits] (when the number is decimal) Maximum number of digits that the integer part must have, when provided.
+         * @return {Boolean}         True if the value is numeric. False if not.
+         */
+        'numeric': function( value, decimalSeparator, decimalPlaces, leftDigits ){
+            decimalSeparator = decimalSeparator || '.';
+            if( value.indexOf(decimalSeparator) !== -1  ){
+                return validationFunctions.decimal( value, decimalSeparator, decimalPlaces, leftDigits );
+            } else {
+                return validationFunctions.integer( value );
+            }
+        },
+
+        /**
+         * Checks if the value is in a specific range of values. The parameters after the first one are used for specifying the range, and are similar in function to python's range() function.
+         *
+         * @method validationFunctions.range
+         * @param  {String} value   Value to be checked
+         * @param  {String} minValue Left limit of the range.
+         * @param  {String} maxValue Right limit of the range.
+         * @param  {String} [multipleOf] In case you want numbers that are only multiples of another number.
+         * @return {Boolean}         True if the value is within the range. False if not.
+         */
+        'range': function( value, minValue, maxValue, multipleOf ){
+            value = +value;
+            minValue = +minValue;
+            maxValue = +maxValue;
+
+            if (isNaN(value) || isNaN(minValue) || isNaN(maxValue)) {
+                return false;
+            }
+
+            if( value < minValue || value > maxValue ){
+                return false;
+            }
+
+            if (multipleOf) {
+                return (value - minValue) % multipleOf === 0;
+            } else {
+                return true;
+            }
+        },
+
+        /**
+         * Checks if the value is a valid color.
+         *
+         * @method validationFunctions.color
+         * @param  {String} value   Value to be checked
+         * @return {Boolean}         True if the value is a valid color. False if not.
+         */
+        'color': function( value ){
+            return InkValidator.isColor(value);
+        },
+
+        /**
+         * Checks if the value matches the value of a different field.
+         *
+         * @method validationFunctions.matches
+         * @param  {String} value   Value to be checked
+         * @param  {String} fieldToCompare Name or ID of the field to compare.
+         * @return {Boolean}         True if the values match. False if not.
+         */
+        'matches': function( value, fieldToCompare ){
+            return ( value === this.getFormElements()[fieldToCompare][0].getValue() );
+        }
+
+    };
+
+    /**
+     * Error messages for the validation functions above
+     * @type {Object}
+     * @private
+     * @static
+     */
+    var validationMessages = new I18n({
+        en_US: {
+            'formvalidator.required' : 'The {field} filling is mandatory',
+            'formvalidator.min_length': 'The {field} must have a minimum size of {param1} characters',
+            'formvalidator.max_length': 'The {field} must have a maximum size of {param1} characters',
+            'formvalidator.exact_length': 'The {field} must have an exact size of {param1} characters',
+            'formvalidator.email': 'The {field} must have a valid e-mail address',
+            'formvalidator.url': 'The {field} must have a valid URL',
+            'formvalidator.ip': 'The {field} does not contain a valid {param1} IP address',
+            'formvalidator.phone': 'The {field} does not contain a valid {param1} phone number',
+            'formvalidator.credit_card': 'The {field} does not contain a valid {param1} credit card',
+            'formvalidator.date': 'The {field} should contain a date in the {param1} format',
+            'formvalidator.alpha': 'The {field} should only contain letters',
+            'formvalidator.text': 'The {field} should only contain alphabetic characters',
+            'formvalidator.latin': 'The {field} should only contain alphabetic characters',
+            'formvalidator.alpha_numeric': 'The {field} should only contain letters or numbers',
+            'formvalidator.alpha_dashes': 'The {field} should only contain letters or dashes',
+            'formvalidator.digit': 'The {field} should only contain a digit',
+            'formvalidator.integer': 'The {field} should only contain an integer',
+            'formvalidator.decimal': 'The {field} should contain a valid decimal number',
+            'formvalidator.numeric': 'The {field} should contain a number',
+            'formvalidator.range': 'The {field} should contain a number between {param1} and {param2}',
+            'formvalidator.color': 'The {field} should contain a valid color',
+            'formvalidator.matches': 'The {field} should match the field {param1}',
+            'formvalidator.validation_function_not_found': 'The rule {rule} has not been defined'
+        },
+        pt_PT: {
+            'formvalidator.required' : 'Preencher {field} é obrigatório',
+            'formvalidator.min_length': '{field} deve ter no mínimo {param1} caracteres',
+            'formvalidator.max_length': '{field} tem um tamanho máximo de {param1} caracteres',
+            'formvalidator.exact_length': '{field} devia ter exactamente {param1} caracteres',
+            'formvalidator.email': '{field} deve ser um e-mail válido',
+            'formvalidator.url': 'O {field} deve ser um URL válido',
+            'formvalidator.ip': '{field} não tem um endereço IP {param1} válido',
+            'formvalidator.phone': '{field} deve ser preenchido com um número de telefone {param1} válido.',
+            'formvalidator.credit_card': '{field} não tem um cartão de crédito {param1} válido',
+            'formvalidator.date': '{field} deve conter uma data no formato {param1}',
+            'formvalidator.alpha': 'O campo {field} deve conter apenas caracteres alfabéticos',
+            'formvalidator.text': 'O campo {field} deve conter apenas caracteres alfabéticos',
+            'formvalidator.latin': 'O campo {field} deve conter apenas caracteres alfabéticos',
+            'formvalidator.alpha_numeric': '{field} deve conter apenas letras e números',
+            'formvalidator.alpha_dashes': '{field} deve conter apenas letras e traços',
+            'formvalidator.digit': '{field} destina-se a ser preenchido com apenas um dígito',
+            'formvalidator.integer': '{field} deve conter um número inteiro',
+            'formvalidator.decimal': '{field} deve conter um número válido',
+            'formvalidator.numeric': '{field} deve conter um número válido',
+            'formvalidator.range': '{field} deve conter um número entre {param1} e {param2}',
+            'formvalidator.color': '{field} deve conter uma cor válida',
+            'formvalidator.matches': '{field} deve corresponder ao campo {param1}',
+            'formvalidator.validation_function_not_found': '[A regra {rule} não foi definida]'
+        },
+    }, 'en_US');
+
+    /**
+     * Constructor of a FormElement.
+     * This type of object has particular methods to parse rules and validate them in a specific DOM Element.
+     *
+     * @param  {DOMElement} element DOM Element
+     * @param  {Object} options Object with configuration options
+     * @return {FormElement} FormElement object
+     */
+    var FormElement = function( element, options ){
+        this._element = Aux.elOrSelector( element, 'Invalid FormElement' );
+        this._errors = {};
+        this._rules = {};
+        this._value = null;
+
+        this._options = Ink.extendObj( {
+            label: this._getLabel()
+        }, Element.data(this._element) );
+
+        this._options = Ink.extendObj( this._options, options || {} );
+
+    };
+
+    /**
+     * FormElement's prototype
+     */
+    FormElement.prototype = {
+
+        /**
+         * Function to get the label that identifies the field.
+         * If it can't find one, it will use the name or the id
+         * (depending on what is defined)
+         *
+         * @method _getLabel
+         * @return {String} Label to be used in the error messages
+         * @private
+         */
+        _getLabel: function(){
+
+            var controlGroup = Element.findUpwardsByClass(this._element,'control-group');
+            var label = Ink.s('label',controlGroup);
+            if( label ){
+                label = Element.textContent(label);
+            } else {
+                label = this._element.name || this._element.id || '';
+            }
+
+            return label;
+        },
+
+        /**
+         * Function to parse a rules' string.
+         * Ex: required|number|max_length[30]
+         *
+         * @method _parseRules
+         * @param  {String} rules String with the rules
+         * @private
+         */
+        _parseRules: function( rules ){
+            this._rules = {};
+            rules = rules.split("|");
+            var i, rulesLength = rules.length, rule, params, paramStartPos ;
+            if( rulesLength > 0 ){
+                for( i = 0; i < rulesLength; i++ ){
+                    rule = rules[i];
+                    if( !rule ){
+                        continue;
+                    }
+
+                    if( ( paramStartPos = rule.indexOf('[') ) !== -1 ){
+                        params = rule.substr( paramStartPos+1 );
+                        params = params.split(']');
+                        params = params[0];
+                        params = params.split(',');
+                        for (var p = 0, len = params.length; p < len; p++) {
+                            params[p] =
+                                params[p] === 'true' ? true :
+                                params[p] === 'false' ? false :
+                                params[p];
+                        }
+                        params.splice(0,0,this.getValue());
+
+                        rule = rule.substr(0,paramStartPos);
+
+                        this._rules[rule] = params;
+                    } else {
+                        this._rules[rule] = [this.getValue()];
+                    }
+                }
+            }
+        },
+
+        /**
+         * Function to add an error to the FormElement's 'errors' object.
+         * It basically receives the rule where the error occurred, the parameters passed to it (if any)
+         * and the error message.
+         * Then it replaces some tokens in the message for a more 'custom' reading
+         *
+         * @method _addError
+         * @param  {String|null} rule    Rule that failed, or null if no rule was found.
+         * @private
+         * @static
+         */
+        _addError: function(rule){
+            var params = this._rules[rule] || [];
+
+            var paramObj = {
+                field: this._options.label,
+                value: this.getValue()
+            };
+
+            for( var i = 1; i < params.length; i++ ){
+                paramObj['param' + i] = params[i];
+            }
+
+            var i18nKey = 'formvalidator.' + rule;
+
+            this._errors[rule] = validationMessages.text(i18nKey, paramObj);
+
+            if (this._errors[rule] === i18nKey) {
+                this._errors[rule] = 'Validation message not found';
+            }
+        },
+
+        /**
+         * Function to retrieve the element's value
+         *
+         * @method getValue
+         * @return {mixed} The DOM Element's value
+         * @public
+         */
+        getValue: function(){
+
+            switch(this._element.nodeName.toLowerCase()){
+                case 'select':
+                    return Ink.s('option:selected',this._element).value;
+                case 'textarea':
+                    return this._element.innerHTML;
+                case 'input':
+                    if( "type" in this._element ){
+                        if( (this._element.type === 'radio') && (this._element.type === 'checkbox') ){
+                            if( this._element.checked ){
+                                return this._element.value;
+                            }
+                        } else if( this._element.type !== 'file' ){
+                            return this._element.value;
+                        }
+                    } else {
+                        return this._element.value;
+                    }
+                    return;
+                default:
+                    return this._element.innerHTML;
+            }
+        },
+
+        /**
+         * Function that returns the constructed errors object.
+         *
+         * @method getErrors
+         * @return {Object} Errors' object
+         * @public
+         */
+        getErrors: function(){
+            return this._errors;
+        },
+
+        /**
+         * Function that returns the DOM element related to it.
+         *
+         * @method getElement
+         * @return {Object} DOM Element
+         * @public
+         */
+        getElement: function(){
+            return this._element;
+        },
+
+        /**
+         * Get other elements in the same form.
+         *
+         * @method getFormElements
+         * @return {Object} A mapping of keys to other elements in this form.
+         * @public
+         */
+        getFormElements: function () {
+            return this._options.form._formElements;
+        },
+
+        /**
+         * Function used to validate the element based on the rules defined.
+         * It parses the rules defined in the _options.rules property.
+         *
+         * @method validate
+         * @return {Boolean} True if every rule was valid. False if one fails.
+         * @public
+         */
+        validate: function(){
+            this._errors = {};
+
+            if( "rules" in this._options || 1){
+                this._parseRules( this._options.rules );
+            }
+            
+            if( ("required" in this._rules) || (this.getValue() !== '') ){
+                for(var rule in this._rules) {
+                    if (this._rules.hasOwnProperty(rule)) {
+                        if( (typeof validationFunctions[rule] === 'function') ){
+                            if( validationFunctions[rule].apply(this, this._rules[rule] ) === false ){
+
+                                this._addError( rule );
+                                return false;
+
+                            }
+
+                        } else {
+
+                            this._addError( null );
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
+
+        }
+    };
+
+
+
+    /**
+     * @class Ink.UI.FormValidator_2
+     * @version 2
+     * @constructor
+     * @param {String|DOMElement} selector Either a CSS Selector string, or the form's DOMElement
+     * @param {} [varname] [description]
+     * @example
+     *     Ink.requireModules( ['Ink.UI.FormValidator_2'], function( FormValidator ){
+     *         var myValidator = new FormValidator( 'form' );
+     *     });
+     */
+    var FormValidator = function( selector, options ){
+
+        /**
+         * DOMElement of the <form> being validated
+         *
+         * @property _rootElement
+         * @type {DOMElement}
+         */
+        this._rootElement = Aux.elOrSelector( selector );
+
+        /**
+         * Object that will gather the form elements by name
+         *
+         * @property _formElements
+         * @type {Object}
+         */
+        this._formElements = {};
+
+        /**
+         * Error message DOMElements
+         * 
+         * @property _errorMessages
+         */
+        this._errorMessages = [];
+
+        /**
+         * Array of elements marked with validation errors
+         *
+         * @property _markedErrorElements
+         */
+        this._markedErrorElements = [];
+
+        /**
+         * Configuration options. Fetches the data attributes first, then the ones passed when executing the constructor.
+         * By doing that, the latter will be the one with highest priority.
+         *
+         * @property _options
+         * @type {Object}
+         */
+        this._options = Ink.extendObj({
+            eventTrigger: 'submit',
+            searchFor: 'input, select, textarea, .control-group',
+            beforeValidation: undefined,
+            onError: undefined,
+            onSuccess: undefined
+        },Element.data(this._rootElement));
+
+        this._options = Ink.extendObj( this._options, options || {} );
+
+        // Sets an event listener for a specific event in the form, if defined.
+        // By default is the 'submit' event.
+        if( typeof this._options.eventTrigger === 'string' ){
+            Event.observe( this._rootElement,this._options.eventTrigger, Ink.bindEvent(this.validate,this) );
+        }
+
+        this._init();
+    };
+
+    /**
+     * Method used to set validation functions (either custom or ovewrite the existent ones)
+     *
+     * @method setRule
+     * @param {String}   name         Name of the function. E.g. 'required'
+     * @param {String}   errorMessage Error message to be displayed in case of returning false. E.g. 'Oops, you passed {param1} as parameter1, lorem ipsum dolor...'
+     * @param {Function} cb           Function to be executed when calling this rule
+     * @public
+     * @static
+     */
+    FormValidator.setRule = function( name, errorMessage, cb ){
+        validationFunctions[ name ] = cb;
+        if (validationMessages.getKey('formvalidator.' + name) !== errorMessage) {
+            var langObj = {}; langObj['formvalidator.' + name] = errorMessage;
+            var dictObj = {}; dictObj[validationMessages.lang()] = langObj;
+            validationMessages.append(dictObj);
+        }
+    };
+
+    /**
+     * Get the i18n object in charge of the error messages
+     *
+     * @method getI18n
+     * @return {Ink.Util.I18n} The i18n object the FormValidator is using.
+     */
+    FormValidator.getI18n = function () {
+        return validationMessages;
+    };
+
+     /**
+     * Sets the I18n object for validation error messages
+     *
+     * @method setI18n
+     * @param {Ink.Util.I18n} i18n  The I18n object.
+     */
+    FormValidator.setI18n = function (i18n) {
+        validationMessages = i18n;
+    };
+
+   /**
+     * Add to the I18n dictionary. See `Ink.Util.I18n.append()` documentation.
+     *
+     * @method AppendI18n
+     */
+    FormValidator.appendI18n = function () {
+        validationMessages.append.apply(validationMessages, [].slice.call(arguments));
+    };
+
+    /**
+     * Sets the language of the error messages. pt_PT and en_US are available, but you can add new languages by using append()
+     *
+     * See the `Ink.Util.I18n.lang()` setter
+     *
+     * @method setLanguage
+     * @param language  The language to set i18n to.
+     */
+    FormValidator.setLanguage = function (language) {
+        validationMessages.lang(language);
+    };
+
+    /**
+     * Method used to get the existing defined validation functions
+     *
+     * @method getRules
+     * @return {Object} Object with the rules defined
+     * @public
+     * @static
+     */
+    FormValidator.getRules = function(){
+        return validationFunctions;
+    };
+
+    FormValidator.prototype = {
+        _init: function(){
+
+        },
+
+        /**
+         * Function that searches for the elements of the form, based in the
+         * this._options.searchFor configuration.
+         *
+         * @method getElements
+         * @return {Object} An object with the elements in the form, indexed by name/id
+         * @public
+         */
+        getElements: function(){
+            this._formElements = {};
+            var formElements = Selector.select( this._options.searchFor, this._rootElement );
+            if( formElements.length ){
+                var i, element;
+                for( i=0; i<formElements.length; i+=1 ){
+                    element = formElements[i];
+
+                    var dataAttrs = Element.data( element );
+
+                    if( !("rules" in dataAttrs) ){
+                        continue;
+                    }
+
+                    var options = {
+                        form: this
+                    };
+
+                    var key;
+                    if( ("name" in element) && element.name ){
+                        key = element.name;
+                    } else if( ("id" in element) && element.id ){
+                        key = element.id;
+                    } else {
+                        key = 'element_' + Math.floor(Math.random()*100);
+                        element.id = key;
+                    }
+
+                    if( !(key in this._formElements) ){
+                        this._formElements[key] = [ new FormElement( element, options ) ];
+                    } else {
+                        this._formElements[key].push( new FormElement( element, options ) );
+                    }
+                }
+            }
+
+            return this._formElements;
+        },
+
+        /**
+         * Runs the validate function of each FormElement in the this._formElements
+         * object.
+         * Also, based on the this._options.beforeValidation, this._options.onError
+         * and this._options.onSuccess, this callbacks are executed when defined.
+         *
+         * @method validate
+         * @param  {Event} event window.event object
+         * @return {Boolean}
+         * @public
+         */
+        validate: function( event ){
+            Event.stop(event);
+
+            if( typeof this._options.beforeValidation === 'function' ){
+                this._options.beforeValidation();
+            }
+
+            this.getElements();
+
+            var errorElements = [];
+
+            for( var key in this._formElements ){
+                if( this._formElements.hasOwnProperty(key) ){
+                    for( var counter = 0; counter < this._formElements[key].length; counter+=1 ){
+                        if( !this._formElements[key][counter].validate() ) {
+                            errorElements.push(this._formElements[key][counter]);
+                        }
+                    }
+                }
+            }
+            
+            if( errorElements.length === 0 ){
+                if( typeof this._options.onSuccess === 'function' ){
+                    this._options.onSuccess();
+                }
+                return true;
+            } else {
+                if( typeof this._options.onError === 'function' ){
+                    this._options.onError( errorElements );
+                }
+                InkArray.each( this._markedErrorElements, Ink.bind(Css.removeClassName, Css, 'validation'));
+                InkArray.each( this._markedErrorElements, Ink.bind(Css.removeClassName, Css, 'error'));
+                InkArray.each( this._errorMessages, Element.remove);
+                this._errorMessages = [];
+                this._markedErrorElements = [];
+                InkArray.each( errorElements, Ink.bind(function( formElement ){
+                    var controlGroupElement;
+                    var controlElement;
+                    if( Css.hasClassName(formElement.getElement(),'control-group') ){
+                        controlGroupElement = formElement.getElement();
+                        controlElement = Ink.s('.control',formElement.getElement());
+                    } else {
+                        controlGroupElement = Element.findUpwardsByClass(formElement.getElement(),'control-group');
+                        controlElement = Element.findUpwardsByClass(formElement.getElement(),'control');
+                    }
+                    if (!controlElement || !controlGroupElement) {
+                        controlElement = controlGroupElement = formElement.getElement();
+                    }
+
+                    Css.addClassName( controlGroupElement, 'validation' );
+                    Css.addClassName( controlGroupElement, 'error' );
+                    this._markedErrorElements.push(controlGroupElement);
+
+                    var paragraph = document.createElement('p');
+                    Css.addClassName(paragraph,'tip');
+                    Element.insertAfter(paragraph, controlElement);
+                    var errors = formElement.getErrors();
+                    var errorArr = [];
+                    for (var k in errors) {
+                        if (errors.hasOwnProperty(k)) {
+                            errorArr.push(errors[k]);
+                        }
+                    }
+                    paragraph.innerHTML = errorArr.join('<br/>');
+                    this._errorMessages.push(paragraph);
+                }, this));
+                return false;
+            }
+        }
+    };
+
+    /**
+     * Returns the FormValidator's Object
+     */
+    return FormValidator;
 
 });
 
@@ -14747,8 +17248,6 @@ Ink.createModule('Ink.UI.FormValidator', '1', ['Ink.Dom.Css_1','Ink.Util.Validat
     /**
      * @class Ink.UI.FormValidator
      * @version 1
-     * @uses Ink.Dom.Css
-     * @uses Ink.Util.Validator
      */
     var FormValidator = {
 
@@ -15084,10 +17583,12 @@ Ink.createModule('Ink.UI.FormValidator', '1', ['Ink.Dom.Css_1','Ink.Util.Validat
             //console.log(oGroups);
             var curGroup = false;
             for(var i in oGroups) {
-                curGroup = oGroups[i];
-                if(curGroup.length === 2) {
-                    if(curGroup[0].value !== curGroup[1].value) {
-                        errors.push({elm:curGroup[1], errors:['ink-fv-confirm']});
+                if (oGroups.hasOwnProperty(i)) {
+                    curGroup = oGroups[i];
+                    if(curGroup.length === 2) {
+                        if(curGroup[0].value !== curGroup[1].value) {
+                            errors.push({elm:curGroup[1], errors:['ink-fv-confirm']});
+                        }
                     }
                 }
             }
@@ -15163,7 +17664,7 @@ Ink.createModule('Ink.UI.FormValidator', '1', ['Ink.Dom.Css_1','Ink.Util.Validat
         /**
          * Runs the normal validation functions for a specific element
          * 
-         * @method :_isValid
+         * @method _isValid
          * @param {DOMElement} elm DOMElement that will be validated
          * @param {String} fieldType Rule to be validated. This must be one of the keys present in the _flagMap property.
          * @private
@@ -15171,7 +17672,6 @@ Ink.createModule('Ink.UI.FormValidator', '1', ['Ink.Dom.Css_1','Ink.Util.Validat
          */
         _isValid: function(elm, fieldType)
         {
-            /*jshint maxstatements:50, maxcomplexity:50 */
             switch(fieldType) {
                 case 'ink-fv-required':
                     if(elm.nodeName.toLowerCase() === 'select') {
@@ -15316,7 +17816,9 @@ Ink.createModule('Ink.UI.FormValidator', '1', ['Ink.Dom.Css_1','Ink.Util.Validat
                         if( !(validFormat in InkValidator._dateParsers ) ){
                             var validValues = [];
                             for( var val in InkValidator._dateParsers ){
-                                validValues.push(val);
+                                if (InkValidator._dateParsers.hasOwnProperty(val)) {
+                                    validValues.push(val);
+                                }
                             }
                             throw "The attribute data-valid-format must be one of the following values: " + validValues.join(',');
                         }
@@ -15456,234 +17958,376 @@ Ink.createModule('Ink.UI.FormValidator', '1', ['Ink.Dom.Css_1','Ink.Util.Validat
  * @author inkdev AT sapo.pt
  * @version 1
  */
-Ink.createModule("Ink.UI.Droppable","1",["Ink.Dom.Element_1", "Ink.Dom.Event_1", "Ink.Dom.Css_1"], function( Element, Event, Css) {
+Ink.createModule("Ink.UI.Droppable","1",["Ink.Dom.Element_1", "Ink.Dom.Event_1", "Ink.Dom.Css_1", "Ink.UI.Aux_1", "Ink.Util.Array_1", "Ink.Dom.Selector_1"], function( InkElement, InkEvent, Css, Aux, InkArray, Selector) {
+    // Higher order functions
+    var hAddClassName = function (element) {
+        return function (className) {return Css.addClassName(element, className);};
+    };
+    var hRemoveClassName = function (element) {
+        return function (className) {return Css.removeClassName(element, className);};
+    };
 
     /**
      * @class Ink.UI.Droppable
      * @version 1
      * @static
      */
-	var Droppable = {
-		/**
-		 * Flag that determines if it's in debug mode or not
-		 *
-		 * @property debug
-		 * @type {Boolean}
-		 * @private
-		 */
-		debug: false,
-
+    var Droppable = {
         /**
-         * Associative array with the elements that are droppable
-         * 
-         * @property _elements
-         * @type {Object}
+         * Flag that determines if it's in debug mode or not
+         *
+         * @property debug
+         * @type {Boolean}
          * @private
          */
-		_elements: {}, // indexed by id
+        debug: false,
 
         /**
-		 * Makes an element droppable and adds it to the stack of droppable elements.
-		 * Can consider it a constructor of droppable elements, but where no Droppable object is returned.
+         * Array with the data of each element (`{element: ..., data: ..., options: ...}`)
          * 
-         * @method add
-		 * @param {String|DOMElement}       element    - target element
-		 * @param {optional Object}         options    - options object
-		 *     @param {String}       [options.hoverclass] - Classname applied when an acceptable draggable element is hovering the element
-		 *     @param {Array|String} [options.accept]     - Array or comma separated string of classnames for elements that can be accepted by this droppable
-		 *     @param {Function}     [options.onHover]    - callback called when an acceptable draggable element is hovering the droppable. Gets the draggable and the droppable element as parameters.
-		 *     @param {Function}     [options.onDrop]     - callback called when an acceptable draggable element is dropped. Gets the draggable, the droppable and the event as parameterse.
-         * @public
+         * @property _droppables
+         * @type {Array}
+         * @private
          */
-		add: function(element, options) {
-			var opt = Ink.extendObj( {
-				hoverclass:		false,
-				accept:			false,
-				onHover:		false,
-				onDrop:			false,
-				onDropOut:		false				
-			}, options || {});
-
-			element = Ink.i(element);
-
-			if (opt.accept && opt.accept.constructor === Array) {
-				opt.accept = opt.accept.join();
-			}
-
-			this._elements[element.id] = {options: opt};
-			this.update(element.id);
-		},
+        _droppables: [],
 
         /**
-		 * Invoke every time a drag starts
+         * Array of data for each draggable. (`{element: ..., data: ...}`)
+         *
+         * @property _draggables
+         * @type {Array}
+         * @private
+         */
+        _draggables: [],
+
+        /**
+         * Makes an element droppable and adds it to the stack of droppable elements.
+         * Can consider it a constructor of droppable elements, but where no Droppable object is returned.
+         * 
+         * In the following arguments, any events/callbacks you may pass, can be either functions or strings. If the 'move' or 'copy' strings are passed, the draggable gets moved into this droppable. If 'revert' is passed, an acceptable droppable is moved back to the element it came from.
+
+         *
+         * @method add
+         * @param {String|DOMElement}       element     Target element
+         * @param {Object}                  [options]   options object
+         *     @param {String}      [options.hoverClass] Classname(s) applied when an acceptable draggable element is hovering the element
+         *     @param {String}      [options.accept]    Selector for choosing draggables which can be dropped in this droppable.
+         *     @param {Function}    [options.onHover]   callback called when an acceptable draggable element is hovering the droppable. Gets the draggable and the droppable element as parameters.
+         *     @param {Function|String} [options.onDrop] callback called when an acceptable draggable element is dropped. Gets the draggable, the droppable and the event as parameters.
+         *     @param {Function|String} [options.onDropOut] callback called when a droppable is dropped outside this droppable. Gets the draggable, the droppable and the event as parameters. (see above for string options).
+         * @public
+         *
+         * @example
+         *
+         *       <style type="text/css">
+         *           .hover {
+         *               border: 1px solid red;
+         *           }
+         *           .left, .right {
+         *               float: left; width: 50%;
+         *               outline: 1px solid gray;
+         *               min-height: 2em;
+         *           }
+         *       </style>
+         *        <ul class="left">
+         *            <li>Draggable 1</li>
+         *            <li>Draggable 2</li>
+         *            <li>Draggable 3</li>
+         *        </ul>
+         *        <ul class="right">
+         *        </ul>
+         *        <script type="text/javascript">
+         *            Ink.requireModules(['Ink.UI.Draggable_1', 'Ink.UI.Droppable_1'], function (Draggable, Droppable) {
+         *                new Draggable('.left li:eq(0)', {});
+         *                new Draggable('.left li:eq(1)', {});
+         *                new Draggable('.left li:eq(2)', {});
+         *                Droppable.add('.left', {onDrop: 'move', onDropOut: 'revert'});
+         *                Droppable.add('.right', {onDrop: 'move', onDropOut: 'revert'});
+         *            })
+         *        </script>
+         *
+         */
+        add: function(element, options) {
+            element = Aux.elOrSelector(element, 'Droppable.add target element');
+
+            var opt = Ink.extendObj( {
+                hoverClass:     options.hoverclass /* old name */ || false,
+                accept:         false,
+                onHover:        false,
+                onDrop:         false,
+                onDropOut:      false
+            }, options || {}, InkElement.data(element));
+            
+            if (typeof opt.hoverClass === 'string') {
+                opt.hoverClass = opt.hoverClass.split(/\s+/);
+            }
+            
+            function cleanStyle(draggable) {
+                draggable.style.position = 'inherit';
+            }
+            var that = this;
+            var namedEventHandlers = {
+                move: function (draggable, droppable, event) {
+                    cleanStyle(draggable);
+                    droppable.appendChild(draggable);
+                },
+                copy: function (draggable, droppable, event) {
+                    cleanStyle(draggable);
+                    droppable.appendChild(draggable.cloneNode);
+                },
+                revert: function (draggable, droppable, event) {
+                    that._findDraggable(draggable).originalParent.appendChild(draggable);
+                    cleanStyle(draggable);
+                }
+            };
+            var name;
+
+            if (typeof opt.onHover === 'string') {
+                name = opt.onHover;
+                opt.onHover = namedEventHandlers[name];
+                if (opt.onHover === undefined) {
+                    throw new Error('Unknown hover event handler: ' + name);
+                }
+            }
+            if (typeof opt.onDrop === 'string') {
+                name = opt.onDrop;
+                opt.onDrop = namedEventHandlers[name];
+                if (opt.onDrop === undefined) {
+                    throw new Error('Unknown drop event handler: ' + name);
+                }
+            }
+            if (typeof opt.onDropOut === 'string') {
+                name = opt.onDropOut;
+                opt.onDropOut = namedEventHandlers[name];
+                if (opt.onDropOut === undefined) {
+                    throw new Error('Unknown dropOut event handler: ' + name);
+                }
+            }
+
+            var elementData = {
+                element: element,
+                data: {},
+                options: opt
+            };
+            this._droppables.push(elementData);
+            this._update(elementData);
+        },
+        
+        /**
+         * find droppable data about `element`. this data is added in `.add`
+         *
+         * @method _findData
+         * @param {DOMElement} element  Needle
+         * @return {object}             Droppable data of the element
+         * @private
+         */
+        _findData: function (element) {
+            var elms = this._droppables;
+            for (var i = 0, len = elms.length; i < len; i++) {
+                if (elms[i].element === element) {
+                    return elms[i];
+                }
+            }
+        },
+        /**
+         * Find draggable data about `element`
+         *
+         * @method _findDraggable
+         * @param {DOMElement} element  Needle
+         * @return {Object}             Draggable data queried
+         * @private
+         */
+        _findDraggable: function (element) {
+            var elms = this._draggables;
+            for (var i = 0, len = elms.length; i < len; i++) {
+                if (elms[i].element === element) {
+                    return elms[i];
+                }
+            }
+        },
+
+        /**
+         * Invoke every time a drag starts
          * 
          * @method updateAll
-         * @public
+         * @private
          */
-		/**
-		 */
-		updateAll: function() {
-			for (var id in this._elements) {
-				if (!this._elements.hasOwnProperty(id)) {	continue;	}
-				this.update(Ink.i(id));
-			}
-		},
+        updateAll: function() {
+            InkArray.each(this._droppables, Droppable._update);
+        },
 
         /**
-		 * Updates location and size of droppable element
+         * Updates location and size of droppable element
          * 
-         * @method update
-		 * @param {String|DOMElement} element - target element
-         * @public
+         * @method update * @param {String|DOMElement} element - target element
+         * @private
          */
-		update: function(element) {
-			element = Ink.i(element);
-			var data = this._elements[element.id];
-			if (!data) {
-				return; /*throw 'Data about element with id="' + element.id + '" was not found!';*/
-			}
+        update: function(element) {
+            this._update(this._findData(element));
+        },
 
-			data.left	= Element.offsetLeft(element);
-			data.top	= Element.offsetTop( element);
-			data.right	= data.left + Element.elementWidth( element);
-			data.bottom	= data.top  + Element.elementHeight(element);
-
-			// if (this.debug) {
-			// 	// for debugging purposes
-			// 	if (!data.rt) {		data.rt = SAPO.Utility.Debug.addRect(document.body,	[data.left, data.top], [data.right-data.left+1, data.bottom-data.top+1]);	}
-			// 	else {				SAPO.Utility.Debug.updateRect(data.rt,				[data.left, data.top], [data.right-data.left+1, data.bottom-data.top+1]);	}
-			// }
-		},
+        _update: function(elementData) {
+            var data = elementData.data;
+            var element = elementData.element;
+            data.left   = InkElement.offsetLeft(element);
+            data.top    = InkElement.offsetTop( element);
+            data.right  = data.left + InkElement.elementWidth( element);
+            data.bottom = data.top  + InkElement.elementHeight(element);
+        },
 
         /**
-		 * Removes an element from the droppable stack and removes the droppable behavior
-		 * 
+         * Removes an element from the droppable stack and removes the droppable behavior
+         * 
          * @method remove
-		 * @param {String|DOMElement} el - target element
+         * @param {String|DOMElement} elOrSelector  Droppable element to disable.
+         * @return {Boolean} Whether the object was found and deleted
          * @public
          */
-		remove: function(el) {
-			el = Ink.i(el);
-			delete this._elements[el.id];
-		},
+        remove: function(el) {
+            el = Aux.elOrSelector(el);
+            var len = this._droppables.length;
+            for (var i = 0; i < len; i++) {
+                if (this._droppables[i].element === el) {
+                    this._droppables.splice(i, 1);
+                    break;
+                }
+            }
+            return len !== this._droppables.length;
+        },
 
         /**
-		 * Method called by a draggable to execute an action on a droppable
+         * Method called by a draggable to execute an action on a droppable
          * 
          * @method action
-		 * @param {Object} coords    - coordinates where the action happened
-		 * @param {String} type      - type of action. drag or drop.
-		 * @param {Object} ev        - Event object
-		 * @param {Object} draggable - draggable element
-         * @public
+         * @param {Object} coords    coordinates where the action happened
+         * @param {String} type      type of action. drag or drop.
+         * @param {Object} ev        Event object
+         * @param {Object} draggable draggable element
+         * @private
          */
-		action: function(coords, type, ev, draggable) {
-			var opt, classnames, accept, el, element;
+        action: function(coords, type, ev, draggable) {
+            // INTRA: Fixed to make the onDrop handlers execute after the onDropOut handlers (to prevent the element reverting after a successful drop)
+            var onDropHandlers = [];
+            var onDropOutHandlers = [];
+            
+            // check all droppable elements
+            InkArray.each(this._droppables, Ink.bind(function(elementData) {
+                var data = elementData.data;
+                var opt = elementData.options;
+                var element = elementData.element;
 
-			// check all droppable elements
-			for (var elId in this._elements) {
-				if (!this._elements.hasOwnProperty(elId)) {	continue;	}
-				el = this._elements[elId];
-				opt = el.options;
-				accept = false;
-				element = Ink.i(elId);
+                if (opt.accept && !Selector.matches(opt.accept, [draggable]).length) {
+                    return;
+                }
 
-				// check if our draggable is over our droppable
-				if (coords.x >= el.left && coords.x <= el.right && coords.y >= el.top && coords.y <= el.bottom) {
+                if (type === 'drag' && !this._findDraggable(draggable)) {
+                    this._draggables.push({
+                        element: draggable,
+                        originalParent: draggable.parentNode
+                    });
+                }
 
-					// INSIDE
-
-					// check if the droppable accepts the draggable
-					if (opt.accept) {
-						classnames = draggable.className.split(' ');
-						for ( var j = 0, lj = classnames.length; j < lj; j++) {
-							if (opt.accept.search(classnames[j]) >= 0 && draggable !== element) {
-								accept = true;
-							}
-						}
-					}
-					else {
-						accept = true;
-					}
-
-					if (accept) {
-						if (type === 'drag') {
-							if (opt.hoverclass) {
-								Css.addClassName(element, opt.hoverclass);
-							}
-							if (opt.onHover) {
-								opt.onHover(draggable, element);
-							}
-						}
-						else {
-							if (type === 'drop' && opt.onDrop) {
-								if (opt.hoverclass) {
-									Css.removeClassName(element, opt.hoverclass);
-								}
-								if (opt.onDrop) {
-									opt.onDrop(draggable, element, ev);
-								}
-							}
+                // check if our draggable is over our droppable
+                if (coords.x >= data.left && coords.x <= data.right &&
+                        coords.y >= data.top && coords.y <= data.bottom) {
+                    // INSIDE
+                    onDropHandlers.push(function() {
+                        if (type === 'drag') {
+                            if (opt.hoverClass) {
+                                InkArray.each(opt.hoverClass,
+                                    hAddClassName(element));
+                            }
+                            if (opt.onHover) {
+                            	// INTRA: Added event parameter 
+                                opt.onHover(draggable, element, ev);
+                            }
+                        } else if (type === 'drop') {
+                            if (opt.hoverClass) {
+                                InkArray.each(opt.hoverClass,
+                                    hRemoveClassName(element));
+                            }
+                            if (opt.onDrop) {
+                                opt.onDrop(draggable, element, ev);
+                            }
                         }
-					}
-				}
-				else {
-					// OUTSIDE
-					if (type === 'drag' && opt.hoverclass) {
-						Css.removeClassName(element, opt.hoverclass);
-					}
-					if(type === 'drop'){
-						if(opt.onDropOut){
-							opt.onDropOut(draggable, element, ev);
-						}
-					}
-				}
-			}
-		}
-	};
+                    });
+                } else {
+                    // OUTSIDE
+                    onDropOutHandlers.push(function() {
+                        if (type === 'drag' && opt.hoverClass) {
+                            InkArray.each(opt.hoverClass, hRemoveClassName(element));
+                        } else if (type === 'drop') {
+                            if(opt.onDropOut){
+                                opt.onDropOut(draggable, element, ev);
+                            }
+                        }
+                    });
+                }
+            }, this));
+            
+            // Execute 'outside handlers'
+            for (var i=0; i<onDropOutHandlers.length ; i++) {
+                onDropOutHandlers[i]();
+            }
 
-	return Droppable;
+            // Execute 'inside handlers'
+            for (var i=0; i<onDropHandlers.length ; i++) {
+                onDropHandlers[i]();
+            }
+
+        }
+    };
+
+    return Droppable;
 });
 
-/**
+/*
  * @module Ink.UI.Draggable_1
  * @author inkdev AT sapo.pt
  * @version 1
  */
-Ink.createModule("Ink.UI.Draggable","1",["Ink.Dom.Element_1", "Ink.Dom.Event_1", "Ink.Dom.Css_1", "Ink.Dom.Browser_1", "Ink.UI.Droppable_1"],function( Element, Event, Css, Browser, Droppable) {
+Ink.createModule("Ink.UI.Draggable","1",["Ink.Dom.Element_1", "Ink.Dom.Event_1", "Ink.Dom.Css_1", "Ink.Dom.Browser_1", "Ink.Dom.Selector_1", "Ink.UI.Aux_1"],function( InkElement, InkEvent, Css, Browser, Selector, Aux) {
+    var x = 0,
+        y = 1;  // For accessing coords in [x, y] arrays
+    
+    // Get a value between two boundaries
+    function between (val, min, max) {
+        val = Math.min(val, max);
+        val = Math.max(val, min);
+        return val;
+    }
 
     /**
      * @class Ink.UI.Draggable
      * @version 1
      * @constructor
-     * @param {String|DOMElement} selector Either a CSS Selector string, or the form's DOMElement
-     * @param {Object} [opptions] Optional object for configuring the component
-	 *     @param {String}            [options.constraint]     - Movement constraint. None by default. Can be either vertical or horizontal.
-	 *     @param {Number}            [options.top]            - top limit for the draggable area
-	 *     @param {Number}            [options.right]          - right limit for the draggable area
-	 *     @param {Number}            [options.bottom]         - bottom limit for the draggable area
-	 *     @param {Number}            [options.left]           - left limit for the draggable area
-	 *     @param {String|DOMElement} [options.handler]        - if specified, only this element will be used for dragging instead of the whole target element
-	 *     @param {Boolean}           [options.revert]         - if true, reverts the draggable to the original position when dragging stops
-	 *     @param {String}            [options.cursor]         - cursor type used over the draggable object
-	 *     @param {Number}            [options.zindex]         - zindex applied to the draggable element while dragged
-	 *     @param {Number}            [options.fps]            - if defined, on drag will run every n frames per second only
-	 *     @param {DomElement}        [options.droppableProxy] - if set, a shallow copy of the droppableProxy will be put on document.body with transparent bg
-	 *     @param {String}            [options.mouseAnchor]    - defaults to mouse cursor. can be 'left|center|right top|center|bottom'
-	 *     @param {Function}          [options.onStart]        - callback called when dragging starts
-	 *     @param {Function}          [options.onEnd]          - callback called when dragging stops
-	 *     @param {Function}          [options.onDrag]         - callback called while dragging, prior to position updates
-	 *     @param {Function}          [options.onChange]       - callback called while dragging, after position updates
+     * @param {String|DOMElement} target    Target element.
+     * @param {Object} [options] Optional object for configuring the component
+     *     @param {String}            [options.constraint]      Movement constraint. None by default. Can be `vertical`, `horizontal`, or `both`.
+     *     @param {String|DomElement} [options.constraintElm]   Constrain dragging to be within this element. None by default.
+     *     @param {Number}            [options.top,left,right,bottom]   Limits for constraining draggable movement.
+     *     @param {String|DOMElement} [options.handle]          if specified, this element will be used as a handle for dragging.
+     *     @param {Boolean}           [options.revert]          if true, reverts the draggable to the original position when dragging stops
+     *     @param {String}            [options.cursor]          cursor type (CSS `cursor` value) used when the mouse is over the draggable object
+     *     @param {Number}            [options.zIndex]          zindex applied to the draggable element while dragged
+     *     @param {Number}            [options.fps]             if defined, on drag will run every n frames per second only
+     *     @param {DomElement}        [options.droppableProxy]  if set, a shallow copy of the droppableProxy will be put on document.body with transparent bg
+     *     @param {String}            [options.mouseAnchor]     defaults to mouse cursor. can be 'left|center|right top|center|bottom'
+     *     @param {String}            [options.dragClass='drag'] class to add when the draggable is being dragged.
+     *     @param {Function}          [options.onStart]        callback called when dragging starts
+     *     @param {Function}          [options.onEnd]          callback called when dragging stops
+     *     @param {Function}          [options.onDrag]         callback called while dragging, prior to position updates
+     *     @param {Function}          [options.onChange]       callback called while dragging, after position updates
      * @example
      *     Ink.requireModules( ['Ink.UI.Draggable_1'], function( Draggable ){
-     *         new Draggable( 'myElementId' );
+     *         new Draggable( '#myElementId' );
      *     });
      */
-	var Draggable = function(element, options) {
-		this.init(element, options);
-	};
+    var Draggable = function(element, options) {
+        this.init(element, options);
+    };
 
-	Draggable.prototype = {
+    Draggable.prototype = {
 
         /**
          * Init function called by the constructor
@@ -15693,137 +18337,121 @@ Ink.createModule("Ink.UI.Draggable","1",["Ink.Dom.Element_1", "Ink.Dom.Event_1",
          * @param {Object} [options] Options object for configuration of the module.
          * @private
          */
-		init: function(element, options) {
-			var o = Ink.extendObj( {
-				constraint:			false,
-				top:				0,
-				right:				Element.pageWidth(),
-				bottom:				Element.pageHeight(),
-				left:				0,
-				handler:			false,
-				revert:				false,
-				cursor:				'move',
-				zindex:				9999,
-				onStart:			false,
-				onEnd:				false,
-				onDrag:				false,
-				onChange:			false,
-				droppableProxy:		false,
-				mouseAnchor:		undefined,
-				skipChildren:		true,
-				debug:				false
-			}, options || {});
+        init: function(element, options) {
+            var o = Ink.extendObj( {
+                constraint:         false,
+                constraintElm:      false,
+                top:                false,
+                right:              false,
+                bottom:             false,
+                left:               false,
+                handle:             options.handler /* old option name */ || false,
+                revert:             false,
+                cursor:             'move',
+                zindex:             options.zindex /* old option name */ || 9999,
+                dragClass:          'drag',
+                onStart:            false,
+                onEnd:              false,
+                onDrag:             false,
+                onChange:           false,
+                droppableProxy:     false,
+                mouseAnchor:        undefined,
+                skipChildren:       true,
+                fps:                100,
+                debug:              false
+            }, options || {}, InkElement.data(element));
 
-			this.options = o;
-			this.element = Ink.i(element);
+            this.options = o;
+            this.element = Aux.elOrSelector(element);
+            this.constraintElm = o.constraintElm && Aux.elOrSelector(o.constraintElm);
 
-			this.handle				= false;
-			this.elmStartPosition	= false;
-			this.active				= false;
-			this.dragged			= false;
-			this.prevCoords			= false;
-			this.placeholder		= false;
+            this.handle             = false;
+            this.elmStartPosition   = false;
+            this.active             = false;
+            this.dragged            = false;
+            this.prevCoords         = false;
+            this.placeholder        = false;
 
-			this.position			= false;
-			this.zindex				= false;
-			this.firstDrag			= true;
+            this.position           = false;
+            this.zindex             = false;
+            this.firstDrag          = true;
 
-			if (o.fps) {
-				this.deltaMs = 1000 / o.fps;
-				this.lastRanAt = 0;
-			}
+            if (o.fps) {
+                this.deltaMs = 1000 / o.fps;
+                this.lastRunAt = 0;
+            }
 
-			this.handlers = {};
-			this.handlers.start			= Ink.bindEvent(this._onStart,this);
-			this.handlers.dragFacade	= Ink.bindEvent(this._onDragFacade,this);
-			this.handlers.drag			= Ink.bindEvent(this._onDrag,this);
-			this.handlers.end			= Ink.bindEvent(this._onEnd,this);
-			this.handlers.selectStart	= function(event) {	Event.stop(event);	return false;	};
+            this.handlers = {};
+            this.handlers.start         = Ink.bindEvent(this._onStart,this);
+            this.handlers.dragFacade    = Ink.bindEvent(this._onDragFacade,this);
+            this.handlers.drag          = Ink.bindEvent(this._onDrag,this);
+            this.handlers.end           = Ink.bindEvent(this._onEnd,this);
+            this.handlers.selectStart   = function(event) {    InkEvent.stop(event);    return false;    };
 
-			// set handler
-			this.handle = (this.options.handler) ? Ink.i(this.options.handler) : this.element;
-			this.handle.style.cursor = o.cursor;
+            // set handle
+            this.handle = (this.options.handle) ?
+                Aux.elOrSelector(this.options.handle) : this.element;
+            this.handle.style.cursor = o.cursor;
 
-			if (o.right  !== false) {	this.options.right	= o.right  - Element.elementWidth( element);	}
-			if (o.bottom !== false) {	this.options.bottom	= o.bottom - Element.elementHeight(element);	}
+            InkEvent.observe(this.handle, 'touchstart', this.handlers.start);
+            InkEvent.observe(this.handle, 'mousedown', this.handlers.start);
 
-			Event.observe(this.handle, 'touchstart', this.handlers.start);
-			Event.observe(this.handle, 'mousedown', this.handlers.start);
-
-			if (Browser.IE) {
-				Event.observe(this.element, 'selectstart', this.handlers.selectStart);
-			}
-		},
+            if (Browser.IE) {
+                InkEvent.observe(this.element, 'selectstart', this.handlers.selectStart);
+            }
+        },
 
         /**
-		 * Removes the ability of the element of being dragged
+         * Removes the ability of the element of being dragged
          * 
          * @method destroy
          * @public
          */
-		destroy: function() {
-			Event.stopObserving(this.handle, 'touchstart', this.handlers.start);
-			Event.stopObserving(this.handle, 'mousedown', this.handlers.start);
+        destroy: function() {
+            InkEvent.stopObserving(this.handle, 'touchstart', this.handlers.start);
+            InkEvent.stopObserving(this.handle, 'mousedown', this.handlers.start);
 
-			if (Browser.IE) {
-				Event.stopObserving(this.element, 'selectstart', this.handlers.selectStart);
-			}
-		},
-
-        /**
-		 * Browser-independant implementation of page scroll
-         * 
-         * @method _getPageScroll
-         * @return {Array} Array where the first position is the scrollLeft and the second position is the scrollTop
-         * @private
-         */
-		_getPageScroll: function() {
-
-			if (typeof self.pageXOffset !== "undefined") {
-				return [ self.pageXOffset, self.pageYOffset ];
-			}
-			if (typeof document.documentElement !== "undefined" && typeof document.documentElement.scrollLeft !== "undefined") {
-				return [ document.documentElement.scrollLeft, document.documentElement.scrollTop ];
-			}
-			return [ document.body.scrollLeft, document.body.scrollTop ];
-		},
+            if (Browser.IE) {
+                InkEvent.stopObserving(this.element, 'selectstart', this.handlers.selectStart);
+            }
+        },
 
         /**
-		 * Gets coordinates for a given event (with added page scroll)
+         * Gets coordinates for a given event (with added page scroll)
          * 
          * @method _getCoords
          * @param {Object} e window.event object.
          * @return {Array} Array where the first position is the x coordinate, the second is the y coordinate
          * @private
          */
-		_getCoords: function(e) {
-			var ps = this._getPageScroll();
-			return {
-				x: (e.touches ? e.touches[0].clientX : e.clientX) + ps[0],
-				y: (e.touches ? e.touches[0].clientY : e.clientY) + ps[1]
-			};
-		},
+        _getCoords: function(e) {
+            var ps = [InkElement.scrollWidth(), InkElement.scrollHeight()];
+            return {
+                x: (e.touches ? e.touches[0].clientX : e.clientX) + ps[x],
+                y: (e.touches ? e.touches[0].clientY : e.clientY) + ps[y]
+            };
+        },
 
         /**
-		 * Clones src element's relevant properties to dst
+         * Clones src element's relevant properties to dst
          * 
          * @method _cloneStyle
          * @param {DOMElement} src Element from where we're getting the styles
          * @param {DOMElement} dst Element where we're placing the styles.
          * @private
          */
-		_cloneStyle: function(src, dst) {
-			dst.className = src.className;
-			dst.style.borderWidth	= '0';
-			dst.style.padding		= '0';
-			dst.style.position		= 'absolute';
-			dst.style.width			= Element.elementWidth(src)		+ 'px';
-			dst.style.height		= Element.elementHeight(src)	+ 'px';
-			dst.style.left			= Element.elementLeft(src)		+ 'px';
-			dst.style.top			= Element.elementTop(src)		+ 'px';
-			dst.style.cssFloat		= Css.getStyle(src, 'float');
-			dst.style.display		= Css.getStyle(src, 'display');
-		},
+        _cloneStyle: function(src, dst) {
+            dst.className = src.className;
+            dst.style.borderWidth   = '0';
+            dst.style.padding       = '0';
+            dst.style.position      = 'absolute';
+            dst.style.width         = InkElement.elementWidth(src)        + 'px';
+            dst.style.height        = InkElement.elementHeight(src)    + 'px';
+            dst.style.left          = InkElement.elementLeft(src)        + 'px';
+            dst.style.top           = InkElement.elementTop(src)        + 'px';
+            dst.style.cssFloat      = Css.getStyle(src, 'float');
+            dst.style.display       = Css.getStyle(src, 'display');
+        },
 
         /**
          * onStart event handler
@@ -15833,102 +18461,105 @@ Ink.createModule("Ink.UI.Draggable","1",["Ink.Dom.Element_1", "Ink.Dom.Event_1",
          * @return {Boolean|void} In some cases return false. Otherwise is void
          * @private
          */
-		_onStart: function(e) {
-			if (!this.active && Event.isLeftClick(e) || typeof e.button === 'undefined') {
+        _onStart: function(e) {
+            if (!this.active && InkEvent.isLeftClick(e) || typeof e.button === 'undefined') {
 
-				var tgtEl = e.target || e.srcElement;
-				if (this.options.skipChildren && tgtEl !== this.element) {	return;	}
+                var tgtEl = InkEvent.element(e);
+                if (this.options.skipChildren && tgtEl !== this.handle) {    return;    }
 
-				Event.stop(e);
+                InkEvent.stop(e);
 
-				this.elmStartPosition = [
-					Element.elementLeft(this.element),
-					Element.elementTop( this.element)
-				];
+                Css.addClassName(this.element, this.options.dragClass);
 
-				var pos = [
-					parseInt(Css.getStyle(this.element, 'left'), 10),
-					parseInt(Css.getStyle(this.element, 'top'),  10)
-				];
+                this.elmStartPosition = [
+                    InkElement.elementLeft(this.element),
+                    InkElement.elementTop( this.element)
+                ];
 
-				var dims = [
-					Element.elementWidth( this.element),
-					Element.elementHeight(this.element)
-				];
+                var pos = [
+                    parseInt(Css.getStyle(this.element, 'left'), 10),
+                    parseInt(Css.getStyle(this.element, 'top'),  10)
+                ];
 
-				this.originalPosition = [ pos[0] ? pos[0]: null, pos[1] ? pos[1] : null ];
-				this.delta = this._getCoords(e); // mouse coords at beginning of drag
+                var dims = InkElement.elementDimensions(this.element);
 
-				this.active = true;
-				this.position = Css.getStyle(this.element, 'position');
-				this.zindex = Css.getStyle(this.element, 'zIndex');
+                this.originalPosition = [ pos[x] ? pos[x]: null, pos[y] ? pos[y] : null ];
+                this.delta = this._getCoords(e); // mouse coords at beginning of drag
 
-				var div = document.createElement('div');
-				div.style.position		= this.position;
-				div.style.width			= dims[0] + 'px';
-				div.style.height		= dims[1] + 'px';
-				div.style.marginTop		= Css.getStyle(this.element, 'margin-top');
-				div.style.marginBottom	= Css.getStyle(this.element, 'margin-bottom');
-				div.style.marginLeft	= Css.getStyle(this.element, 'margin-left');
-				div.style.marginRight	= Css.getStyle(this.element, 'margin-right');
-				div.style.borderWidth	= '0';
-				div.style.padding		= '0';
-				div.style.cssFloat		= Css.getStyle(this.element, 'float');
-				div.style.display		= Css.getStyle(this.element, 'display');
-				div.style.visibility	= 'hidden';
+                this.active = true;
+                this.position = Css.getStyle(this.element, 'position');
+                this.zindex = Css.getStyle(this.element, 'zIndex');
 
-				this.delta2 = [ this.delta.x - this.elmStartPosition[0], this.delta.y - this.elmStartPosition[1] ]; // diff between top-left corner of obj and mouse
-				if (this.options.mouseAnchor) {
-					var parts = this.options.mouseAnchor.split(' ');
-					var ad = [dims[0], dims[1]];	// starts with 'right bottom'
-					if (parts[0] === 'left') {	ad[0] = 0;	} else if(parts[0] === 'center') {	ad[0] = parseInt(ad[0]/2, 10);	}
-					if (parts[1] === 'top') {	ad[1] = 0;	} else if(parts[1] === 'center') {	ad[1] = parseInt(ad[1]/2, 10);	}
-					this.applyDelta = [this.delta2[0] - ad[0], this.delta2[1] - ad[1]];
-				}
+                var div = document.createElement('div');
+                div.style.position      = this.position;
+                div.style.width         = dims[x] + 'px';
+                div.style.height        = dims[y] + 'px';
+                div.style.marginTop     = Css.getStyle(this.element, 'margin-top');
+                div.style.marginBottom  = Css.getStyle(this.element, 'margin-bottom');
+                div.style.marginLeft    = Css.getStyle(this.element, 'margin-left');
+                div.style.marginRight   = Css.getStyle(this.element, 'margin-right');
+                div.style.borderWidth   = '0';
+                div.style.padding       = '0';
+                div.style.cssFloat      = Css.getStyle(this.element, 'float');
+                div.style.display       = Css.getStyle(this.element, 'display');
+                div.style.visibility    = 'hidden';
 
-				this.placeholder = div;
+                this.delta2 = [ this.delta.x - this.elmStartPosition[x], this.delta.y - this.elmStartPosition[y] ]; // diff between top-left corner of obj and mouse
+               
+                if (this.options.mouseAnchor) {
+                    var parts = this.options.mouseAnchor.split(' ');
+                    var ad = [dims[x], dims[y]];    // starts with 'right bottom'
+                    if (parts[0] === 'left') {    ad[x] = 0;    } else if(parts[0] === 'center') {    ad[x] = parseInt(ad[x]/2, 10);    }
+                    if (parts[1] === 'top') {     ad[y] = 0;    } else if(parts[1] === 'center') {    ad[y] = parseInt(ad[y]/2, 10);    }
+                    this.applyDelta = [this.delta2[x] - ad[x], this.delta2[y] - ad[y]];
+                }
 
-				if (this.options.onStart) {		this.options.onStart(this.element, e);		}
+                var dragHandlerName = this.options.fps ? 'dragFacade' : 'drag';
 
-				if (this.options.droppableProxy) {	// create new transparent div to optimize DOM traversal during drag
-					this.proxy = document.createElement('div');
-					dims = [
-						window.innerWidth	|| document.documentElement.clientWidth		|| document.body.clientWidth,
-						window.innerHeight	|| document.documentElement.clientHeight	|| document.body.clientHeight
-					];
-					var fs = this.proxy.style;
-					fs.width			= dims[0] + 'px';
-					fs.height			= dims[1] + 'px';
-					fs.position			= 'fixed';
-					fs.left				= '0';
-					fs.top				= '0';
-					fs.zIndex			= this.options.zindex + 1;
-					fs.backgroundColor	= '#FF0000';
-					Css.setOpacity(this.proxy, 0);
+                this.placeholder = div;
 
-					var firstEl = document.body.firstChild;
-					while (firstEl && firstEl.nodeType !== 1) {	firstEl = firstEl.nextSibling;	}
-					document.body.insertBefore(this.proxy, firstEl);
+                if (this.options.onStart) {        this.options.onStart(this.element, e);        }
 
-					Event.observe(this.proxy, 'mousemove', this.handlers[this.options.fps ? 'dragFacade' : 'drag']);
-					Event.observe(this.proxy, 'touchmove', this.handlers[this.options.fps ? 'dragFacade' : 'drag']);
-				}
-				else {
-					Event.observe(document, 'mousemove', this.handlers[this.options.fps ? 'dragFacade' : 'drag']);
-				}
+                if (this.options.droppableProxy) {    // create new transparent div to optimize DOM traversal during drag
+                    this.proxy = document.createElement('div');
+                    dims = [
+                        window.innerWidth     || document.documentElement.clientWidth   || document.body.clientWidth,
+                        window.innerHeight    || document.documentElement.clientHeight  || document.body.clientHeight
+                    ];
+                    var fs = this.proxy.style;
+                    fs.width            = dims[x] + 'px';
+                    fs.height           = dims[y] + 'px';
+                    fs.position         = 'fixed';
+                    fs.left             = '0';
+                    fs.top              = '0';
+                    fs.zIndex           = this.options.zindex + 1;
+                    fs.backgroundColor  = '#FF0000';
+                    Css.setOpacity(this.proxy, 0);
 
-				this.element.style.position = 'absolute';
-				this.element.style.zIndex = this.options.zindex;
-				this.element.parentNode.insertBefore(this.placeholder, this.element);
+                    var firstEl = document.body.firstChild;
+                    while (firstEl && firstEl.nodeType !== 1) {    firstEl = firstEl.nextSibling;    }
+                    document.body.insertBefore(this.proxy, firstEl);
 
-				this._onDrag(e);
+                    
+                    InkEvent.observe(this.proxy, 'mousemove', this.handlers[dragHandlerName]);
+                    InkEvent.observe(this.proxy, 'touchmove', this.handlers[dragHandlerName]);
+                }
+                else {
+                    InkEvent.observe(document, 'mousemove', this.handlers[dragHandlerName]);
+                }
 
-				Event.observe(document, 'mouseup',	this.handlers.end);
-				Event.observe(document, 'touchend',	this.handlers.end);
+                this.element.style.position = 'absolute';
+                this.element.style.zIndex = this.options.zindex;
+                this.element.parentNode.insertBefore(this.placeholder, this.element);
 
-				return false;
-			}
-		},
+                this._onDrag(e);
+
+                InkEvent.observe(document, 'mouseup',      this.handlers.end);
+                InkEvent.observe(document, 'touchend',     this.handlers.end);
+
+                return false;
+            }
+        },
 
         /**
          * Function that gets the timestamp of the current run from time to time. (FPS)
@@ -15937,13 +18568,13 @@ Ink.createModule("Ink.UI.Draggable","1",["Ink.Dom.Element_1", "Ink.Dom.Event_1",
          * @param {Object} window.event object.
          * @private
          */
-		_onDragFacade: function(e) {
-			var now = new Date().getTime();
-			if (!this.lastRanAt || now > this.lastRanAt + this.deltaMs) {
-				this.lastRanAt = now;
-				this._onDrag(e);
-			}
-		},
+        _onDragFacade: function(e) {
+            var now = +new Date();
+            if (!this.lastRunAt || now > this.lastRunAt + this.deltaMs) {
+                this.lastRunAt = now;
+                this._onDrag(e);
+            }
+        },
 
         /**
          * Function that handles the dragging movement
@@ -15952,67 +18583,72 @@ Ink.createModule("Ink.UI.Draggable","1",["Ink.Dom.Element_1", "Ink.Dom.Event_1",
          * @param {Object} window.event object.
          * @private
          */
-		_onDrag: function(e) {
-			if (this.active) {
-				Event.stop(e);
-				this.dragged = true;
-				var mouseCoords	= this._getCoords(e),
-					mPosX		= mouseCoords.x,
-					mPosY		= mouseCoords.y,
-					o			= this.options,
-					newX		= false,
-					newY		= false;
+        _onDrag: function(e) {
+            if (this.active) {
+                InkEvent.stop(e);
+                this.dragged = true;
+                var mouseCoords = this._getCoords(e),
+                    mPosX       = mouseCoords.x,
+                    mPosY       = mouseCoords.y,
+                    o           = this.options,
+                    newX        = false,
+                    newY        = false;
 
-				if (!this.prevCoords) {		this.prevCoords = {x: 0, y: 0};		}
+                if (this.prevCoords && mPosX !== this.prevCoords.x || mPosY !== this.prevCoords.y) {
+                    if (o.onDrag) {        o.onDrag(this.element, e);        }
+                    this.prevCoords = mouseCoords;
 
-				if (mPosX !== this.prevCoords.x || mPosY !== this.prevCoords.y) {
-					if (o.onDrag) {		o.onDrag(this.element, e);		}
-					this.prevCoords = mouseCoords;
+                    newX = this.elmStartPosition[x] + mPosX - this.delta.x;
+                    newY = this.elmStartPosition[y] + mPosY - this.delta.y;
 
-					newX = this.elmStartPosition[0] + mPosX - this.delta.x;
-					newY = this.elmStartPosition[1] + mPosY - this.delta.y;
+                    var draggableSize = InkElement.elementDimensions(this.element);
 
-					if (o.constraint === 'horizontal' || o.constraint === 'both') {
-						if (o.right !== false && newX > o.right) {		newX = o.right;		}
-						if (o.left  !== false && newX < o.left) {		newX = o.left;		}
-					}
-					if (o.constraint === 'vertical' || o.constraint === 'both') {
-						if (o.bottom !== false && newY > o.bottom) {	newY = o.bottom;	}
-						if (o.top    !== false && newY < o.top) {		newY = o.top;		}
-					}
+                    if (this.constraintElm) {
+                        var offset = InkElement.offset(this.constraintElm);
+                        var size = InkElement.elementDimensions(this.constraintElm);
+                        var constTop = offset[y] + (o.top || 0),
+                            constBottom = offset[y] + size[y] - (o.bottom || 0),
+                            constLeft = offset[x] + (o.left || 0),
+                            constRight = offset[x] + size[x] - (o.right || 0);
 
-					if (this.firstDrag) {
-						if (Droppable) {	Droppable.updateAll();	}
-						/*this.element.style.position = 'absolute';
-						this.element.style.zIndex = this.options.zindex;
-						this.element.parentNode.insertBefore(this.placeholder, this.element);*/
-						this.firstDrag = false;
-					}
+                        newY = between(newY, constTop, constBottom - draggableSize[y]);
+                        newX = between(newX, constLeft, constRight - draggableSize[x]);
+                    } else if (o.constraint) {
+                        var right = o.right === false ? InkElement.pageWidth() - draggableSize[x] : o.right,
+                            left = o.left === false ? 0 : o.left,
+                            top = o.top === false ? 0 : o.top,
+                            bottom = o.bottom === false ? InkElement.pageHeight() - draggableSize[y] : o.bottom;
+                        if (o.constraint === 'horizontal' || o.constraint === 'both') {
+                            newX = between(newX, left, right);
+                        }
+                        if (o.constraint === 'vertical' || o.constraint === 'both') {
+                            newY = between(newY, top, bottom);
+                        }
+                    }
 
-					if (newX) {		this.element.style.left = newX + 'px';		}
-					if (newY) {		this.element.style.top  = newY + 'px';		}
+                    var Droppable = Ink.getModule('Ink.UI.Droppable_1');
+                    if (this.firstDrag) {
+                        if (Droppable) {    Droppable.updateAll();    }
+                        /*this.element.style.position = 'absolute';
+                        this.element.style.zIndex = this.options.zindex;
+                        this.element.parentNode.insertBefore(this.placeholder, this.element);*/
+                        this.firstDrag = false;
+                    }
 
-					if (Droppable) {
-						// apply applyDelta defined on drag init
-						var mouseCoords2 = this.options.mouseAnchor ? {x: mPosX - this.applyDelta[0], y: mPosY - this.applyDelta[1]} : mouseCoords;
+                    if (newX) {        this.element.style.left = newX + 'px';        }
+                    if (newY) {        this.element.style.top  = newY + 'px';        }
 
-						// for debugging purposes
-						// if (this.options.debug) {
-						// 	if (!this.pt) {
-						// 		this.pt = Debug.addPoint(document.body, [mouseCoords2.x, mouseCoords2.y], '#0FF', 9);
-						// 		this.pt.style.zIndex = this.options.zindex + 1;
-						// 	}
-						// 	else {
-						// 		Debug.movePoint(this.pt, [mouseCoords2.x, mouseCoords2.y]);
-						// 	}
-						// }
-
-						Droppable.action(mouseCoords2, 'drag', e, this.element);
-					}
-					if (o.onChange) {	o.onChange(this);	}
-				}
-			}
-		},
+                    if (Droppable) {
+                        // apply applyDelta defined on drag init
+                        var mouseCoords2 = this.options.mouseAnchor ?
+                            {x: mPosX - this.applyDelta[x], y: mPosY - this.applyDelta[y]} :
+                            mouseCoords;
+                        Droppable.action(mouseCoords2, 'drag', e, this.element);
+                    }
+                    if (o.onChange) {    o.onChange(this);    }
+                }
+            }
+        },
 
         /**
          * Function that handles the end of the dragging process
@@ -16021,65 +18657,68 @@ Ink.createModule("Ink.UI.Draggable","1",["Ink.Dom.Element_1", "Ink.Dom.Event_1",
          * @param {Object} window.event object.
          * @private
          */
-		_onEnd: function(e) {
-			Event.stopObserving(document, 'mousemove', this.handlers.drag);
-			Event.stopObserving(document, 'touchmove', this.handlers.drag);
+        _onEnd: function(e) {
+            InkEvent.stopObserving(document, 'mousemove', this.handlers.drag);
+            InkEvent.stopObserving(document, 'touchmove', this.handlers.drag);
 
-			if (this.options.fps) {
-				this._onDrag(e);
-			}
+            if (this.options.fps) {
+                this._onDrag(e);
+            }
 
-			if (this.active && this.dragged) {
+            Css.removeClassName(this.element, this.options.dragClass);
 
-				if (this.options.droppableProxy) {	// remove transparent div...
-					document.body.removeChild(this.proxy);
-				}
+            if (this.active && this.dragged) {
 
-				if (this.pt) {	// remove debugging element...
-					this.pt.parentNode.removeChild(this.pt);
-					this.pt = undefined;
-				}
+                if (this.options.droppableProxy) {    // remove transparent div...
+                    document.body.removeChild(this.proxy);
+                }
 
-	            /*if (this.options.revert) {
-					this.placeholder.parentNode.removeChild(this.placeholder);
-				}*/
+                if (this.pt) {    // remove debugging element...
+                    InkElement.remove(this.pt);
+                    this.pt = undefined;
+                }
 
-	            if(this.placeholder) {
-	                this.placeholder.parentNode.removeChild(this.placeholder);
-	            }
+                /*if (this.options.revert) {
+                    this.placeholder.parentNode.removeChild(this.placeholder);
+                }*/
 
-				if (this.options.revert) {
-					this.element.style.position = this.position;
-					if (this.zindex !== null) {
-						this.element.style.zIndex = this.zindex;
-					}
-					else {
-						this.element.style.zIndex = 'auto';
-					} // restore default zindex of it had none
+                if(this.placeholder) {
+                    InkElement.remove(this.placeholder);
+                }
 
-					this.element.style.left = (this.originalPosition[0]) ? this.originalPosition[0] + 'px' : '';
-					this.element.style.top  = (this.originalPosition[1]) ? this.originalPosition[1] + 'px' : '';
-				}
+                if (this.options.revert) {
+                    this.element.style.position = this.position;
+                    if (this.zindex !== null) {
+                        this.element.style.zIndex = this.zindex;
+                    }
+                    else {
+                        this.element.style.zIndex = 'auto';
+                    } // restore default zindex of it had none
 
-				if (this.options.onEnd) {
-					this.options.onEnd(this.element, e);
-				}
+                    this.element.style.left = (this.originalPosition[x]) ? this.originalPosition[x] + 'px' : '';
+                    this.element.style.top  = (this.originalPosition[y]) ? this.originalPosition[y] + 'px' : '';
+                }
 
-				if (Droppable) {
-					Droppable.action(this._getCoords(e), 'drop', e, this.element);
-				}
+                if (this.options.onEnd) {
+                    this.options.onEnd(this.element, e);
+                }
+                
+                var Droppable = Ink.getModule('Ink.UI.Droppable_1');
+                if (Droppable) {
+                    Droppable.action(this._getCoords(e), 'drop', e, this.element);
+                }
 
-				this.position	= false;
-				this.zindex		= false;
-				this.firstDrag	= true;
-			}
+                this.position   = false;
+                this.zindex     = false;
+                this.firstDrag  = true;
+            }
 
-			this.active			= false;
-			this.dragged		= false;
-		}
-	};
+            this.active         = false;
+            this.dragged        = false;
+        }
+    };
 
-	return Draggable;
+    return Draggable;
 
 });
 
@@ -16088,20 +18727,13 @@ Ink.createModule("Ink.UI.Draggable","1",["Ink.Dom.Element_1", "Ink.Dom.Event_1",
  * @author inkdev AT sapo.pt
  * @version 1
  */
-Ink.createModule('Ink.UI.DatePicker', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Dom.Css_1','Ink.Dom.Element_1','Ink.Dom.Selector_1','Ink.Util.Array_1','Ink.Util.Date_1'], function(Aux, Event, Css, Element, Selector, InkArray, InkDate ) {
+Ink.createModule('Ink.UI.DatePicker', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Dom.Css_1','Ink.Dom.Element_1','Ink.Dom.Selector_1','Ink.Util.Array_1','Ink.Util.Date_1', 'Ink.Dom.Browser_1'], function(Aux, Event, Css, Element, Selector, InkArray, InkDate ) {
     'use strict';    
 
     /**
      * @class Ink.UI.DatePicker
      * @constructor
      * @version 1
-     * @uses Ink.UI.Aux
-     * @uses Ink.Dom.Event
-     * @uses Ink.Dom.Css
-     * @uses Ink.Dom.Element
-     * @uses Ink.Dom.Selector
-     * @uses Ink.Util.Array
-     * @uses Ink.Util.Date
      *
      * @param {String|DOMElement} selector
      * @param {Object} [options] Options
@@ -16120,7 +18752,7 @@ Ink.createModule('Ink.UI.DatePicker', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','In
      *      @param {Boolean}  [options.showClean]        whether to display the clean button or not. defaults to true.
      *      @param {String}   [options.yearRange]        enforce limits to year for the Date, ex: '1990:2020' (deprecated)
      *      @param {String}   [options.dateRange]        enforce limits to year, month and day for the Date, ex: '1990-08-25:2020-11'
-     *      @paran {Number}   [options.startWeekDay]     day to use as first column on the calendar view. Defaults to Monday (1)
+     *      @param {Number}   [options.startWeekDay]     day to use as first column on the calendar view. Defaults to Monday (1)
      *      @param {String}   [options.closeText]        text to display on close button. defaults to 'Fechar'
      *      @param {String}   [options.cleanText]        text to display on clean button. defaults to 'Limpar'
      *      @param {String}   [options.prevLinkText]     text to display on the previous button. defaults to '«'
@@ -16359,12 +18991,12 @@ Ink.createModule('Ink.UI.DatePicker', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','In
                     if ( this._options.position === 'bottom' )
                     {
                         this._containerObject.style.top = Element.elementHeight(this._dataField) + Element.offsetTop(this._dataField) + 'px';
-                        this._containerObject.style.left = Element.offset2(this._dataField)[0] +'px';
+                        this._containerObject.style.left = Element.offset(this._dataField)[0] +'px';
                     }
                     else
                     {
-                        this._containerObject.style.top = Element.offset2(this._dataField)[1] +'px';
-                        this._containerObject.style.left = Element.elementWidth(this._dataField) + Element.offset2(this._dataField)[0] +'px';
+                        this._containerObject.style.top = Element.offset(this._dataField)[1] +'px';
+                        this._containerObject.style.left = Element.elementWidth(this._dataField) + Element.offset(this._dataField)[0] +'px';
                     }
                     //dom.appendChild(this._containerObject);
                     this._updateDate();
@@ -17281,9 +19913,8 @@ Ink.createModule('Ink.UI.DatePicker', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','In
 /**
  * @module Ink.UI.Close_1
  * @author inkdev AT sapo.pt
- * @version 1
  */
-Ink.createModule('Ink.UI.Close', '1', ['Ink.Dom.Event_1','Ink.Dom.Css_1','Ink.Util.Array_1'], function(Event, Css, InkArray ) {
+Ink.createModule('Ink.UI.Close', '1', ['Ink.Dom.Event_1','Ink.Dom.Element_1'], function(InkEvent, InkElement) {
     'use strict';
 
     /**
@@ -17296,10 +19927,6 @@ Ink.createModule('Ink.UI.Close', '1', ['Ink.Dom.Event_1','Ink.Dom.Css_1','Ink.Ut
      * 
      * @class Ink.UI.Close
      * @constructor
-     * @version 1
-     * @uses Ink.Dom.Event
-     * @uses Ink.Dom.Css
-     * @uses Ink.Util.Array
      * @example
      *     <script>
      *         Ink.requireModules(['Ink.UI.Close_1'],function( Close ){
@@ -17308,23 +19935,23 @@ Ink.createModule('Ink.UI.Close', '1', ['Ink.Dom.Event_1','Ink.Dom.Css_1','Ink.Ut
      *     </script>
      */
     var Close = function() {
+        InkEvent.observe(document.body, 'click', function(ev) {
+            var el = InkEvent.element(ev);
 
-        Event.observe(document.body, 'click', function(ev) {
-            var el = Event.element(ev);
-            if (!Css.hasClassName(el, 'ink-close') && !Css.hasClassName(el, 'ink-dismiss')) { return; }
+            el = InkElement.findUpwardsByClass(el, 'ink-close') ||
+                 InkElement.findUpwardsByClass(el, 'ink-dismiss');
 
-            var classes;
-            do { 
-                if (!el.className) { continue; }
-                classes = el.className.split(' ');
-                if (!classes) { continue; }
-                if ( InkArray.inArray('ink-alert',       classes) ||
-                     InkArray.inArray('ink-alert-block', classes) ) { break; }
-            } while ((el = el.parentNode));
+            if (!el) {
+                return;  // ink-close or ink-dismiss class not found
+            }
 
-            if (el) {
-                Event.stop(ev);
-                el.parentNode.removeChild(el);
+            var toRemove = el;
+            toRemove = InkElement.findUpwardsByClass(el, 'ink-alert') ||
+                       InkElement.findUpwardsByClass(el, 'ink-alert-block');
+
+            if (toRemove) {
+                InkEvent.stop(ev);
+                InkElement.remove(toRemove);
             }
         });
     };
@@ -17334,113 +19961,887 @@ Ink.createModule('Ink.UI.Close', '1', ['Ink.Dom.Event_1','Ink.Dom.Css_1','Ink.Ut
 });
 
 /**
-00 * @module Ink.UI.Toggle_1
+ * @module Ink.UI.Carousel_1
  * @author inkdev AT sapo.pt
  * @version 1
  */
-Ink.createModule('Ink.UI.Toggle', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Dom.Css_1','Ink.Dom.Element_1','Ink.Dom.Selector_1'], function(Aux, Event, Css, Element, Selector ) {
+Ink.createModule('Ink.UI.Carousel', '1',
+    ['Ink.UI.Aux_1', 'Ink.Dom.Event_1', 'Ink.Dom.Css_1', 'Ink.Dom.Element_1', 'Ink.UI.Pagination_1', 'Ink.Dom.Browser_1', 'Ink.Dom.Selector_1'],
+    function(Aux, InkEvent, Css, InkElement, Pagination, Browser/*, Selector*/) {
+    'use strict';
+
+    /*
+     * TODO:
+     *  keyboardSupport
+     *  swipe
+     */
+    
+    /**
+     * @class Ink.UI.Carousel_1
+     * @constructor
+     *
+     * @param {String|DOMElement} selector
+     * @param {Object} [options]
+     *  @param {String} [options.axis='x'] Can be `'x'` or `'y'`, for a horizontal or vertical carousel
+     *  @param {Boolean} [options.center=false] Center the carousel.
+     *  @TODO @param {Boolean} [options.keyboardSupport=false] Enable keyboard support
+     *  @param {String|DOMElement|Ink.UI.Pagination_1} [options.pagination] Either an `<ul>` element to add pagination markup to, or an `Ink.UI.Pagination` instance to use.
+     *  @param {Function} [options.onChange] Callback for when the page is changed.
+     */
+    var Carousel = function(selector, options) {
+        this._handlers = {
+            paginationChange: Ink.bind(this._onPaginationChange, this),
+            windowResize:     Ink.bind(this.refit, this)
+        };
+
+        InkEvent.observe(window, 'resize', this._handlers.windowResize);
+
+        this._element = Aux.elOrSelector(selector, '1st argument');
+
+        this._options = Ink.extendObj({
+            axis:           'x',
+            hideLast:       false,
+            center:         false,
+            keyboardSupport:false,
+            pagination:     null,
+            onChange:       null
+        }, options || {}, InkElement.data(this._element));
+
+        this._isY = (this._options.axis === 'y');
+
+        var rEl = this._element;
+
+        var ulEl = Ink.s('ul.stage', rEl);
+        this._ulEl = ulEl;
+
+        InkElement.removeTextNodeChildren(ulEl);
+
+
+
+        if (this._options.hideLast) {
+            var hiderEl = document.createElement('div');
+            hiderEl.className = 'hider';
+            this._element.appendChild(hiderEl);
+            hiderEl.style.position = 'absolute';
+            hiderEl.style[ this._isY ? 'left' : 'top' ] = '0';  // fix to top..
+            hiderEl.style[ this._isY ? 'right' : 'bottom' ] = '0';  // and bottom...
+            hiderEl.style[ this._isY ? 'bottom' : 'right' ] = '0';  // and move to the end.
+            this._hiderEl = hiderEl;
+        }
+
+        this.refit();
+
+        if (this._isY) {
+            // Override white-space: no-wrap which is only necessary to make sure horizontal stuff stays horizontal, but breaks stuff intended to be vertical.
+            this._ulEl.style.whiteSpace = 'normal';
+        }
+
+        if (this._options.pagination) {
+            if (Aux.isDOMElement(this._options.pagination) || typeof this._options.pagination === 'string') {
+                // if dom element or css selector string...
+                this._pagination = new Pagination(this._options.pagination, {
+                    size:     this._numPages,
+                    onChange: this._handlers.paginationChange
+                });
+            } else {
+                // assumes instantiated pagination
+                this._pagination = this._options.pagination;
+                this._pagination._options.onChange = this._handlers.paginationChange;
+                this._pagination.setSize(this._numPages);
+                this._pagination.setCurrent(0);
+            }
+        }
+    };
+
+    Carousel.prototype = {
+        /**
+         * Measure the carousel once again, adjusting the involved elements'
+         * sizes. Called automatically when the window resizes, in order to
+         * cater for changes from responsive media queries, for instance.
+         *
+         * @method refit
+         */
+        refit: function() {
+            this._liEls = Ink.ss('li.slide', this._ulEl);
+            var numItems = this._liEls.length;
+            this._ctnLength = this._size(this._element);
+            this._elLength = this._size(this._liEls[0]);
+            this._itemsPerPage = Math.floor( this._ctnLength / this._elLength  );
+            this._numPages = Math.ceil( numItems / this._itemsPerPage );
+            this._deltaLength = this._itemsPerPage * this._elLength;
+            
+            if (this._isY) {
+                this._element.style.width = this._liEls[0].offsetWidth + 'px';
+                this._ulEl.style.width  =  this._liEls[0].offsetWidth + 'px';
+            } else {
+                this._ulEl.style.height =  this._liEls[0].offsetHeight + 'px';
+            }
+
+            this._center();
+            this._updateHider();
+            this._IE7();
+            
+            if (this._pagination) {
+                this._pagination.setSize(this._numPages);
+                this._pagination.setCurrent(0);
+            }
+        },
+
+        _size: function (elm) {
+            var dims = InkElement.outerDimensions(elm)
+            return this._isY ? dims[1] : dims[0];
+        },
+
+        _center: function() {
+            if (!this._options.center) { return; }
+            var gap = Math.floor( (this._ctnLength - (this._elLength * this._itemsPerPage) ) / 2 );
+
+            var pad;
+            if (this._isY) {
+                pad = [gap, 'px 0'];
+            }
+            else {
+                pad = ['0 ', gap, 'px'];
+            }
+            this._ulEl.style.padding = pad.join('');
+        },
+
+        _updateHider: function() {
+            if (!this._hiderEl) { return; }
+            var gap = Math.floor( this._ctnLength - (this._elLength * this._itemsPerPage) );
+            if (this._options.center) {
+                gap /= 2;
+            }
+            this._hiderEl.style[ this._isY ? 'height' : 'width' ] = gap + 'px';
+        },
+        
+        /**
+         * Refit stuff for IE7 because it won't support inline-block.
+         *
+         * @method _IE7
+         * @private
+         */
+        _IE7: function () {
+            if (Browser.IE && '' + Browser.version.split('.')[0] === '7') {
+                var numPages = this._numPages;
+                var slides = Ink.ss('li.slide', this._ulEl);
+                var stl = function (prop, val) {slides[i].style[prop] = val; };
+                for (var i = 0, len = slides.length; i < len; i++) {
+                    stl('position', 'absolute');
+                    stl(this._isY ? 'top' : 'left', (i * this._elLength) + 'px');
+                }
+            }
+        },
+
+        _onPaginationChange: function(pgn) {
+            var currPage = pgn.getCurrent();
+            this._ulEl.style[ this._options.axis === 'y' ? 'top' : 'left'] = ['-', currPage * this._deltaLength, 'px'].join('');
+            if (this._options.onChange) {
+                this._options.onChange.call(this, currPage);
+            }
+        }
+    };
+
+
+
+    return Carousel;
+
+});
+
+/**
+ * @module Ink.UI.Modal_1
+ * @author inkdev AT sapo.pt
+ * @version 1
+ */
+Ink.createModule('Ink.UI.Modal', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Dom.Css_1','Ink.Dom.Element_1','Ink.Dom.Selector_1','Ink.Util.Array_1'], function(Aux, Event, Css, Element, Selector, InkArray ) {
     'use strict';
 
     /**
-     * Toggle component
-     * 
-     * @class Ink.UI.Toggle
+     * @class Ink.UI.Modal
      * @constructor
      * @version 1
-     * @uses Ink.UI.Aux
-     * @uses Ink.Dom.Event
-     * @uses Ink.Dom.Css
-     * @uses Ink.Dom.Element
-     * @uses Ink.Dom.Selector
      * @param {String|DOMElement} selector
      * @param {Object} [options] Options
-     *     @param {String}       options.target                    CSS Selector that specifies the elements that will toggle
-     *     @param {String}       [options.triggerEvent]            Event that will trigger the toggling. Default is 'click'
-     *     @param {Boolean}      [options.closeOnClick]            Flag that determines if, when clicking outside of the toggled content, it should hide it. Default: true.
+     *      @param {String}    [options.width]             Default/Initial width. Ex: '600px'
+     *      @param {String}    [options.height]            Default/Initial height. Ex: '400px'
+     *      @param {String}    [options.shadeClass]        Custom class to be added to the div.ink-shade
+     *      @param {String}    [options.modalClass]        Custom class to be added to the div.ink-modal
+     *      @param {String}    [options.trigger]           CSS Selector to target elements that will trigger the Modal.
+     *      @param {String}    [options.triggerEvent]      Trigger's event to be listened. 'click' is the default value. Ex: 'mouseover', 'touchstart'...
+     *      @param {Boolean}   [options.autoDisplay=true]  Display the Modal automatically when constructed.
+     *      @param {String}    [options.markup]            Markup to be placed in the Modal when created
+     *      @param {Function}  [options.onShow]            Callback function to run when the Modal is opened.
+     *      @param {Function}  [options.onDismiss]         Callback function to run when the Modal is closed. Return `false` to cancel dismissing the Modal.
+     *      @param {Boolean}   [options.closeOnClick]      Determines if the Modal should close when clicked outside of it. 'false' by default.
+     *      @param {Boolean}   [options.responsive]        Determines if the Modal should behave responsively (adapt to smaller viewports).
+     *      @param {Boolean}   [options.disableScroll]     Determines if the Modal should 'disable' the page's scroll (not the Modal's body).
+     *
      * @example
-     *      <div class="ink-dropdown">
-     *          <button class="ink-button toggle" data-target="#dropdown">Dropdown <span class="icon-caret-down"></span></button>
-     *          <ul id="dropdown" class="dropdown-menu">
-     *              <li class="heading">Heading</li>
-     *              <li class="separator-above"><a href="#">Option</a></li>
-     *              <li><a href="#">Option</a></li>
-     *              <li class="separator-above disabled"><a href="#">Disabled option</a></li>
-     *              <li class="submenu">
-     *                  <a href="#" class="toggle" data-target="#submenu1">A longer option name</a>
-     *                  <ul id="submenu1" class="dropdown-menu">
-     *                      <li class="submenu">
-     *                          <a href="#" class="toggle" data-target="#ultrasubmenu">Sub option</a>
-     *                          <ul id="ultrasubmenu" class="dropdown-menu">
-     *                              <li><a href="#">Sub option</a></li>
-     *                              <li><a href="#" data-target="ultrasubmenu">Sub option</a></li>
-     *                              <li><a href="#">Sub option</a></li>
-     *                          </ul>
-     *                      </li>
-     *                      <li><a href="#">Sub option</a></li>
-     *                      <li><a href="#">Sub option</a></li>
-     *                  </ul>
-     *              </li>
-     *              <li><a href="#">Option</a></li>
-     *          </ul>
+     *      <div class="ink-shade fade">
+     *          <div id="test" class="ink-modal fade" data-trigger="#bModal" data-width="800px" data-height="400px">
+     *              <div class="modal-header">
+     *                  <button class="modal-close ink-dismiss"></button>
+     *                  <h5>Modal windows can have headers</h5>
+     *              </div>
+     *              <div class="modal-body" id="modalContent">
+     *                  <h3>Please confirm your previous choice</h3>
+     *                  <p>"No," said Peleg, "and he hasn't been baptized right either, or it would have washed some of that devil's blue off his face."</p>
+     *                  <p>
+     *                      <img src="http://placehold.it/800x400" style="width: 100%;" alt="">
+     *                  </p>
+     *                  <p>"Do tell, now," cried Bildad, "is this Philistine a regular member of Deacon Deuteronomy's meeting? I never saw him going there, and I pass it every Lord's day."</p>
+     *                  <p>"I don't know anything about Deacon Deuteronomy or his meeting," said I; "all I know is, that Queequeg here is a born member of the First Congregational Church. He is a deacon himself, Queequeg is."</p>
+     *              </div>
+     *              <div class="modal-footer">
+     *                  <div class="push-right">
+     *                      <button class="ink-button info">Confirm</button>
+     *                      <button class="ink-button caution ink-dismiss">Cancel</button>
+     *                  </div>
+     *              </div>
+     *          </div>
      *      </div>
+     *      <a href="#" id="bModal">Open modal</a>
      *      <script>
-     *          Ink.requireModules( ['Ink.Dom.Selector_1','Ink.UI.Toggle_1'], function( Selector, Toggle ){
-     *              var toggleElement = Ink.s('.toggle');
-     *              var toggleObj = new Toggle( toggleElement );
+     *          Ink.requireModules( ['Ink.Dom.Selector_1','Ink.UI.Modal_1'], function( Selector, Modal ){
+     *              var modalElement = Ink.s('#test');
+     *              var modalObj = new Modal( modalElement );
      *          });
      *      </script>
      */
-    var Toggle = function( selector, options ){
+    var Modal = function(selector, options) {
 
-        if( typeof selector !== 'string' && typeof selector !== 'object' ){
-            throw '[Ink.UI.Toggle] Invalid CSS selector to determine the root element';
+        if( (typeof selector !== 'string') && (typeof selector !== 'object') && (typeof options.markup === 'undefined') ){
+            throw 'Invalid Modal selector';
+        } else if(typeof selector === 'string'){
+            if( selector !== '' ){
+                this._element = Selector.select(selector);
+                if( this._element.length === 0 ){
+                    /**
+                     * From a developer's perspective this should be like it is...
+                     * ... from a user's perspective, if it doesn't find elements, should just ignore it, no?
+                     */
+                    throw 'The Modal selector has not returned any elements';
+                } else {
+                    this._element = this._element[0];
+                }
+            }
+        } else if( !!selector ){
+            this._element = selector;
         }
 
-        if( typeof selector === 'string' ){
-            this._rootElement = Selector.select( selector );
-            if( this._rootElement.length <= 0 ){
-                throw '[Ink.UI.Toggle] Root element not found';
+        this._options = {
+            /**
+             * Width, height and markup really optional, as they can be obtained by the element
+             */
+            width:        undefined,
+            height:       undefined,
+
+            /**
+             * To add extra classes
+             */
+            shadeClass: undefined,
+            modalClass: undefined,
+
+            /**
+             * Optional trigger properties
+             */
+            trigger:      undefined,
+            triggerEvent: 'click',
+            autoDisplay:  true,
+
+            /**
+             * Remaining options
+             */
+            markup:       undefined,
+            onShow:       undefined,
+            onDismiss:    undefined,
+            closeOnClick: false,
+            responsive:    true,
+            disableScroll: true
+        };
+
+
+        this._handlers = {
+            click:   Ink.bindEvent(this._onClick, this),
+            keyDown: Ink.bindEvent(this._onKeyDown, this),
+            resize:  Ink.bindEvent(this._onResize, this)
+        };
+
+        this._wasDismissed = false;
+
+        /**
+         * Modal Markup
+         */
+        if( this._element ){
+            this._markupMode = Css.hasClassName(this._element,'ink-modal'); // Check if the full modal comes from the markup
+        } else {
+            this._markupMode = false;
+        }
+
+
+
+
+        if( !this._markupMode ){
+
+
+            this._modalShadow      = document.createElement('div');
+            this._modalShadowStyle = this._modalShadow.style;
+
+            this._modalDiv         = document.createElement('div');
+            this._modalDivStyle    = this._modalDiv.style;
+
+            if( !!this._element ){
+                this._options.markup = this._element.innerHTML;
             }
 
-            this._rootElement = this._rootElement[0];
+            /**
+             * Not in full markup mode, let's set the classes and css configurations
+             */
+            Css.addClassName( this._modalShadow,'ink-shade' );
+            Css.addClassName( this._modalDiv,'ink-modal' );
+            Css.addClassName( this._modalDiv,'ink-space' );
+
+            /**
+             * Applying the main css styles
+             */
+            // this._modalDivStyle.position = 'absolute';
+            this._modalShadow.appendChild( this._modalDiv);
+            document.body.appendChild( this._modalShadow );
         } else {
-            this._rootElement = selector;
+            this._modalDiv         = this._element;
+            this._modalDivStyle    = this._modalDiv.style;
+            this._modalShadow      = this._modalDiv.parentNode;
+            this._modalShadowStyle = this._modalShadow.style;
+
+            this._contentContainer = Selector.select(".modal-body",this._modalDiv);
+            if( !this._contentContainer.length ){
+                throw 'Missing div with class "modal-body"';
+            }
+
+            this._contentContainer = this._contentContainer[0];
+            this._options.markup = this._contentContainer.innerHTML;
+
+            /**
+             * First, will handle the least important: The dataset
+             */
+            this._options = Ink.extendObj(this._options,Element.data(this._element));
+
         }
 
-        this._options = Ink.extendObj({
-            target : undefined,
-            triggerEvent: 'click',
-            closeOnClick: true
-        },Element.data(this._rootElement));
-
+        /**
+         * Now, the most important, the initialization options
+         */
         this._options = Ink.extendObj(this._options,options || {});
 
-        if( typeof this._options.target === 'undefined' ){
-            throw '[Ink.UI.Toggle] Target option not defined';
+        if( !this._markupMode ){
+            this.setContentMarkup(this._options.markup);
         }
 
-        this._childElement = Aux.elOrSelector( this._options.target, 'Target' );
-        // this._childElement = Selector.select( this._options.target, this._rootElement );
-        // if( this._childElement.length <= 0 ){
-        //     if( this._childElement.length <= 0 ){
-        //         this._childElement = Selector.select( this._options.target, this._rootElement.parentNode );
-        //     }
+        if( typeof this._options.shadeClass === 'string' ){
 
-        //     if( this._childElement.length <= 0 ){
-        //         this._childElement = Selector.select( this._options.target );
-        //     }
+            InkArray.each( this._options.shadeClass.split(' '), Ink.bind(function( item ){
+                Css.addClassName( this._modalShadow, item.trim() );
+            }, this));
+        }
 
-        //     if( this._childElement.length <= 0 ){
-        //         return;
-        //     }
-        // }
-        // this._childElement = this._childElement[0];
+        if( typeof this._options.modalClass === 'string' ){
+            InkArray.each( this._options.modalClass.split(' '), Ink.bind(function( item ){
+                Css.addClassName( this._modalDiv, item.trim() );
+            }, this));
+        }
 
-        this._init();
+        if( ("trigger" in this._options) && ( typeof this._options.trigger !== 'undefined' ) ){
+            var triggerElement,i;
+            if( typeof this._options.trigger === 'string' ){
+                triggerElement = Selector.select( this._options.trigger );
+                if( triggerElement.length > 0 ){
+                    for( i=0; i<triggerElement.length; i++ ){
+                        Event.observe( triggerElement[i], this._options.triggerEvent, Ink.bindEvent(this.open, this) );
+                    }
+                }
+            }
+        } else if ( this._options.autoDisplay ) {
+            this.open();
+        }
+    };
+
+    Modal.prototype = {
+
+        /**
+         * Responsible for repositioning the modal
+         * 
+         * @method _reposition
+         * @private
+         */
+        _reposition: function(){
+
+            this._modalDivStyle.top = this._modalDivStyle.left = '50%';
+
+            this._modalDivStyle.marginTop = '-' + ( ~~( Element.elementHeight(this._modalDiv)/2) ) + 'px';
+            this._modalDivStyle.marginLeft = '-' + ( ~~( Element.elementWidth(this._modalDiv)/2) ) + 'px';
+        },
+
+        /**
+         * Responsible for resizing the modal
+         * 
+         * @method _onResize
+         * @param {Boolean|Event} runNow Its executed in the begining to resize/reposition accordingly to the viewport. But usually it's an event object.
+         * @private
+         */
+        _onResize: function( runNow ){
+
+            if( typeof runNow === 'boolean' ){
+                this._timeoutResizeFunction.call(this);
+            } else if( !this._resizeTimeout && (typeof runNow === 'object') ){
+                this._resizeTimeout = setTimeout(Ink.bind(this._timeoutResizeFunction, this),250);
+            }
+        },
+
+        /**
+         * Timeout Resize Function
+         * 
+         * @method _timeoutResizeFunction
+         * @private
+         */
+        _timeoutResizeFunction: function(){
+            /**
+             * Getting the current viewport size
+             */
+            var
+                elem = (document.compatMode === "CSS1Compat") ?  document.documentElement : document.body,
+                currentViewportHeight = parseInt(elem.clientHeight,10),
+                currentViewportWidth = parseInt(elem.clientWidth,10)
+            ;
+
+            if( ( currentViewportWidth > this.originalStatus.width ) /* && ( parseInt(this._modalDivStyle.maxWidth,10) >= Element.elementWidth(this._modalDiv) )*/ ){
+                /**
+                 * The viewport width has expanded
+                 */
+                this._modalDivStyle.width = this._modalDivStyle.maxWidth;
+
+            } else {
+                /**
+                 * The viewport width has not changed or reduced
+                 */
+                //this._modalDivStyle.width = (( currentViewportWidth * this.originalStatus.width ) / this.originalStatus.viewportWidth ) + 'px';
+                this._modalDivStyle.width = (~~( currentViewportWidth * 0.9)) + 'px';
+            }
+
+            if( (currentViewportHeight > this.originalStatus.height) && (parseInt(this._modalDivStyle.maxHeight,10) >= Element.elementHeight(this._modalDiv) ) ){
+
+                /**
+                 * The viewport height has expanded
+                 */
+                //this._modalDivStyle.maxHeight =
+                this._modalDivStyle.height = this._modalDivStyle.maxHeight;
+
+            } else {
+                /**
+                 * The viewport height has not changed, or reduced
+                 */
+                this._modalDivStyle.height = (~~( currentViewportHeight * 0.9)) + 'px';
+            }
+
+            this._resizeContainer();
+            this._reposition();
+            this._resizeTimeout = undefined;
+        },
+
+        /**
+         * Navigation click handler
+         * 
+         * @method _onClick
+         * @param {Event} ev
+         * @private
+         */
+        _onClick: function(ev) {
+            var tgtEl = Event.element(ev);
+
+            if (Css.hasClassName(tgtEl, 'ink-close') || Css.hasClassName(tgtEl, 'ink-dismiss') || 
+                Element.findUpwardsByClass(tgtEl, 'ink-close') || Element.findUpwardsByClass(tgtEl, 'ink-dismiss') ||
+                (
+                    this._options.closeOnClick &&
+                    (!Element.descendantOf(this._shadeElement, tgtEl) || (tgtEl === this._shadeElement))
+                )
+            ) {
+                var 
+                    alertsInTheModal = Selector.select('.ink-alert',this._shadeElement),
+                    alertsLength = alertsInTheModal.length
+                ;
+                for( var i = 0; i < alertsLength; i++ ){
+                    if( Element.descendantOf(alertsInTheModal[i], tgtEl) ){
+                        return;
+                    }
+                }
+
+                Event.stop(ev);
+                this.dismiss();
+            }
+        },
+
+        /**
+         * Responsible for handling the escape key pressing.
+         *
+         * @method _onKeyDown
+         * @param  {Event} ev
+         * @private
+         */
+        _onKeyDown: function(ev) {
+            if (ev.keyCode !== 27 || this._wasDismissed) { return; }
+            this.dismiss();
+        },
+
+        /**
+         * Responsible for setting the size of the modal (and position) based on the viewport.
+         * 
+         * @method _resizeContainer
+         * @private
+         */
+        _resizeContainer: function()
+        {
+
+            this._contentElement.style.overflow = this._contentElement.style.overflowX = this._contentElement.style.overflowY = 'hidden';
+            var containerHeight = Element.elementHeight(this._modalDiv);
+
+            this._modalHeader = Selector.select('.modal-header',this._modalDiv);
+            if( this._modalHeader.length>0 ){
+                this._modalHeader = this._modalHeader[0];
+                containerHeight -= Element.elementHeight(this._modalHeader);
+            }
+
+            this._modalFooter = Selector.select('.modal-footer',this._modalDiv);
+            if( this._modalFooter.length>0 ){
+                this._modalFooter = this._modalFooter[0];
+                containerHeight -= Element.elementHeight(this._modalFooter);
+            }
+
+            this._contentContainer.style.height = containerHeight + 'px';
+            if( containerHeight !== Element.elementHeight(this._contentContainer) ){
+                this._contentContainer.style.height = ~~(containerHeight - (Element.elementHeight(this._contentContainer) - containerHeight)) + 'px';
+            }
+
+            if( this._markupMode ){ return; }
+
+            this._contentContainer.style.overflow = this._contentContainer.style.overflowX = 'hidden';
+            this._contentContainer.style.overflowY = 'auto';
+            this._contentElement.style.overflow = this._contentElement.style.overflowX = this._contentElement.style.overflowY = 'visible';
+        },
+
+        /**
+         * Responsible for 'disabling' the page scroll
+         * 
+         * @method _disableScroll
+         * @private
+         */
+        _disableScroll: function()
+        {
+            this._oldScrollPos = Element.scroll();
+            this._onScrollBinded = Ink.bindEvent(function(event) {
+                var tgtEl = Event.element(event);
+
+                if( !Element.descendantOf(this._modalShadow, tgtEl) ){
+                    Event.stop(event);
+                    window.scrollTo(this._oldScrollPos[0], this._oldScrollPos[1]);
+                }
+            },this);
+            Event.observe(window, 'scroll', this._onScrollBinded);
+            Event.observe(document, 'touchmove', this._onScrollBinded);
+        },
+
+        /**************
+         * PUBLIC API *
+         **************/
+
+        /**
+         * Display this Modal. Useful if you have initialized the modal
+         * @method open 
+         * @param {Event} [event] (internal) In case its fired by the internal trigger.
+         */
+        open: function(event) {
+
+            if( event ){ Event.stop(event); }
+
+            var elem = (document.compatMode === "CSS1Compat") ?  document.documentElement : document.body;
+
+            this._resizeTimeout    = null;
+
+            Css.addClassName( this._modalShadow,'ink-shade' );
+            this._modalShadowStyle.display = this._modalDivStyle.display = 'block';
+            setTimeout(Ink.bind(function(){
+                Css.addClassName( this._modalShadow,'visible' );
+                Css.addClassName( this._modalDiv,'visible' );
+            }, this),100);
+
+            /**
+             * Fallback to the old one
+             */
+            this._contentElement = this._modalDiv;
+            this._shadeElement   = this._modalShadow;
+
+            if( !this._markupMode ){
+                /**
+                 * Setting the content of the modal
+                 */
+                this.setContentMarkup( this._options.markup );
+            }
+
+            /**
+             * If any size has been user-defined, let's set them as max-width and max-height
+             */
+            if( typeof this._options.width !== 'undefined' ){
+                this._modalDivStyle.width = this._options.width;
+                if( this._options.width.indexOf('%') === -1 ){
+                    this._modalDivStyle.maxWidth = Element.elementWidth(this._modalDiv) + 'px';
+                }
+            } else {
+                this._modalDivStyle.maxWidth = this._modalDivStyle.width = Element.elementWidth(this._modalDiv)+'px';
+            }
+
+            if( parseInt(elem.clientWidth,10) <= parseInt(this._modalDivStyle.width,10) ){
+                this._modalDivStyle.width = (~~(parseInt(elem.clientWidth,10)*0.9))+'px';
+            }
+
+            if( typeof this._options.height !== 'undefined' ){
+                this._modalDivStyle.height = this._options.height;
+                if( this._options.height.indexOf('%') === -1 ){
+                    this._modalDivStyle.maxHeight = Element.elementHeight(this._modalDiv) + 'px';
+                }
+            } else {
+                this._modalDivStyle.maxHeight = this._modalDivStyle.height = Element.elementHeight(this._modalDiv) + 'px';
+            }
+
+            if( parseInt(elem.clientHeight,10) <= parseInt(this._modalDivStyle.height,10) ){
+                this._modalDivStyle.height = (~~(parseInt(elem.clientHeight,10)*0.9))+'px';
+            }
+
+            this.originalStatus = {
+                viewportHeight:     parseInt(elem.clientHeight,10),
+                viewportWidth:      parseInt(elem.clientWidth,10),
+                width:              parseInt(this._modalDivStyle.maxWidth,10),
+                height:             parseInt(this._modalDivStyle.maxHeight,10)
+            };
+
+            /**
+             * Let's 'resize' it:
+             */
+            if(this._options.responsive) {
+                this._onResize(true);
+                Event.observe( window,'resize',this._handlers.resize );
+            } else {
+                this._resizeContainer();
+                this._reposition();
+            }
+
+            if (this._options.onShow) {
+                this._options.onShow(this);
+            }
+
+            if(this._options.disableScroll) {
+                this._disableScroll();
+            }
+
+            // subscribe events
+            Event.observe(this._shadeElement, 'click',   this._handlers.click);
+            Event.observe(document,           'keydown', this._handlers.keyDown);
+
+            Aux.registerInstance(this, this._shadeElement, 'modal');
+
+            this._wasDismissed = false;
+        },
+
+        /**
+         * Dismisses the modal
+         * 
+         * @method dismiss
+         * @public
+         */
+        dismiss: function() {
+            if (this._options.onDismiss) {
+                var ret = this._options.onDismiss(this);
+                if (ret === false) { return; }
+            }
+
+            this._wasDismissed = true;
+
+            if(this._options.disableScroll) {
+                Event.stopObserving(window, 'scroll', this._onScrollBinded);
+                Event.stopObserving(document, 'touchmove', this._onScrollBinded);
+            }
+
+            if( this._options.responsive ){
+                Event.stopObserving(window, 'resize', this._handlers.resize);
+            }
+
+            // this._modalShadow.parentNode.removeChild(this._modalShadow);
+
+            if( !this._markupMode ){
+                this._modalShadow.parentNode.removeChild(this._modalShadow);
+                this.destroy();
+            } else {
+                Css.removeClassName( this._modalDiv, 'visible' );
+                Css.removeClassName( this._modalShadow, 'visible' );
+
+                var
+                    dismissInterval,
+                    transitionEndFn = Ink.bindEvent(function(){
+                        if( !dismissInterval ){ return; }
+                        this._modalShadowStyle.display = 'none';
+                        Event.stopObserving(document,'transitionend',transitionEndFn);
+                        Event.stopObserving(document,'oTransitionEnd',transitionEndFn);
+                        Event.stopObserving(document,'webkitTransitionEnd',transitionEndFn);
+                        clearInterval(dismissInterval);
+                        dismissInterval = undefined;
+                    }, this)
+                ;
+
+                Event.observe(document,'transitionend',transitionEndFn);
+                Event.observe(document,'oTransitionEnd',transitionEndFn);
+                Event.observe(document,'webkitTransitionEnd',transitionEndFn);
+
+                if( !dismissInterval ){
+                    dismissInterval = setInterval(Ink.bind(function(){
+                        if( this._modalShadowStyle.opacity > 0 ){
+                            return;
+                        } else {
+                            this._modalShadowStyle.display = 'none';
+                            clearInterval(dismissInterval);
+                            dismissInterval = undefined;
+                        }
+
+                    }, this),500);
+                }
+            }
+        },
+
+        /**
+         * Removes the modal from the DOM
+         * 
+         * @method destroy
+         * @public
+         */
+        destroy: function() {
+            Aux.unregisterInstance(this._instanceId);
+
+        },
+
+        /**
+         * Returns the content DOM element
+         * 
+         * @method getContentElement
+         * @return {DOMElement} Modal main cointainer.
+         * @public
+         */
+        getContentElement: function() {
+            return this._contentContainer;
+        },
+
+        /**
+         * Replaces the content markup
+         * 
+         * @method setContentMarkup
+         * @param {String} contentMarkup
+         * @public
+         */
+        setContentMarkup: function(contentMarkup) {
+            if( !this._markupMode ){
+                this._modalDiv.innerHTML = [contentMarkup].join('');
+                this._contentContainer = Selector.select(".modal-body",this._modalDiv);
+                if( !this._contentContainer.length ){
+                    // throw 'Missing div with class "modal-body"';
+                    var tempHeader = Selector.select(".modal-header",this._modalDiv);
+                    var tempFooter = Selector.select(".modal-footer",this._modalDiv);
+
+                    InkArray.each(tempHeader,Ink.bind(function( element ){ element.parentNode.removeChild(element); },this));
+                    InkArray.each(tempFooter,Ink.bind(function( element ){ element.parentNode.removeChild(element); },this));
+
+                    var body = document.createElement('div');
+                    Css.addClassName(body,'modal-body');
+                    body.innerHTML = this._modalDiv.innerHTML;
+                    this._modalDiv.innerHTML = '';
+
+                    InkArray.each(tempHeader,Ink.bind(function( element ){ this._modalDiv.appendChild(element); },this));
+                    this._modalDiv.appendChild(body);
+                    InkArray.each(tempFooter,Ink.bind(function( element ){ this._modalDiv.appendChild(element); },this));
+                    
+                    this._contentContainer = Selector.select(".modal-body",this._modalDiv);
+                }
+                this._contentContainer = this._contentContainer[0];
+            } else {
+                this._contentContainer.innerHTML = [contentMarkup].join('');
+            }
+            this._contentElement = this._modalDiv;
+            this._resizeContainer();
+        }
 
     };
 
-    Toggle.prototype = {
+    return Modal;
+
+});
+
+/**
+ * @module Ink.UI.ProgressBar_1
+ * @author inkdev AT sapo.pt
+ * @version 1
+ */
+Ink.createModule('Ink.UI.ProgressBar', '1', ['Ink.Dom.Selector_1','Ink.Dom.Element_1'], function( Selector, Element ) {
+    'use strict';
+
+    /**
+     * Associated to a .ink-progress-bar element, it provides the necessary
+     * method - setValue() - for the user to change the element's value.
+     * 
+     * @class Ink.UI.ProgressBar
+     * @constructor
+     * @version 1
+     * @param {String|DOMElement} selector
+     * @param {Object} [options] Options
+     *     @param {Number}     [options.startValue]          Percentage of the bar that is filled. Range between 0 and 100. Default: 0
+     *     @param {Function}   [options.onStart]             Callback that is called when a change of value is started
+     *     @param {Function}   [options.onEnd]               Callback that is called when a change of value ends
+     *
+     * @example
+     *      <div class="ink-progress-bar grey" data-start-value="70%">
+     *          <span class="caption">I am a grey progress bar</span>
+     *          <div class="bar grey"></div>
+     *      </div>
+     *      <script>
+     *          Ink.requireModules( ['Ink.Dom.Selector_1','Ink.UI.ProgressBar_1'], function( Selector, ProgressBar ){
+     *              var progressBarElement = Ink.s('.ink-progress-bar');
+     *              var progressBarObj = new ProgressBar( progressBarElement );
+     *          });
+     *      </script>
+     */
+    var ProgressBar = function( selector, options ){
+
+        if( typeof selector !== 'object' ){
+            if( typeof selector !== 'string' ){
+                throw '[Ink.UI.ProgressBar] :: Invalid selector';
+            } else {
+                this._element = Selector.select(selector);
+                if( this._element.length < 1 ){
+                    throw "[Ink.UI.ProgressBar] :: Selector didn't find any elements";
+                }
+                this._element = this._element[0];
+            }
+        } else {
+            this._element = selector;
+        }
+
+
+        this._options = Ink.extendObj({
+            'startValue': 0,
+            'onStart': function(){},
+            'onEnd': function(){}
+        },Element.data(this._element));
+
+        this._options = Ink.extendObj( this._options, options || {});
+        this._value = this._options.startValue;
+
+        this._init();
+    };
+
+    ProgressBar.prototype = {
 
         /**
          * Init function called by the constructor
@@ -17449,579 +20850,40 @@ Ink.createModule('Ink.UI.Toggle', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Do
          * @private
          */
         _init: function(){
-
-            this._accordion = ( Css.hasClassName(this._rootElement.parentNode,'accordion') || Css.hasClassName(this._childElement.parentNode,'accordion') );
-
-            Event.observe( this._rootElement, this._options.triggerEvent, Ink.bindEvent(this._onTriggerEvent,this) );
-            if( this._options.closeOnClick.toString() === 'true' ){
-                Event.observe( document, 'click', Ink.bindEvent(this._onClick,this));
+            this._elementBar = Selector.select('.bar',this._element);
+            if( this._elementBar.length < 1 ){
+                throw '[Ink.UI.ProgressBar] :: Bar element not found';
             }
+            this._elementBar = this._elementBar[0];
+
+            this._options.onStart = Ink.bind(this._options.onStart,this);
+            this._options.onEnd = Ink.bind(this._options.onEnd,this);
+            this.setValue( this._options.startValue );
         },
 
         /**
-         * Event handler. It's responsible for handling the <triggerEvent> defined in the options.
-         * This will trigger the toggle.
+         * Sets the value of the Progressbar
          * 
-         * @method _onTriggerEvent
-         * @param {Event} event
-         * @private
+         * @method setValue
+         * @param {Number} newValue Numeric value, between 0 and 100, that represents the percentage of the bar.
+         * @public
          */
-        _onTriggerEvent: function( event ){
+        setValue: function( newValue ){
+            this._options.onStart( this._value);
 
-            if( this._accordion ){
-                var elms, i, accordionElement;
-                if( Css.hasClassName(this._childElement.parentNode,'accordion') ){
-                    accordionElement = this._childElement.parentNode;
-                } else {
-                    accordionElement = this._childElement.parentNode.parentNode;
-                }
-                elms = Selector.select('.toggle',accordionElement);
-                for( i=0; i<elms.length; i+=1 ){
-                    var
-                        dataset = Element.data( elms[i] ),
-                        targetElm = Selector.select( dataset.target,accordionElement )
-                    ;
-                    if( (targetElm.length > 0) && (targetElm[0] !== this._childElement) ){
-                            targetElm[0].style.display = 'none';
-                    }
-                }
+            newValue = parseInt(newValue,10);
+            if( isNaN(newValue) || (newValue < 0) ){
+                newValue = 0;
+            } else if( newValue>100 ){
+                newValue = 100;
             }
+            this._value = newValue;
+            this._elementBar.style.width =  this._value + '%';
 
-            var finalClass = ( Css.getStyle(this._childElement,'display') === 'none') ? 'show-all' : 'hide-all';
-            var finalDisplay = ( Css.getStyle(this._childElement,'display') === 'none') ? 'block' : 'none';
-            Css.removeClassName(this._childElement,'show-all');
-            Css.removeClassName(this._childElement, 'hide-all');
-            Css.addClassName(this._childElement, finalClass);
-            this._childElement.style.display = finalDisplay;
-
-            if( finalClass === 'show-all' ){
-                Css.addClassName(this._rootElement,'active');
-            } else {
-                Css.removeClassName(this._rootElement,'active');
-            }
-        },
-
-        /**
-         * Click handler. Will handle clicks outside the toggle component.
-         * 
-         * @method _onClick
-         * @param {Event} event
-         * @private
-         */
-        _onClick: function( event ){
-            var
-                tgtEl = Event.element(event),
-                shades
-            ;
-
-            if( (this._rootElement === tgtEl) || Element.isAncestorOf( this._rootElement, tgtEl ) || Element.isAncestorOf( this._childElement, tgtEl ) ){
-                return;
-            } else if( (shades = Ink.ss('.ink-shade')).length ) {
-                var
-                    shadesLength = shades.length
-                ;
-
-                for( var i = 0; i < shadesLength; i++ ){
-                    if( Element.isAncestorOf(shades[i],tgtEl) && Element.isAncestorOf(shades[i],this._rootElement) ){
-                        return;
-                    }
-                }
-            }
-            
-            this._dismiss( this._rootElement );
-        },
-
-        /**
-         * Dismisses the toggling.
-         * 
-         * @method _dismiss
-         * @private
-         */
-        _dismiss: function( ){
-            if( ( Css.getStyle(this._childElement,'display') === 'none') ){
-                return;
-            }
-            Css.removeClassName(this._childElement, 'show-all');
-            Css.removeClassName(this._rootElement,'active');
-            Css.addClassName(this._childElement, 'hide-all');
-            this._childElement.style.display = 'none';
+            this._options.onEnd( this._value );
         }
     };
 
-    return Toggle;
-
-});
-
-/**
- * @module Ink.UI.Pagination_1
- * @author inkdev AT sapo.pt
- * @version 1
- */
-Ink.createModule('Ink.UI.Pagination', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Dom.Css_1','Ink.Dom.Element_1','Ink.Dom.Selector_1'], function(Aux, Event, Css, Element, Selector ) {
-    'use strict';
-
-    /**
-     * Function to create the pagination anchors
-     *
-     * @method genAel
-     * @param  {String} inner HTML to be placed inside the anchor.
-     * @return {DOMElement}  Anchor created
-     */
-    var genAEl = function(inner) {
-        var aEl = document.createElement('a');
-        aEl.setAttribute('href', '#');
-        aEl.innerHTML = inner;
-        return aEl;
-    };
-
-    /**
-     * @class Ink.UI.Pagination
-     * @constructor
-     * @version 1
-     * @uses Ink.UI.Aux
-     * @uses Ink.Dom.Event
-     * @uses Ink.Dom.Css
-     * @uses Ink.Dom.Element
-     * @uses Ink.Dom.Selector
-     * @param {String|DOMElement} selector
-     * @param {Object} options Options
-     * @param {Number}   options.size                number of pages
-     * @param {Number}   [options.maxSize]           if passed, only shows at most maxSize items. displays also first|prev page and next page|last buttons
-     * @param {Number}   [options.start]             start page. defaults to 1
-     * @param {String}   [options.previousLabel]     label to display on previous page button
-     * @param {String}   [options.nextLabel]         label to display on next page button
-     * @param {String}   [options.previousPageLabel] label to display on previous page button
-     * @param {String}   [options.nextPageLabel]     label to display on next page button
-     * @param {String}   [options.firstLabel]        label to display on previous page button
-     * @param {String}   [options.lastLabel]         label to display on next page button
-     * @param {Function} [options.onChange]          optional callback
-     * @param {Boolean}  [options.setHash]           if true, sets hashParameter on the location.hash. default is disabled
-     * @param {String}   [options.hashParameter]     parameter to use on setHash. by default uses 'page'
-     */
-    var Pagination = function(selector, options) {
-
-        this._options = Ink.extendObj({
-            size:          undefined,
-            start:         1,
-            firstLabel:    'First',
-            lastLabel:     'Last',
-            previousLabel: 'Previous',
-            nextLabel:     'Next',
-            onChange:      undefined,
-            setHash:       false,
-            hashParameter: 'page'
-        }, options || {});
-
-        if (!this._options.previousPageLabel) {
-            this._options.previousPageLabel = 'Previous ' + this._options.maxSize;
-        }
-
-        if (!this._options.nextPageLabel) {
-            this._options.nextPageLabel = 'Next ' + this._options.maxSize;
-        }
-
-
-        this._handlers = {
-            click: Ink.bindEvent(this._onClick,this)
-        };
-
-        this._element = Aux.elOrSelector(selector, '1st argument');
-
-        if (!Aux.isInteger(this._options.size)) {
-            throw new TypeError('size option is a required integer!');
-        }
-
-        if (!Aux.isInteger(this._options.start) && this._options.start > 0 && this._options.start <= this._options.size) {
-            throw new TypeError('start option is a required integer between 1 and size!');
-        }
-
-        if (this._options.maxSize && !Aux.isInteger(this._options.maxSize) && this._options.maxSize > 0) {
-            throw new TypeError('maxSize option is a positive integer!');
-        }
-
-        else if (this._options.size < 0) {
-            throw new RangeError('size option must be equal or more than 0!');
-        }
-
-        if (this._options.onChange !== undefined && typeof this._options.onChange !== 'function') {
-            throw new TypeError('onChange option must be a function!');
-        }
-
-        this._current = this._options.start - 1;
-        this._itemLiEls = [];
-
-        this._init();
-    };
-
-    Pagination.prototype = {
-
-        /**
-         * Init function called by the constructor
-         * 
-         * @method _init
-         * @private
-         */
-        _init: function() {
-            // generate and apply DOM
-            this._generateMarkup(this._element);
-            this._updateItems();
-
-            // subscribe events
-            this._observe();
-
-            Aux.registerInstance(this, this._element, 'pagination');
-        },
-
-        /**
-         * Responsible for setting listener in the 'click' event of the Pagination element.
-         * 
-         * @method _observe
-         * @private
-         */
-        _observe: function() {
-            Event.observe(this._element, 'click', this._handlers.click);
-        },
-
-        /**
-         * Updates the markup everytime there's a change in the Pagination object.
-         * 
-         * @method _updateItems
-         * @private
-         */
-        _updateItems: function() {
-            var liEls = this._itemLiEls;
-
-            var isSimpleToggle = this._options.size === liEls.length;
-
-            var i, f, liEl;
-
-            if (isSimpleToggle) {
-                // just toggle active class
-                for (i = 0, f = this._options.size; i < f; ++i) {
-                    Css.setClassName(liEls[i], 'active', i === this._current);
-                }
-            }
-            else {
-                // remove old items
-                for (i = liEls.length - 1; i >= 0; --i) {
-                    this._ulEl.removeChild(liEls[i]);
-                }
-
-                // add new items
-                liEls = [];
-                for (i = 0, f = this._options.size; i < f; ++i) {
-                    liEl = document.createElement('li');
-                    liEl.appendChild( genAEl( i + 1 ) );
-                    Css.setClassName(liEl, 'active', i === this._current);
-                    this._ulEl.insertBefore(liEl, this._nextEl);
-                    liEls.push(liEl);
-                }
-                this._itemLiEls = liEls;
-            }
-
-            if (this._options.maxSize) {
-                // toggle visible items
-                var page = Math.floor( this._current / this._options.maxSize );
-                var pi = this._options.maxSize * page;
-                var pf = pi + this._options.maxSize - 1;
-
-                for (i = 0, f = this._options.size; i < f; ++i) {
-                    liEl = liEls[i];
-                    Css.setClassName(liEl, 'hide-all', i < pi || i > pf);
-                }
-
-                this._pageStart = pi;
-                this._pageEnd = pf;
-                this._page = page;
-
-                Css.setClassName(this._prevPageEl, 'disabled', !this.hasPreviousPage());
-                Css.setClassName(this._nextPageEl, 'disabled', !this.hasNextPage());
-
-                Css.setClassName(this._firstEl, 'disabled', this.isFirst());
-                Css.setClassName(this._lastEl, 'disabled', this.isLast());
-            }
-
-            // update prev and next
-            Css.setClassName(this._prevEl, 'disabled', !this.hasPrevious());
-            Css.setClassName(this._nextEl, 'disabled', !this.hasNext());
-        },
-
-        /**
-         * Returns the top element for the gallery DOM representation
-         * 
-         * @method _generateMarkup
-         * @param {DOMElement} el
-         * @private
-         */
-        _generateMarkup: function(el) {
-            Css.addClassName(el, 'ink-navigation');
-
-            var
-                ulEl,liEl,
-                hasUlAlready = false
-            ;
-            if( ( ulEl = Selector.select('ul.pagination',el)).length < 1 ){
-                ulEl = document.createElement('ul');
-                Css.addClassName(ulEl, 'pagination');
-            } else {
-                hasUlAlready = true;
-                ulEl = ulEl[0];
-            }
-
-            if (this._options.maxSize) {
-                liEl = document.createElement('li');
-                liEl.appendChild( genAEl(this._options.firstLabel) );
-                this._firstEl = liEl;
-                Css.addClassName(liEl, 'first');
-                ulEl.appendChild(liEl);
-
-                liEl = document.createElement('li');
-                liEl.appendChild( genAEl(this._options.previousPageLabel) );
-                this._prevPageEl = liEl;
-                Css.addClassName(liEl, 'previousPage');
-                ulEl.appendChild(liEl);
-            }
-
-            liEl = document.createElement('li');
-            liEl.appendChild( genAEl(this._options.previousLabel) );
-            this._prevEl = liEl;
-            Css.addClassName(liEl, 'previous');
-            ulEl.appendChild(liEl);
-
-            liEl = document.createElement('li');
-            liEl.appendChild( genAEl(this._options.nextLabel) );
-            this._nextEl = liEl;
-            Css.addClassName(liEl, 'next');
-            ulEl.appendChild(liEl);
-
-            if (this._options.maxSize) {
-                liEl = document.createElement('li');
-                liEl.appendChild( genAEl(this._options.nextPageLabel) );
-                this._nextPageEl = liEl;
-                Css.addClassName(liEl, 'nextPage');
-                ulEl.appendChild(liEl);
-
-                liEl = document.createElement('li');
-                liEl.appendChild( genAEl(this._options.lastLabel) );
-                this._lastEl = liEl;
-                Css.addClassName(liEl, 'last');
-                ulEl.appendChild(liEl);
-            }
-
-            if( !hasUlAlready ){
-                el.appendChild(ulEl);
-            }
-
-            this._ulEl = ulEl;
-        },
-
-        /**
-         * Click handler
-         * 
-         * @method _onClick
-         * @param {Event} ev
-         * @private
-         */
-        _onClick: function(ev) {
-            Event.stop(ev);
-
-            var tgtEl = Event.element(ev);
-            if (tgtEl.nodeName.toLowerCase() !== 'a') {
-                do{
-                    tgtEl = tgtEl.parentNode;
-                }while( (tgtEl.nodeName.toLowerCase() !== 'a') && (tgtEl !== this._element) );
-                
-                if( tgtEl === this._element){
-                    return;
-                }
-            }
-
-            var liEl = tgtEl.parentNode;
-            if (liEl.nodeName.toLowerCase() !== 'li') { return; }
-
-            if ( Css.hasClassName(liEl, 'active') ||
-                 Css.hasClassName(liEl, 'disabled') ) { return; }
-
-            var isPrev = Css.hasClassName(liEl, 'previous');
-            var isNext = Css.hasClassName(liEl, 'next');
-            var isPrevPage = Css.hasClassName(liEl, 'previousPage');
-            var isNextPage = Css.hasClassName(liEl, 'nextPage');
-            var isFirst = Css.hasClassName(liEl, 'first');
-            var isLast = Css.hasClassName(liEl, 'last');
-
-            if (isFirst) {
-                this.setCurrent(0);
-            }
-            else if (isLast) {
-                this.setCurrent(this._options.size - 1);
-            }
-            else if (isPrevPage || isNextPage) {
-                this.setCurrent( (isPrevPage ? -1 : 1) * this._options.maxSize, true);
-            }
-            else if (isPrev || isNext) {
-                this.setCurrent(isPrev ? -1 : 1, true);
-            }
-            else {
-                var nr = parseInt( tgtEl.innerHTML, 10) - 1;
-                this.setCurrent(nr);
-            }
-        },
-
-
-
-        /**************
-         * PUBLIC API *
-         **************/
-
-        /**
-         * Sets the number of pages
-         * 
-         * @method setSize
-         * @param {Number} sz number of pages
-         * @public
-         */
-        setSize: function(sz) {
-            if (!Aux.isInteger(sz)) {
-                throw new TypeError('1st argument must be an integer number!');
-            }
-
-            this._options.size = sz;
-            this._updateItems();
-            this._current = 0;
-        },
-
-        /**
-         * Sets the current page
-         * 
-         * @method setCurrent
-         * @param {Number} nr sets the current page to given number
-         * @param {Boolean} isRelative trueish to set relative change instead of absolute (default)
-         * @public
-         */
-        setCurrent: function(nr, isRelative) {
-            if (!Aux.isInteger(nr)) {
-                throw new TypeError('1st argument must be an integer number!');
-            }
-
-            if (isRelative) {
-                nr += this._current;
-            }
-
-            if (nr < 0) {
-                nr = 0;
-            }
-            else if (nr > this._options.size - 1) {
-                nr = this._options.size - 1;
-            }
-            this._current = nr;
-            this._updateItems();
-
-            /*if (this._options.setHash) {
-                var o = {};
-                o[this._options.hashParameter] = nr;
-                Aux.setHash(o);
-            }*/
-
-            if (this._options.onChange) { this._options.onChange(this); }
-        },
-
-        /**
-         * Returns the number of pages
-         * 
-         * @method getSize
-         * @return {Number} Number of pages
-         * @public
-         */
-        getSize: function() {
-            return this._options.size;
-        },
-
-        /**
-         * Returns current page
-         * 
-         * @method getCurrent
-         * @return {Number} Current page
-         * @public
-         */
-        getCurrent: function() {
-            return this._current;
-        },
-
-        /**
-         * Returns true iif at first page
-         * 
-         * @method isFirst
-         * @return {Boolean} True if at first page
-         * @public
-         */
-        isFirst: function() {
-            return this._current === 0;
-        },
-
-        /**
-         * Returns true iif at last page
-         * 
-         * @method isLast
-         * @return {Boolean} True if at last page
-         * @public
-         */
-        isLast: function() {
-            return this._current === this._options.size - 1;
-        },
-
-        /**
-         * Returns true iif has prior pages
-         * 
-         * @method hasPrevious
-         * @return {Boolean} True if has prior pages
-         * @public
-         */
-        hasPrevious: function() {
-            return this._current > 0;
-        },
-
-        /**
-         * Returns true iif has pages ahead
-         * 
-         * @method hasNext
-         * @return {Boolean} True if has pages ahead
-         * @public
-         */
-        hasNext: function() {
-            return this._current < this._options.size - 1;
-        },
-
-        /**
-         * Returns true iif has prior set of page(s)
-         * 
-         * @method hasPreviousPage
-         * @return {Boolean} Returns true iif has prior set of page(s)
-         * @public
-         */
-        hasPreviousPage: function() {
-            return this._options.maxSize && this._current > this._options.maxSize - 1;
-        },
-
-        /**
-         * Returns true iif has set of page(s) ahead
-         * 
-         * @method hasNextPage
-         * @return {Boolean} Returns true iif has set of page(s) ahead
-         * @public
-         */
-        hasNextPage: function() {
-            return this._options.maxSize && this._options.size - this._current >= this._options.maxSize + 1;
-        },
-
-        /**
-         * Unregisters the component and removes its markup from the DOM
-         * 
-         * @method destroy
-         * @public
-         */
-        destroy: Aux.destroyComponent
-    };
-
-    return Pagination;
+    return ProgressBar;
 
 });
