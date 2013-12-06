@@ -7,7 +7,7 @@ An architectural Pattern for [Ink][i]).
 
 This is an attempt at providing a reference implementation for rich client-side HTML5 apps using [Ink][k].
 
-# What you get in the package:
+# What you get in the package
 
 - Great "out of the box" look & feel, CSS & widgets provided by Ink.js lib.
 - MVVM (Model, view, view model) architecture from the great Knockout.js lib.
