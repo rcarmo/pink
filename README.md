@@ -16,6 +16,14 @@ This is an attempt at providing a reference implementation for rich client-side 
 - Client-side navigation & routing (routie.js).
 - Client-side signals/event bus for module decoupling (jssignals)
 - Various data-bind ready components: Autocomplete, Drag&Drop, Kanban, Grid, Tooltip, ModalWindow, ...
+
+
+# Demo
+
+Check a sample todo app created with the framework:
+
+http://rcarmo.github.io/pink/
+
  
 
 [i]: https://github.com/sapo/Ink
