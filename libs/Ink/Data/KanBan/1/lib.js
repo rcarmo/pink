@@ -10,22 +10,35 @@ Ink.createModule('Ink.Data.KanBan', '1', ['Ink.Data.Binding_1', 'Ink.Data.DragDr
         this.moduleName = 'Ink.Data.KanBan';
         this.sections = options.sections;
         this.cardsMovedHandler = options.cardsMovedHandler;
+        this.previewMoveHandler = options.previewMoveHandler;
+        this.preventDragout = false;
     };
 
+    // This handler is called after the dropHandler and containes the logic to remove/preserve the item from/in it's origin
     Module.prototype.dragOutHandler = function(source, data) {
         var i;
         var dataIndex;
         
+        if (this.preventDragout) {
+            this.preventDragout = false;
+            return;
+        }
+        
         if (typeof data.length == 'undefined') {
-            i=source.indexOf(data);
-            if (i != -1) {
-                source.splice(i, 1);
+            if ((typeof data.moveOnDrop=='undefined') || data.moveOnDrop) {
+                i=source.indexOf(data);
+                if (i != -1) {
+                    source.splice(i, 1);
+                }
             }
         } else {
             for (dataIndex=0; dataIndex < data.length; dataIndex++) {
-                i=source.indexOf(data[dataIndex]);
-                if (i != -1) {
-                    source.splice(i, 1);
+                if ((typeof data[dataIndex].moveOnDrop=='undefined') || data[dataIndex].moveOnDrop) {
+                    i=source.indexOf(data[dataIndex]);
+                    if (i != -1) {
+                        source.splice(i, 1);
+                    }
+                    
                 }
             }
         }
@@ -36,8 +49,18 @@ Ink.createModule('Ink.Data.KanBan', '1', ['Ink.Data.Binding_1', 'Ink.Data.DragDr
     	var i;
         var oldItem = undefined;
 
-        if (typeof data.length == 'undefined') {
+        // The data array needs to be cloned to allow the client to modify the cards after the move 
+        if (data.length === undefined) {
         	data = [data];
+        } else {
+            data = data.slice(0);
+        }
+        
+        if (this.previewMoveHandler !== undefined) {
+            if (!this.previewMoveHandler(source, data, index)) {
+                this.preventDragout = true;
+                return;
+            }
         }
         
         if (index !== undefined) {

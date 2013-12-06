@@ -178,7 +178,7 @@ Ink.createModule('Ink.Data.DragDrop', '1', ['Ink.Data.Binding_1', 'Ink.UI.Dragga
             };
         },
         
-        _cloneStyle: function(src, dst, cloneAll) {
+        _cloneStyle: function(src, dst, cloneAll, offset) {
             if (cloneAll) {
                 dst.className           = src.className;
                 dst.style.borderWidth   = '0';
@@ -188,8 +188,8 @@ Ink.createModule('Ink.Data.DragDrop', '1', ['Ink.Data.Binding_1', 'Ink.UI.Dragga
             dst.style.position      = 'absolute';
             dst.style.width         = inkEl.elementWidth(src) + 'px';
             dst.style.height        = inkEl.elementHeight(src) + 'px';
-            dst.style.left          = inkEl.elementLeft(src) + 'px';
-            dst.style.top           = inkEl.elementTop(src) + 'px';
+            dst.style.left          = (offset?inkEl.elementLeft(src)-offset().left:inkEl.elementLeft(src)) + 'px';
+            dst.style.top           = (offset?inkEl.elementTop(src)-offset().top:inkEl.elementTop(src)) + 'px';
             dst.style.cssFloat      = inkCss.getStyle(src, 'float');
             dst.style.display       = inkCss.getStyle(src, 'display');
         },        
@@ -199,26 +199,56 @@ Ink.createModule('Ink.Data.DragDrop', '1', ['Ink.Data.Binding_1', 'Ink.UI.Dragga
             var draggable;
             var draggableElement;
             var dragThreshold = (binding.dragThreshold || 4);
+            var offset = binding.offset;
+            var lastSelectedIndex=-1;
 
             var handleSelection = function(data, evt) {
                 var draggableElement;
-                var i;
+                var i, start, stop;
+                var selectedIndex;
+                var elements;
+                var source = ko.unwrap(binding.source);
 
                 if (!ko.bindingHandlers.draggableContainer._isDragging) {
                     // If the user selects an item from a different container let's clear the old selection
                     if (lastSelectedContainer != element) {
                         ko.bindingHandlers.draggableContainer._clearSelection();
                         lastSelectedContainer = element;
+                        lastSelectedIndex=-1;
                     }
                     
                     draggableElement = inkEl.findUpwardsByClass(evt.target, 'drag-enabled');
-                    inkCss.toggleClassName(draggableElement, 'draggable-selected');
-                    i = selectedData.indexOf(data);
-                    if (i !=-1) {
-                        selectedData.splice(i, 1);
+                    selectedIndex = draggableElement.getAttribute('data-index');
+
+                    if (evt.shiftKey && (selectedIndex!=lastSelectedIndex) && (lastSelectedIndex!=-1)) {
+                        elements = inkSel.select('.drag-enabled', lastSelectedContainer);
+
+                        if (lastSelectedIndex > selectedIndex) {
+                            start=selectedIndex;
+                            stop=lastSelectedIndex;
+                        } else {
+                            stop=selectedIndex;
+                            start=lastSelectedIndex;
+                        }
+                        
+                        for (i=start; i<=stop; i++) {
+                            inkCss.addClassName(elements[i], 'draggable-selected');
+                            
+                            if (selectedData.indexOf(source[i])==-1) {
+                                selectedData.push(source[i]);
+                            }
+                        }
                     } else {
-                        selectedData.push(data);
+                        inkCss.toggleClassName(draggableElement, 'draggable-selected');
+                        i = selectedData.indexOf(data);
+                        if (i !=-1) {
+                            selectedData.splice(i, 1);
+                        } else {
+                            selectedData.push(data);
+                        }
                     }
+                    
+                    lastSelectedIndex = selectedIndex;
                 }
             };
 
@@ -242,13 +272,13 @@ Ink.createModule('Ink.Data.DragDrop', '1', ['Ink.Data.Binding_1', 'Ink.UI.Dragga
                             ko.bindingHandlers.draggableContainer._clearSelection();
                         }
                         
-                        if (selectedData.length == 0) {
+                        if (selectedData.length <= 1) {
                             draggableProxy = draggableElement.cloneNode(true);
-                            ko.bindingHandlers.draggableContainer._cloneStyle(draggableElement, draggableProxy, true);
+                            ko.bindingHandlers.draggableContainer._cloneStyle(draggableElement, draggableProxy, true, offset);
                             dataTransfer = data;
                         } else {
                             draggableProxy = inkEl.htmlToFragment('<div>Multile elements selected</div>').firstChild;
-                            ko.bindingHandlers.draggableContainer._cloneStyle(draggableElement, draggableProxy, false);
+                            ko.bindingHandlers.draggableContainer._cloneStyle(draggableElement, draggableProxy, false, offset);
                             dataTransfer = selectedData;
                         }
 
