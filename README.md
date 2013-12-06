@@ -1,11 +1,11 @@
 Pink
 =========
 
-An architectural Pattern for [Ink][i]).
+An architectural Pattern for [Ink][i].
 
 # Goals
 
-This is an attempt at providing a reference implementation for rich client-side HTML5 apps using [Ink][k].
+This is an attempt at providing a reference implementation for rich client-side HTML5 apps using [Ink][i].
 
 # What you get in the package
 
