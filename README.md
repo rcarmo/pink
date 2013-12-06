@@ -3,7 +3,7 @@ Pink
 
 An architectural Pattern for [Ink][i].
 
-# Goals
+## Goals
 
 This is an attempt at providing a reference implementation for rich client-side HTML5 apps using [Ink][i].
 
@@ -18,7 +18,7 @@ This is an attempt at providing a reference implementation for rich client-side 
 - Various data-bind ready components: Autocomplete, Drag&Drop, Kanban, Grid, Tooltip, ModalWindow, ...
 
 
-# Demo
+## Demo
 
 Check a sample todo app created with the framework:
 
