@@ -1,11 +1,11 @@
-Ink.createModule('App.Tasks.Home', '1', ['App.Tasks', 'Ink.Data.Binding_1', 'App.Tasks.DataProvider'], function(app, ko, dataProvider) {
+Ink.createModule('App.Tasks.Home', '1', ['App.Tasks', 'Ink.Data.Binding_1', 'App.Tasks.DataProvider', 'Ink.Data.Grid_1'], function(app, ko, dataProvider, Grid) {
     var Module = function() {
         this.moduleName = 'App.Tasks.Home';
         this.tasks = ko.observableArray();
         this.todoTasks = ko.observableArray();
         this.completedTasks = ko.observableArray();        
         this.incompleteTasks = ko.observableArray();
-        this.tasksModel = new ko.simpleGrid.viewModel({
+        this.tasksModel = new Grid({
             data: this.tasks,
             pageSize: 10000,
             columns: [

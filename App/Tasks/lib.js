@@ -8,7 +8,7 @@ Ink.createModule('App.Tasks', '1', ['Ink.App_1', 'Ink.Data.Binding_1', 'Ink.Plug
     
     // App constructor (only data initialization logic)
     var Module = function() {
-        App.call(this); // Call the base initialization logic
+        App.call(this, 'todo', 'todo'); // Call the base initialization logic (set default route, undefined route)
 
         this.appTitle = 'My Tasks';
     };
@@ -49,12 +49,9 @@ Ink.createModule('App.Tasks', '1', ['Ink.App_1', 'Ink.Data.Binding_1', 'Ink.Plug
      * Application startup logic
      * 
      */
-    Module.prototype.navigateToStart = function() {
-        var self=this;
-        
-        if (window.location.hash=='') {
-            self.navigateTo('todo');
-        }
+    Module.prototype.ready = function() {
+        /// Do your custom initialization stuff here, and then call start();
+        this.start();
     };
     
     return new Module();
