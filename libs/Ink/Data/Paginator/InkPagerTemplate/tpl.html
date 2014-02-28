@@ -1,5 +1,5 @@
-<footer>
-    <nav class="ink-navigation">
+<footer class="paginator ink-form">
+    <nav class="ink-navigation push-left">
         <ul class="pagination">
             <li class="previous" data-bind="css: {disabled: backDisabled}"><a href="javascript:void" data-bind="click: stepBackward"><span class="icon-chevron-left"></span></a></li>
             <!-- ko foreach: pages -->  
@@ -13,4 +13,15 @@
             <li class="next" data-bind="css: {disabled: forwardDisabled}"><a href="javascript:void" data-bind="click: stepForward"><span class="icon-chevron-right"></span></a></li>
         </ul>
     </nav>              
+    <!-- ko if: typeof $data.pageSizeOptionList != 'undefined' -->
+        <div class="control push-left paginator-page-sizes">
+            <label>Items/Page:&nbsp;</label>
+            <select title="Items/Page" data-bind="options: pageSizeOptionList, value: pageSize"></select>
+        </div>
+    <!-- /ko -->
+    <!-- ko if: $data.showPageCaption -->
+        <div class="control push-right paginator-page-caption">
+            <label data-bind="text: pageCaption"></label>
+        </div>
+    <!-- /ko -->
 </footer>   

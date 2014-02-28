@@ -22,13 +22,19 @@
             <tr data-bind="foreach: $parent.columns">
                <td data-bind="css: (typeof cellClass == 'undefined' ? undefined : cellClass), visible: (typeof visible == 'undefined' ? true : visible)">
                     <!--ko if: (typeof rowHandler == 'function') || (typeof href == 'function') -->
-                        <a data-bind="attr: {href: (typeof href == 'function' ? href($parent) : 'javascript:void(0);')}, text: typeof rowText == 'function' ? rowText($parent) : $parent[rowText], click: (typeof rowHandler == 'function' ? function() {rowHandler($parent);} : undefined)"></a>
+                        <!-- ko if: typeof href == 'function' && href($parent) == undefined && typeof rowHandler != 'function' -->
+                            <span data-bind="text: typeof rowText == 'function' ? rowText($parent) : $parent[rowText]"></span>
+                        <!-- /ko -->
+                        <!-- ko if: (typeof href == 'function' && href($parent) != undefined) ||  (typeof rowHandler == 'function') -->
+                            <a data-bind="attr: {href: (typeof href == 'function' ? href($parent) : 'javascript:void(0);')}, text: typeof rowText == 'function' ?
+ rowText($parent) : $parent[rowText], click: (typeof rowHandler == 'function' ? function() {rowHandler($parent);} : undefined)"></a>
+                        <!-- /ko -->
                     <!--/ko-->
                     <!--ko if: (typeof rowHandler != 'function') && (typeof href != 'function') -->
                         <!--ko if: typeof rowTemplate == 'string' -->
                             <span data-bind="template: { name: rowTemplate, data: $parent }"></span>
                         <!--/ko-->
-    
+
                         <!--ko if: typeof rowTemplate != 'string' -->
                             <span data-bind="text: typeof rowText == 'function' ? rowText($parent) : $parent[rowText]"></span>
                         <!--/ko-->

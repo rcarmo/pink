@@ -3,11 +3,11 @@
  * @desc Application main module class (to be inherited by apps)
  * @author hlima, ecunha, ttt  AT sapo.pt
  * @version 1
- */    
+ */
 
 Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', 'Ink.Dom.Element_1', 'Ink.Plugin.Signals_1', 'Ink.Data.Module_1'], function(ko, Router, element, Signal) {
-    // App constructor (only data initialization, no logic)
-    var Module = function() {
+    // App constructor
+    var Module = function(rootRoute, undefinedRoute) {
         this._router = undefined;
 
         this.modalModule = {
@@ -22,28 +22,32 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
         this.alertModule = {
             title: ko.observable()
         };
-        
+
         this.infoModule = {
             title: ko.observable()
         };
 
-        this.undefinedRoute = undefined;
+        this.rootRoute = rootRoute;
+        this.undefinedRoute = undefinedRoute;
+
+        this._defineRoutingMaps();
+        this._setupSignals();
     };
 
-    /* 
+    /*
      * Toast notifications API
-     * 
+     *
      */
-    
+
     Module.prototype._showToast = function(message, type, delay) {
         var toast = element.create('div', {'class': 'ink-alert basic '+type});
         var panel = Ink.i('toastPanel');
-        
+
         element.setTextContent(toast, message);
         panel.appendChild(toast);
         window.setTimeout(function() {element.remove(toast);}, delay);
     };
-    
+
     Module.prototype.showInfoToast = function(message) {
         this._showToast(message, 'info', 2000);
     };
@@ -55,37 +59,37 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
     Module.prototype.showSuccessToast = function(message) {
         this._showToast(message, 'success', 2000);
     };
-    
-    
-    /* 
+
+
+    /*
      * Modal dialogs API
-     * 
+     *
      */
     Module.prototype.showMiniModalWindow = function(title, moduleName, params, modalStyle) {
         var style = modalStyle || {};
-        
+
         style.width = '550px';
         style.height = '300px';
-        
+
         this.showModalWindow(title, moduleName, params, style);
     };
 
-    
+
     Module.prototype.showSmallModalWindow = function(title, moduleName, params, modalStyle) {
         var style = modalStyle || {};
-        
+
         style.width = '800px';
         style.height = '500px';
-        
+
         this.showModalWindow(title, moduleName, params, style);
     };
-    
+
     Module.prototype.showLargeModalWindow = function(title, moduleName, params, modalStyle) {
         var style = modalStyle || {};
-        
+
         style.width = '900px';
         style.height = '600px';
-        
+
         this.showModalWindow(title, moduleName, params, style);
     };
 
@@ -110,15 +114,15 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
         this.infoModule.title(title);
         this.infoModule.modal.show({message: message});
     };
-    
+
     Module.prototype.showStandby = function() {
         var standbyPanel = document.getElementById('standbyLightBox');
-        
+
         if (standbyPanel.className.indexOf(' visible') < 0) {
             standbyPanel.className+=' visible';
         }
     };
-    
+
     Module.prototype.hideStandby = function() {
         window.setTimeout(function() {
             var standbyPanel = document.getElementById('standbyLightBox');
@@ -128,48 +132,49 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
             }
         }, 500);
     };
-    
+
     /*
      * Define routing maps
-     * 
+     *
      */
 
     /*
      * Returns a list of routes to be rendered in the top navigation bar
      * (Abstract method to be overriden by subclasses)
-     * 
+     *
      * Visible route example:
      * {isActive: ko.observable(true), caption: 'Home', hash: 'home', module: 'App.Example.Home'}
-     * 
+     *
      */
     Module.prototype.listVisibleRoutes = function() {
         return [];
     };
-    
+
 
     /*
      * Returns a list of the routes used internally by the app
      * (Abstract method to be overriden by subclasses)
-     * 
+     *
      * Invisible route example (search users view):
      * {hash: 'users\\?search=:search', module: 'App.Example.ListUsers', parentModule: 'App.Example.ListUsers'}
-     * 
+     *
      */
     Module.prototype.listInvisibleRoutes = function() {
         return [];
     };
-    
-    
+
+
     Module.prototype._defineRoutingMaps = function () {
         // Available routes definition
         this.definedRoutes = {
             visibleRoutes: this.listVisibleRoutes(),
             invisibleRoutes: this.listInvisibleRoutes(),
             activeModule: ko.observable(undefined),
+            activeRoute: ko.observable(undefined),
             moduleArgs: ko.observable(undefined)
         };
     };
-    
+
     /*
      * Allows a plugin to add a new visible route
      * The plugin should call this method on it's initialization code
@@ -185,12 +190,12 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
     Module.prototype.addInvisibleRoute = function(route) {
         this.definedRoutes.invisibleRoutes.push(route);
     };
-    
+
     /*
      * This methods is responsible for:
      * - Initialize the routing maps and send them to the routing plugin.
-     * - View change logic 
-     * 
+     * - View change logic
+     *
      */
     Module.prototype._buildRoutingMaps = function() {
         var self = this;
@@ -244,7 +249,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
                             values[parameters[i].replace(":", "")] = argumentsValues[i];
                         }
                     }
-                    
+
                     if (route.arguments) {
                         values = Ink.extendObj(values, route.arguments);
                     }
@@ -253,6 +258,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
                     self.definedRoutes.moduleArgs([values]);
                     // Set the active module and force rebinding
                     self.definedRoutes.activeModule(route.module);
+                    self.definedRoutes.activeRoute(route);
                     // Send a signal telling to which view the app changed
                     self.signals.viewChanged.dispatch(route);
 
@@ -278,26 +284,26 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
 
     /*
      * Signals setup
-     * 
+     *
      */
-    
-    
+
+
     /*
      * Build the app's custom signals (client side)
      * (Abstract method to be overriden by subclasses)
-     * 
-     * Add custom signals to this.signals 
-     * 
+     *
+     * Add custom signals to this.signals
+     *
      */
     Module.prototype.addCustomSignals = function() {
         /*
          * eg.:
-         * 
+         *
          * this.signals.userAdded = new Signal();
          */
     };
-    
-    
+
+
     Module.prototype._setupSignals = function() {
         var self = this;
         this.signals = {};
@@ -305,79 +311,96 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
         // Core app signals
         this.signals.viewChanged = new Signal();
         this.signals.shellRendered = new Signal();
-        
+        this.signals.appReady = new Signal();
+
         this.addCustomSignals();
     };
 
-    
+
     /*
-     * Navigate to internal route path 
-     * 
-     * eg. app.navigateTo('user/1'); 
-     * 
+     * Navigate to an internal app route path
+     *
+     * eg. app.navigateTo('user/1');
+     *
      */
     Module.prototype.navigateTo = function(path, options) {
         Router.navigate(path, options);
     };
 
     /*
-     * Bootstrap plugins init
-     * 
-     * Define custom modules to be loaded on startup. 
-     * Custom modules can define new routes and subscribe to client side events in their initialization code.  
+     * Navigate to the app's initial screen
+     *
      */
-    
+    Module.prototype.navigateToStart = function() {
+        if (this.rootRoute) {
+            this.navigateTo(this.rootRoute);
+        }
+    };
+
     /*
-     * Return an array with the module names of the plugins to be loaded on the app's bootstrap 
+     * Bootstrap plugins init
+     *
+     * Define custom modules to be loaded on startup.
+     * Custom modules can define new routes and subscribe to client side events in their initialization code.
+     */
+
+    /*
+     * Return an array with the module names of the plugins to be loaded on the app's bootstrap
      * Override this method in subclasses
-     * 
+     *
      * eg. ['App.Example.Plugins.Calendar']
      */
     Module.prototype.listPluginModules = function() {
         return [];
     };
-    
+
     Module.prototype._loadPlugins = function(callback) {
         var self=this;
-        
+
         window.setTimeout(function() {
             console.log('Loading plugins...');
             Ink.requireModules(self.listPluginModules(), function() {
                 console.log('All plugins loaded.');
                 callback();
-            });        
+            });
         }, 0);
     };
-    
+
     /*
-     * Application startup logic
-     * 
+     * Application startup logic methods
+     *
      */
-    
+
     /*
-     * Override this method in subclasses
-     * 
+     * The application entry point must call this method
+     *
      */
-    Module.prototype.navigateToStart = function() {
-       /*
-        * eg.
-        * 
-        * this.navigateTo('home');
-        */ 
-    };
-    
     Module.prototype.run = function() {
         var self=this;
-        
-        this._defineRoutingMaps();
-        this._setupSignals();
+
         this._loadPlugins(function() {
             self._buildRoutingMaps();
-
-            // Load the shell 
-            ko.applyBindings();
+            self.ready();
         });
-        this.navigateToStart();
+    };
+
+    /*
+     * Override this method to add your own custom initialization logic.
+     * If you override this method, you must call start() when ready
+     *
+     */
+    Module.prototype.ready = function() {
+        this.start();
+    };
+
+
+    /*
+     * Call this method only once when all the app's initialization code has run
+     *
+     */
+    Module.prototype.start = function() {
+        this.signals.appReady.dispatch();
+        ko.applyBindings();
     };
 
     return Module;

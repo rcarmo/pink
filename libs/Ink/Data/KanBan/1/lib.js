@@ -5,7 +5,7 @@
  * @version 1
  */    
 
-Ink.createModule('Ink.Data.KanBan', '1', ['Ink.Data.Binding_1', 'Ink.Data.DragDrop_1'], function(ko) {
+Ink.createModule('Ink.Data.KanBan', '1', ['Ink.Data.Binding_1', 'Ink.Dom.Event_1', 'Ink.UI.Toggle_1', 'Ink.Data.DragDrop_1', 'Ink.Data.Tooltip_1'], function(ko, inkEvt, Toggle) {
     var Module = function(options) {
         this.moduleName = 'Ink.Data.KanBan';
         this.sections = options.sections;
@@ -98,6 +98,19 @@ Ink.createModule('Ink.Data.KanBan', '1', ['Ink.Data.Binding_1', 'Ink.Data.DragDr
     			self.cardsMovedHandler(source, data);
     		}
         }, 0);
+    };
+    
+    Module.prototype.afterCardRender = function(elements) {
+        // Hack to wait for the elements to be attached to the DOM :(
+        window.setTimeout(function() {
+            var card=Ink.s('.toggle', elements[0]);
+            if (card) {
+                try {
+                    new Toggle(card);
+                } catch (error) {
+                }
+            }
+        }, 50);
     };
     
     return Module;

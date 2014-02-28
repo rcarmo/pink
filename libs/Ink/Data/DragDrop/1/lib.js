@@ -133,6 +133,10 @@ Ink.createModule('Ink.Data.DragDrop', '1', ['Ink.Data.Binding_1', 'Ink.UI.Dragga
             if (ko.bindingHandlers.draggableContainer._isDragging) {
                 window.setTimeout(function() {
                     ko.bindingHandlers.draggableContainer._isDragging = false;
+
+                    if (typeof ko.bindingHandlers.dragEndHandler == 'function') {
+                        ko.bindingHandlers.dragEndHandler();
+                    }
                 }, 500);
             }
         },
@@ -292,6 +296,10 @@ Ink.createModule('Ink.Data.DragDrop', '1', ['Ink.Data.Binding_1', 'Ink.UI.Dragga
                         draggable=new Draggable(draggableProxy, {cursor: 'move', onEnd: ko.bindingHandlers.draggableContainer._handleDrop.bind(this, binding)});
                         draggable.handlers.start(clonedEvent);
                         ko.bindingHandlers.draggableContainer._draggable=draggable;
+                        
+                        if (typeof ko.bindingHandlers.dragStartHandler == 'function') {
+                            ko.bindingHandlers.dragStartHandler();
+                        }
                     }
                 } 
             };
@@ -317,8 +325,10 @@ Ink.createModule('Ink.Data.DragDrop', '1', ['Ink.Data.Binding_1', 'Ink.UI.Dragga
                 
                 for (i=0; i < source.length; i++) {
                     draggable = source[i];
+                    draggable.guid = guid();
+                    draggable.afterRender = binding.afterDraggableRender;
                     
-                    draggableElement = inkEl.htmlToFragment('<div data-index="'+i+'" class="drag-enabled disable-text-selection" style="cursor: move" data-bind="template: {name: \''+binding.draggableTemplate+'\'}"/>').firstChild;
+                    draggableElement = inkEl.htmlToFragment('<div data-index="'+i+'" class="drag-enabled disable-text-selection" style="cursor: move" data-bind="template: {afterRender: $data.afterRender, name: \''+binding.draggableTemplate+'\'}"/>').firstChild;
                     draggableElement.dataTransfer = {data: draggable};
                     
                     ko.applyBindings(draggable, draggableElement);
@@ -336,6 +346,13 @@ Ink.createModule('Ink.Data.DragDrop', '1', ['Ink.Data.Binding_1', 'Ink.UI.Dragga
             return {controlsDescendantBindings: true};
         }
     };
+    
+    function guid() {
+        function S4() {
+            return (((1+Math.random())*0x10000)|0).toString(16).substring(1); 
+        }
+        return (S4() + S4() + "-" + S4() + "-4" + S4().substr(0,3) + "-" + S4() + "-" + S4() + S4() + S4()).toLowerCase();    
+    }
     
     return {};
 });
