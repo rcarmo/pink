@@ -18227,6 +18227,14 @@ Ink.createModule("Ink.UI.Droppable","1",["Ink.Dom.Element_1", "Ink.Dom.Event_1",
                     });
                 }
 
+                /* Teste HLIMA
+                if (element.id=='droppable3') {
+                    console.clear();
+                    console.log(coords.x);
+                    console.log(data.left);
+                }
+                */
+                
                 // check if our draggable is over our droppable
                 if (coords.x >= data.left && coords.x <= data.right &&
                         coords.y >= data.top && coords.y <= data.bottom) {
@@ -18425,7 +18433,18 @@ Ink.createModule("Ink.UI.Draggable","1",["Ink.Dom.Element_1", "Ink.Dom.Event_1",
          * @private
          */
         _getCoords: function(e) {
+            var node = e.target;
+            var leftScroll = 0;
             var ps = [InkElement.scrollWidth(), InkElement.scrollHeight()];
+            
+            // Teste HLIMA
+            while ( (typeof node.scrollLeft == 'number') && (leftScroll==0) ) {
+                leftScroll += node.scrollLeft;
+                node = node.parentNode;
+            }
+
+            ps[0] = leftScroll;
+            
             return {
                 x: (e.touches ? e.touches[0].clientX : e.clientX) + ps[x],
                 y: (e.touches ? e.touches[0].clientY : e.clientY) + ps[y]

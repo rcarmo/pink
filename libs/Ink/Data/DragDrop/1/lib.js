@@ -192,8 +192,8 @@ Ink.createModule('Ink.Data.DragDrop', '1', ['Ink.Data.Binding_1', 'Ink.UI.Dragga
             dst.style.position      = 'absolute';
             dst.style.width         = inkEl.elementWidth(src) + 'px';
             dst.style.height        = inkEl.elementHeight(src) + 'px';
-            dst.style.left          = (offset?inkEl.elementLeft(src)-offset().left:inkEl.elementLeft(src)) + 'px';
-            dst.style.top           = (offset?inkEl.elementTop(src)-offset().top:inkEl.elementTop(src)) + 'px';
+            dst.style.left          = (offset?inkEl.elementLeft(src)-offset(src).left:inkEl.elementLeft(src)) + 'px';
+            dst.style.top           = (offset?inkEl.elementTop(src)-offset(src).top:inkEl.elementTop(src)) + 'px';
             dst.style.cssFloat      = inkCss.getStyle(src, 'float');
             dst.style.display       = inkCss.getStyle(src, 'display');
         },        
