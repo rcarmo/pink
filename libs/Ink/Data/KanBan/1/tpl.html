@@ -1,15 +1,20 @@
 <div class="kanban disable-text-selection">
     <!--ko foreach: sections -->
-    	<div data-bind="css: (typeof css=='undefined'?'section':'section '+css), tooltip: {text: $data.title, where: 'left', color: 'blue', fade: 0, delay: 1}">
+    	<div data-bind="css: (typeof css=='undefined'?'section':'section '+ko.unwrap(css)), tooltip: {text: $data.title, where: 'left', color: 'blue', fade: 0, delay: 1}">
     		<div class="title prevent-hover-propagation">
-                <div data-bind="text: title"></div>
-                <!--ko if: (typeof $data.subtitle!='undefined')-->
-                    <div class="sub-title" data-bind="text: $data.subtitle, attr: {title: $data.subtitle}"></div>
+                <!--ko if: (typeof headerTemplate=='undefined')-->
+                    <div data-bind="text: title"></div>
+                    <!--ko if: (typeof $data.subtitle!='undefined')-->
+                        <div class="sub-title" data-bind="text: $data.subtitle, attr: {title: $data.subtitle}"></div>
+                    <!--/ko-->
+                    <!--ko if: (typeof $data.settingsHandler=='function')-->
+                        <div class="section-setup">
+                            <a href="javascript:void(0);" data-bind="click: $data.settingsHandler, attr: {title: (typeof $data.settingsCaption=='undefined'?'':$data.settingsCaption)}"><i class="icon-cog"></i></a>
+                        </div>
+                    <!--/ko-->
                 <!--/ko-->
-                <!--ko if: (typeof $data.settingsHandler=='function')-->
-                    <div class="section-setup">
-                        <a href="javascript:void(0);" data-bind="click: $data.settingsHandler, attr: {title: (typeof $data.settingsCaption=='undefined'?'':$data.settingsCaption)}"><i class="icon-cog"></i></a>
-                    </div>
+                <!--ko if: (typeof headerTemplate=='string')-->
+                    <div class="content" data-bind="template: {name: headerTemplate, data: $data}"></div>
                 <!--/ko-->
             </div>
             <!--ko if: (typeof $data.droppable == 'undefined') || ($data.droppable) -->
@@ -21,9 +26,14 @@
                 </div>
             <!--/ko-->
             <div class="footer">
-                <div data-bind="text: title"></div>
-                <!--ko: if (typeof $data.subtitle!='undefined')-->
-                    <div class="sub-title" data-bind="text: $data.subtitle, attr: {title: $data.subtitle}"></div>
+                <!--ko if: (typeof footerTemplate=='undefined')-->
+                    <div data-bind="text: title"></div>
+                    <!--ko if: (typeof $data.subtitle!='undefined')-->
+                        <div class="sub-title" data-bind="text: $data.subtitle, attr: {title: $data.subtitle}"></div>
+                    <!--/ko-->
+                <!--/ko-->
+                <!--ko if: (typeof footerTemplate=='string')-->
+                    <div data-bind="template: {name: footerTemplate, data: $data}"></div>
                 <!--/ko-->
             </div>
     	</div>
