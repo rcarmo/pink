@@ -56,6 +56,7 @@ Ink.createModule('Ink.Data.Module', '1', ['Ink.Data.Binding_1'], function(ko) {
                 options = unwrap(value),
                 templateBinding = {},
                 initializer = ko.bindingHandlers.module.initializer || "initialize",
+                finalizer = ko.bindingHandlers.module.finalizer || "finalize",
                 notifyReady = undefined;
 
                 //build up a proper template binding object
@@ -106,7 +107,8 @@ Ink.createModule('Ink.Data.Module', '1', ['Ink.Data.Binding_1'], function(ko) {
                     read: function() {
                         //module name could be in an observable
                         var moduleName = unwrap(value),
-                        initialArgs;
+                            oldModule = templateBinding.data(), 
+                            initialArgs;
 
                         //observable could return an object that contains a name property
                         if (moduleName && typeof moduleName === "object") {
@@ -117,6 +119,11 @@ Ink.createModule('Ink.Data.Module', '1', ['Ink.Data.Binding_1'], function(ko) {
                             moduleName = unwrap(moduleName.name);
                         }
 
+                        // If the old module has an appropriate finalizer function, then call it
+                        if (oldModule && oldModule[finalizer]) {
+                            oldModule[finalizer].apply(oldModule);
+                        }
+                        
                         //ensure that data is cleared, so it can't bind against an incorrect template
                         templateBinding.data(null);
 
