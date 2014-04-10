@@ -36,7 +36,6 @@ Ink.createModule('App.Tasks.Home', '1', ['App.Tasks', 'Ink.Data.Binding_1', 'App
     		}
     	}
     };
-
     
     Module.prototype.loadTasks = function() {
     	var tasks = dataProvider.listTasks();

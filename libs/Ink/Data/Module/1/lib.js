@@ -53,30 +53,30 @@ Ink.createModule('Ink.Data.Module', '1', ['Ink.Data.Binding_1'], function(ko) {
     ko.bindingHandlers.module = {
             init: function(element, valueAccessor, allBindingsAccessor, data, context) {
                 var value = valueAccessor(),
-                options = unwrap(value),
-                templateBinding = {},
-                initializer = ko.bindingHandlers.module.initializer || "initialize",
-                finalizer = ko.bindingHandlers.module.finalizer || "finalize",
-                notifyReady = undefined;
+	                options = unwrap(value),
+	                templateBinding = {},
+	                initializer = ko.bindingHandlers.module.initializer || "initialize",
+	                finalizer = ko.bindingHandlers.module.finalizer || "finalize",
+	                notifyReady = undefined,
+	                notifyBeforeDestroy = undefined;
 
                 //build up a proper template binding object
                 if (options && typeof options === "object") {
-                    //initializer function name can be overridden
+                    //initializer/finalizer function names can be overridden
                     initializer = options.initializer || initializer;
+                    finalizer = options.finalizer || finalizer;
                     notifyReady = options.notifyReady;
+                    notifyBeforeDestroy = options.notifyBeforeDestroy;
 
                     if (options["templateEngine"]) {
                         templateBinding.templateEngine = options["templateEngine"]; 
                     }
                 }
 
-                //if this is not an anonymous template, then build a function to properly return the template name
-                if (!element.firstChild) {
-                    templateBinding.name = function() {
-                        var template = unwrap(value);
-                        return ((template && typeof template === "object") ? unwrap(template.template || template.name) : template) || "";
-                    };
-                }
+                templateBinding.name = function() {
+                    var template = unwrap(value);
+                    return ((template && typeof template === "object") ? unwrap(template.template || template.name) : template) || "";
+                };
 
                 //set the data to an observable, that we will fill when the module is ready
                 templateBinding.data = ko.observable();
@@ -88,26 +88,28 @@ Ink.createModule('Ink.Data.Module', '1', ['Ink.Data.Binding_1'], function(ko) {
                     if (elements && elements.length>0 && ((elements[0].nodeType==1) || (elements[0].nodeType==8))) {
                         // The viewmodel must be a valid one
                         if (templateBinding.data()) {
-                            // Run this method on the viewmodel
-                            if (typeof templateBinding.data()['afterRender'] == "function") 
+                            // Run this method on the loaded view model
+                            if (typeof templateBinding.data()['afterRender'] == "function") { 
                                 templateBinding.data()["afterRender"](elements);
+                            }
 
-                            // Run this method on the host page
-                            if (notifyReady && (typeof notifyReady == "function") )
-                                notifyReady();
+                            // Run this method on the host view model
+                            if (notifyReady && (typeof notifyReady == "function") ) {
+                                notifyReady(element);
+                            }
                         }
                     }
-                }
+                };
 
                 //actually apply the template binding that we built
                 ko.applyBindingsToNode(element, { template: templateBinding },  context);
 
-                //now that we have bound our element using the template binding, pull the module and populate the observable.
+                // Use a computed to force a re-bind when the module name changes
                 ko.computed({
                     read: function() {
                         //module name could be in an observable
                         var moduleName = unwrap(value),
-                            oldModule = templateBinding.data(), 
+                            oldModule = templateBinding.data.peek(), //don't create a dependency 
                             initialArgs;
 
                         //observable could return an object that contains a name property
@@ -119,17 +121,24 @@ Ink.createModule('Ink.Data.Module', '1', ['Ink.Data.Binding_1'], function(ko) {
                             moduleName = unwrap(moduleName.name);
                         }
 
-                        // If the old module has an appropriate finalizer function, then call it
-                        if (oldModule && oldModule[finalizer]) {
-                            oldModule[finalizer].apply(oldModule);
+                        if (oldModule) {
+                            // If the old module has an appropriate finalizer function, then call it
+                        	if (oldModule[finalizer]) {
+                        		oldModule[finalizer].apply(oldModule);
+                        	}
+                        	
+                            // Run this method on the host view model to notify that the old module is to be destroyed
+                            if (notifyBeforeDestroy && (typeof notifyBeforeDestroy == "function") ) {
+                            	notifyBeforeDestroy(element);
+                            }
                         }
                         
-                        //ensure that data is cleared, so it can't bind against an incorrect template
+                        // Destroy the old module
                         templateBinding.data(null);
 
-                        //at this point, if we have a module name, then retrieve it via the text plugin
+                        //at this point, if we have a module name, then retrieve it via ink require
                         if (moduleName) {
-                            // Prevent Ink's requireModule reentrance bug
+                            // Prevent Ink's requireModule re-entrance bug
                             window.setTimeout(function() {
                                 Ink.requireModules([addTrailingSlash(ko.bindingHandlers.module.baseDir) + moduleName], function(mod) {
                                     //if it is a constructor function then create a new instance
@@ -155,8 +164,7 @@ Ink.createModule('Ink.Data.Module', '1', ['Ink.Data.Binding_1'], function(ko) {
 
                 return { controlsDescendantBindings: true };
             },
-            baseDir: "",
-            initializer: "initialize"
+            baseDir: ""
     };
 
     

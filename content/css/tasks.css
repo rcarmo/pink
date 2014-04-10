@@ -131,7 +131,7 @@ footer>.ink-navigation>ul>li>a {
 .scroll-area {
 	position: absolute;
 	left: 0.9em;
-	top: 2em;
+	top: 4em;
 	right: 0.9em;
 	bottom: 3em;
 	overflow-y: auto;

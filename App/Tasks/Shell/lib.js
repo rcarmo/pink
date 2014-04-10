@@ -1,4 +1,4 @@
-Ink.createModule('App.Tasks.Shell', '1', ['App.Tasks'], function(app) {
+Ink.createModule('App.Tasks.Shell', '1', ['App.Tasks', 'App.Tasks.Libs.Animation'], function(app, Animation) {
     var Module = function() {
         var self=this;
         
@@ -13,6 +13,27 @@ Ink.createModule('App.Tasks.Shell', '1', ['App.Tasks'], function(app) {
     Module.prototype.afterRender = function() {
         new Ink.UI.Toggle('#mainMenuTrigger');
         app.signals.shellRendered.dispatch();
+    };
+
+    Module.prototype.handleBeforeModuleDestroy = function(element) {
+    	var moduleEl=element.firstChild;
+    	
+    	ko.cleanNode(moduleEl); // Remove old module bindings
+    	document.getElementById('tempContainer').appendChild(moduleEl);
+    	element.style.display = 'none';
+
+    	// Run the animation after the new new module is bound...
+    	window.setTimeout(function() {
+        	Animation(moduleEl)
+        	.set('opacity', 0.5)
+        	.translate(-500)
+        	.duration('0.3s')
+        	.then(function() {
+            	element.style.display = 'block';
+            	moduleEl.parentNode.removeChild(moduleEl);
+        	})
+    		.end();
+    	}, 0);
     };
 
     return new Module();

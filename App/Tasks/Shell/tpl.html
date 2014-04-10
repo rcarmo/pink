@@ -27,8 +27,9 @@
             <h4 class="menu-title" data-bind="text: appTitle"></h4>
         </nav>
     
-        <!--ko module: {name: definedRoutes.activeModule, data: definedRoutes.moduleArgs} -->
-        <!--/ko-->
+        <section id="tempContainer"></section>
+        <section data-bind="module: {name: definedRoutes.activeModule, data: definedRoutes.moduleArgs, notifyBeforeDestroy: handleBeforeModuleDestroy}">
+        </section>
             
         <!-- Required modules for Ink modal windows -->
         <div id="modalWindow" data-bind="module: {name:'Ink.Data.ModalWindow_1', data: {parent: modalModule, modalId: 'modalWindow', title: modalModule.title, contentModule: modalModule.content, modalWidth: modalModule.width, modalHeight: modalModule.height}}"></div>
