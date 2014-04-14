@@ -105,9 +105,9 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
         this.modalModule.modal.show(params);
     };
 
-    Module.prototype.showConfirm = function(title, message, callback) {
+    Module.prototype.showConfirm = function(title, message, confirmCallback, cancelCallback) {
         this.alertModule.title(title);
-        this.alertModule.modal.show({message: message, confirmCallback: callback});
+        this.alertModule.modal.show({message: message, confirmCallback: confirmCallback, cancelCallback: cancelCallback});
     };
 
     Module.prototype.showInfoBox = function(title, message) {

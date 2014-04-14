@@ -29,6 +29,7 @@ Ink.createModule('Ink.Data.ModalWindow', '1', ['Ink.Data.Binding_1', 'Ink.Dom.Se
         
         this.moduleData = {
             confirmHandler: undefined, 
+            cancelHandler: undefined, 
             confirmDisabled: ko.observable(false), 
             params: undefined, 
             hide: this.hide.bind(this) 
@@ -50,13 +51,20 @@ Ink.createModule('Ink.Data.ModalWindow', '1', ['Ink.Data.Binding_1', 'Ink.Dom.Se
     };
 
     Module.prototype.confirm = function() {
-        if (this.moduleData.confirmHandler && (typeof this.moduleData.confirmHandler == 'function'))
+        if (this.moduleData.confirmHandler && (typeof this.moduleData.confirmHandler == 'function')) {
             this.moduleData.confirmHandler();
-    }
+        }
+    };
+    
+    Module.prototype.cancel = function() {
+        if (this.moduleData.params.cancelCallback && (typeof this.moduleData.params.cancelCallback == 'function')) {
+            this.moduleData.params.cancelCallback();
+        }
+    };
     
     Module.prototype.hide = function() {
         this.modal.dismiss();
-    }
+    };
     
     Module.prototype._hideModal = function() {
         var self=this;

@@ -11,7 +11,7 @@
         <div class="modal-footer">
             <div class="push-right">
                 <button class="ink-button blue" data-bind="click: confirm, disable: confirmDisabled, text: confirmCaption"></button>
-                <button class="ink-button red ink-dismiss" data-bind="visible: cancelVisible">Cancel</button>
+                <button class="ink-button red ink-dismiss" data-bind="click: cancel, visible: cancelVisible">Cancel</button>
             </div>
             <div class="push-left" data-bind="foreach: taskButtons">
                 <button class="ink-button" data-bind="click: $parent.handleTask.bind($parent, handler), css: cssClass">
