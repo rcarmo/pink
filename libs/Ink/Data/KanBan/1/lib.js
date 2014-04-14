@@ -9,6 +9,8 @@ Ink.createModule('Ink.Data.KanBan', '1', ['Ink.Data.Binding_1', 'Ink.Dom.Event_1
     var Module = function(options) {
         this.moduleName = 'Ink.Data.KanBan';
         this.sections = options.sections;
+        this.afterRender = options.afterRender;
+        this.showSectionTooltip = (typeof options.showSectionTooltip == 'undefined' ? true : options.showSectionTooltip);
         this.cardsMovedHandler = options.cardsMovedHandler;
         this.previewMoveHandler = options.previewMoveHandler;
         this.preventDragout = false;

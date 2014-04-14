@@ -1,6 +1,6 @@
 <div class="kanban disable-text-selection">
-    <!--ko foreach: sections -->
-    	<div data-bind="css: (typeof css=='undefined'?'section':'section '+ko.unwrap(css)), tooltip: {text: $data.title, where: 'left', color: 'blue', fade: 0, delay: 1}">
+    <!--ko foreach: {data: sections, afterRender: afterRender} -->
+    	<div data-bind="css: (typeof css=='undefined'?'section':'section '+ko.unwrap(css)), tooltip: {text: $parent.showSectionTooltip ? $data.title : '', where: 'left', color: 'blue', fade: 0, delay: 0}">
     		<div class="title prevent-hover-propagation">
                 <!--ko if: (typeof headerTemplate=='undefined')-->
                     <div data-bind="text: title"></div>
