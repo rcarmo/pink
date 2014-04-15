@@ -142,12 +142,6 @@ footer>.ink-navigation>ul>li>a {
 }
 
 .todo-kanban {
-    position: absolute;
-    left: 0.9em;
-    top: 4em;
-    right: 0.9em;
-    bottom: 3em;
-    overflow-y: auto;
 }
 
 /*****************************

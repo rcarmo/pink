@@ -22,18 +22,18 @@ Ink.createModule('App.Tasks.Shell', '1', ['App.Tasks', 'App.Tasks.Libs.Animation
     	document.getElementById('tempContainer').appendChild(moduleEl);
     	element.style.display = 'none';
 
-    	// Run the animation after the new new module is bound...
+    	// Run the animation after the new module is bound...
     	window.setTimeout(function() {
         	Animation(moduleEl)
         	.set('opacity', 0.5)
         	.translate(-500)
-        	.duration('0.3s')
-        	.then(function() {
-            	element.style.display = 'block';
-            	moduleEl.parentNode.removeChild(moduleEl);
-        	})
-    		.end();
-    	}, 0);
+        	.duration('0.5s')
+    		.end(function() {
+                element.style.display = 'block';
+                moduleEl.parentNode.removeChild(moduleEl);
+            });
+
+    	}, 250);
     };
 
     return new Module();
