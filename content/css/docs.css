@@ -1,0 +1,36 @@
+body {
+    background: #ededed;
+}
+
+header h1 small:before  {
+    content: "|";
+    margin: 0 0.5em;
+    font-size: 1.6em;
+}
+
+footer {
+    background: #ccc;
+}
+
+article header{
+    padding: 0;
+    overflow: hidden;
+}
+
+article footer {
+    background: none;
+}
+
+article {
+    padding-bottom: 2em;
+    border-bottom: 1px solid #ccc;
+}
+
+.date {
+    float: right;
+}
+
+summary {
+    font-weight: 700;
+    line-height: 1.5;
+}
