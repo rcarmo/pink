@@ -1,1 +1,24 @@
-<button data-bind="click: test">Test</button>
+<div class="half-space">
+    <div class="ink-form">
+        <div class="control-group column-group half-right-space">
+            <div class="control">
+                <input type="search" placeholder="Search terms..." data-bind="value: search, valueUpdate: 'afterkeydown'"></input>
+            </div>
+        </div>
+    </div>
+    <!-- ko if: searching  -->
+	    <i class="icon-spinner icon-spin icon-4x"></i>
+    <!-- /ko -->
+    <!-- ko ifnot: searching -->
+	    <div class="top-space" data-bind="foreach: photos">
+	        <div class="thumbnail">
+	            <a href="javascript:void(0)" data-bind="click: clickHandler">
+	               <img data-bind="attr: {src: tbUrl}" height="120">
+	            </a>
+	        </div>
+	    </div>
+	    <div class="top-space" data-bind="visible: noPhotos">
+	        No results
+	    </div>
+    <!-- /ko -->
+</div>

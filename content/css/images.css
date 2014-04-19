@@ -137,6 +137,13 @@ footer>.ink-navigation>ul>li>a {
 	overflow-y: auto;
 }
 
+.thumbnail {
+	float: left;
+	height: 120px;
+    padding: 0.5em;
+	margin: 0.5em;
+	background-color: #F0F0F0;
+}
 
 /*****************************
  HTML 5 Hacks

@@ -4,7 +4,7 @@
  * @version 1
  */    
 
-Ink.createModule('App.Images', '1', ['Ink.App_1', 'Ink.Data.Binding_1', 'Ink.Plugin.Signals_1'], function(App, ko, Signal) {
+Ink.createModule('App.Images', '1', ['Ink.App_1', 'Ink.Plugin.Signals_1', 'Ink.Data.Binding_1'], function(App, Signal, ko) {
     var Module = function() {
         App.call(this, 'search', 'search'); 
 
@@ -17,9 +17,25 @@ Ink.createModule('App.Images', '1', ['Ink.App_1', 'Ink.Data.Binding_1', 'Ink.Plu
     Module.prototype.listInvisibleRoutes = function() {
         return [
           {hash: 'search', module: 'App.Images.Search'},
-          {hash: 'view\\?url=:url', module: 'App.Images.View'}
+          {hash: 'view', module: 'App.Images.View'}
         ];
     };
     
+    Module.prototype.addCustomSignals = function() {
+    	this.signals.viewPhoto = new Signal();
+    };
+
+    /*
+     * Application startup logic
+     * 
+     */
+    Module.prototype.ready = function() {
+    	var self=this;
+    	
+    	Ink.requireModules(['App.Images.View'], function() {
+            self.start();
+    	});
+    };
+
     return new Module();
 });
