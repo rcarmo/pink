@@ -28,12 +28,12 @@
         </nav>
     
         <section id="tempContainer"></section>
-        <section data-bind="module: {name: definedRoutes.activeModule, data: definedRoutes.moduleArgs, notifyBeforeDestroy: handleBeforeModuleDestroy}">
+        <section data-bind="module: mainModule">
         </section>
             
         <!-- Required modules for Ink modal windows -->
-        <div id="modalWindow" data-bind="module: {name:'Ink.Data.ModalWindow_1', data: {parent: modalModule, modalId: 'modalWindow', title: modalModule.title, contentModule: modalModule.content, modalWidth: modalModule.width, modalHeight: modalModule.height}}"></div>
-        <div id="modalAlert" data-bind="module: {name:'Ink.Data.ModalWindow_1', data: {parent: alertModule, modalId: 'modalAlert', title: alertModule.title, contentModule: 'Ink.Data.ModalWindow.AlertBox_1', modalWidth: '400px', modalHeight: '200px'}}"></div>
-        <div id="modalInfo" data-bind="module: {name:'Ink.Data.ModalWindow_1', data: {parent: infoModule, modalId: 'modalInfo', title: infoModule.title, contentModule: 'Ink.Data.ModalWindow.InfoBox_1', modalWidth: '600px', modalHeight: '300px', cancelVisible: false, confirmCaption: 'Ok'}}"></div>
+        <div data-bind="module: modalModule"></div>
+        <div data-bind="module: alertModule"></div>
+        <div data-bind="module: infoModule"></div>
     </div>
 </div>

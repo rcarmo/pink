@@ -12,7 +12,6 @@ Ink.createModule('Ink.Data.ModalWindow', '1', ['Ink.Data.Binding_1', 'Ink.Dom.Se
         this.moduleName = 'Ink.Data.ModalWindow';
         this.modal = undefined;
         this.title = options.title;
-        this.modalId = options.modalId;
         this.contentModule = options.contentModule;
         this.contentReady = false;
         this.modalEl = undefined;
@@ -85,12 +84,15 @@ Ink.createModule('Ink.Data.ModalWindow', '1', ['Ink.Data.Binding_1', 'Ink.Dom.Se
                 self.modalEl.parentNode.removeAttribute('data-instance');
             }, 400);
         }
-    }
+    };
+    
+    Module.prototype.afterRender = function(elements) {
+    	this.modalEl = Selector.select(".ink-modal", elements[0])[0];
+    };
 
     Module.prototype.show = function(params) {
         var content;
         
-        this.modalEl = Selector.select("#"+this.modalId+" .ink-modal")[0];
         this.modal = new Ink.UI.Modal(this.modalEl, {onDismiss: this._hideModal.bind(this)});
         this.modal.open();
         this.taskButtons(params.taskButtons || []);
@@ -111,11 +113,11 @@ Ink.createModule('Ink.Data.ModalWindow', '1', ['Ink.Data.Binding_1', 'Ink.Dom.Se
             content.scrollTop = 0;
             content.style.overflowY = 'auto';
         }, 250);
-    }
+    };
     
     Module.prototype.handleTask = function(handler) {
         handler.call(this, this);
-    }
+    };
 
     return Module;
 });

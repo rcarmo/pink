@@ -34,3 +34,21 @@ summary {
     font-weight: 700;
     line-height: 1.5;
 }
+
+.highlight {
+	padding: 1em;
+	background: #fafafa;
+	margin-bottom: 1.5em;
+	-webkit-border-radius: 2px;
+	border-radius: 2px;
+}
+
+
+.highlight pre {
+	margin: 0;
+	font-size: .85em;
+	overflow-x: auto;
+	white-space: pre;
+	word-wrap: normal;
+}
+

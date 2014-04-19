@@ -2,11 +2,15 @@ Ink.createModule('App.Tasks.Shell', '1', ['App.Tasks', 'App.Tasks.Libs.Animation
     var Module = function() {
         var self=this;
         
-        this.moduleName =  'App.Tasks.Shell';
         this.definedRoutes = app.definedRoutes;
+
+        this.mainModule = app.mainModule;
+        this.mainModule.notifyBeforeDestroy = this.handleBeforeModuleDestroy;
+        
         this.modalModule = app.modalModule;
         this.alertModule = app.alertModule;
         this.infoModule = app.infoModule;
+
         this.appTitle = app.appTitle;
     };
 

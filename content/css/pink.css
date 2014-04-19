@@ -35,6 +35,24 @@
 }
 
 /***********************************
+    Toast notifications container
+************************************/
+
+#toastPanel {
+	position: absolute;
+	z-index: 999999;
+	top: 0px;
+	left: 0px;
+	right: 0px;
+}
+
+#toastPanel>div {
+	width: 60%;
+	margin-left: auto;
+    margin-right: auto;
+}
+
+/***********************************
     Auto Complete
 ************************************/
 

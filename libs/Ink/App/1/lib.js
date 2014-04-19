@@ -10,7 +10,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
     var Module = function(rootRoute, undefinedRoute) {
         this._router = undefined;
 
-        this.modalModule = {
+        this._modalData = {
             title: ko.observable(),
             content: ko.observable(),
             width: ko.observable(),
@@ -19,18 +19,59 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
             confirmCaption: ko.observable()
         };
 
+        this.modalModule = {
+	    	name:'Ink.Data.ModalWindow_1', 
+	    	data: {
+	    		parent: this._modalData, 
+	    		title: this._modalData.title, 
+	    		contentModule: this._modalData.content, 
+	    		modalWidth: this._modalData.width, 
+	    		modalHeight: this._modalData.height
+	    	}
+        };
+        
+        this._alertData = {
+            title: ko.observable()
+        };
+
         this.alertModule = {
+			name:'Ink.Data.ModalWindow_1', 
+			data: {
+				parent: this._alertData, 
+				title: this._alertData.title, 
+				contentModule: 'Ink.Data.ModalWindow.AlertBox_1', 
+				modalWidth: '400px', 
+				modalHeight: '200px'
+			}
+        };
+        
+        this._infoData = {
             title: ko.observable()
         };
 
         this.infoModule = {
-            title: ko.observable()
+			name:'Ink.Data.ModalWindow_1', 
+			data: {
+				parent: this._infoData, 
+				title: this._infoData.title, 
+				contentModule: 'Ink.Data.ModalWindow.InfoBox_1', 
+				modalWidth: '600px', 
+				modalHeight: '300px', 
+				cancelVisible: false, 
+				confirmCaption: 'Ok'
+			}
         };
-
+        
         this.rootRoute = rootRoute;
         this.undefinedRoute = undefinedRoute;
 
         this._defineRoutingMaps();
+
+        this.mainModule = {
+			name: this.definedRoutes.activeModule, 
+			data: this.definedRoutes.moduleArgs 
+        };
+        
         this._setupSignals();
     };
 
@@ -94,27 +135,27 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
     };
 
     Module.prototype.showModalWindow = function(title, moduleName, params, modalStyle) {
-        this.modalModule.content(undefined);
+        this._modalData.content(undefined);
 
-        this.modalModule.width(modalStyle.width);
-        this.modalModule.height(modalStyle.height);
-        this.modalModule.cancelVisible(modalStyle.cancelVisible);
-        this.modalModule.confirmCaption(modalStyle.confirmCaption);
-        this.modalModule.title(title);
-        this.modalModule.content(moduleName);
-        this.modalModule.modal.show(params);
+        this._modalData.width(modalStyle.width);
+        this._modalData.height(modalStyle.height);
+        this._modalData.cancelVisible(modalStyle.cancelVisible);
+        this._modalData.confirmCaption(modalStyle.confirmCaption);
+        this._modalData.title(title);
+        this._modalData.content(moduleName);
+        this._modalData.modal.show(params);
     };
 
     Module.prototype.showConfirm = function(title, message, confirmCallback, cancelCallback) {
-        this.alertModule.title(title);
-        this.alertModule.modal.show({message: message, confirmCallback: confirmCallback, cancelCallback: cancelCallback});
+        this._alertData.title(title);
+        this._alertData.modal.show({message: message, confirmCallback: confirmCallback, cancelCallback: cancelCallback});
     };
 
     Module.prototype.showInfoBox = function(title, message) {
-        this.infoModule.title(title);
-        this.infoModule.modal.show({message: message});
+        this._infoData.title(title);
+        this._infoData.modal.show({message: message});
     };
-
+    
     Module.prototype.showStandby = function() {
         var standbyPanel = document.getElementById('standbyLightBox');
 
@@ -140,7 +181,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
 
     /*
      * Returns a list of routes to be rendered in the top navigation bar
-     * (Abstract method to be overriden by subclasses)
+     * (Method to be overriden by subclasses)
      *
      * Visible route example:
      * {isActive: ko.observable(true), caption: 'Home', hash: 'home', module: 'App.Example.Home'}
@@ -153,7 +194,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
 
     /*
      * Returns a list of the routes used internally by the app
-     * (Abstract method to be overriden by subclasses)
+     * (Method to be overriden by subclasses)
      *
      * Invisible route example (search users view):
      * {hash: 'users\\?search=:search', module: 'App.Example.ListUsers', parentModule: 'App.Example.ListUsers'}
