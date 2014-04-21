@@ -52,3 +52,38 @@ summary {
 	word-wrap: normal;
 }
 
+.docs-article>ul>li>.details {
+	padding-left: 1em;
+	margin-bottom: 1em;
+}
+
+blockquote {
+	background-color: #FAFAFA;
+}
+
+blockquote>pre {
+    overflow-x: auto;
+    white-space: pre;
+    word-wrap: normal;
+}
+
+#docMenu {
+	position: fixed;
+    top: 10em;
+	bottom: 0px ! important;
+	width: 25%;
+	overflow-y: auto
+}
+
+/*****************************
+ Media Queries
+*****************************/
+
+@media screen and (max-width: 970px) {
+    #docMenu {
+       position: relative ! important;
+       width: auto ! important;
+       height: auto ! important;
+       top: 0px ! important;
+    }
+}

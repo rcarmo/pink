@@ -10,30 +10,10 @@
         <meta name="MobileOptimized" content="320">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
 
-        <!-- load inks css from the cdn -->
-        <link rel="stylesheet" type="text/css" href="http://cdn.ink.sapo.pt/3.0.0/css/ink-flex.min.css">
-        <link rel="stylesheet" type="text/css" href="http://cdn.ink.sapo.pt/3.0.0/css/font-awesome.min.css">
-
-        <!-- load inks css for IE8 -->
-        <!--[if lt IE 9 ]>
-            <link rel="stylesheet" href="http://cdn.ink.sapo.pt/3.0.0/css/ink-ie.min.css" type="text/css" media="screen" title="no title" charset="utf-8">
-        <![endif]-->
-
-        <!-- test browser flexbox support and load legacy grid if unsupported -->
-        <script type="text/javascript" src="http://cdn.ink.sapo.pt/3.0.0/js/modernizr.js"></script>
-        <script type="text/javascript">
-            Modernizr.load({
-              test: Modernizr.flexbox,
-              nope : 'http://cdn.ink.sapo.pt/3.0.0/css/ink-legacy.min.css'
-            });
-        </script>
-
-        <!-- load inks javascript files from the cdn -->
-        <script type="text/javascript" src="http://cdn.ink.sapo.pt/3.0.0/js/holder.js"></script>
-        <script type="text/javascript" src="http://cdn.ink.sapo.pt/3.0.0/js/ink-all.min.js"></script>
-        <script type="text/javascript" src="http://cdn.ink.sapo.pt/3.0.0/js/autoload.js"></script>
-
+        <link rel="stylesheet" type="text/css" href="content/css/ink.css">
         <link rel="stylesheet" type="text/css" href="content/css/docs.css">
+
+        <script type="text/javascript" src="libs/ink-all.js"></script>
     </head>
 
     <body>
@@ -50,108 +30,512 @@
 
             <header class="vertical-space">
                 <h1><a href="index.html"><img src="content/img/logo-small.png" height="50" alt=""></a><small>Single page app framework</small></h1>
-                <nav class="ink-navigation">
+                <nav class="ink-navigation quarter-top-space">
                     <ul class="menu horizontal black">
                         <li><a href="get-started.html">Get started</a></li>
                         <li class="active"><a href="#">Docs</a></li>
-                        <li><a href="sample-app.html" target="_blank">Sample app</a></li>
+                        <li><a href="samples.html">Sample apps</a></li>
                         <li><a href="http://github.com/rcarmo/pink" target="_blank">GitHub</a></li>
                     </ul>
                 </nav>
             </header>
             
-            <section class="column-group gutters article">
-                <div class="xlarge-70 large-70 medium-60 small-100 tiny-100">
-                    <article>
-                        <header>
-                            <h1 class="push-left">Article title</h1>
-                            <p class="push-right">Published: <time pubdate="pubdate">2009-10-09</time></p>
-                        </header>
-                        <summary>But being in a great hurry to resume scolding the man in the purple Shirt, who was waiting for it in the entry, and seeming to hear nothing but the word "clam," Mrs. Hussey hurried towards an open door leading to the kitchen, and bawling out "clam for two," disappeared.</summary>
-                        <figure class="ink-image vertical-space">
-                            <img src="holder.js/1200x600/auto/ink" alt="">
-                            <figcaption class="dark over-bottom">
-                                "Because you wear silver shoes and have killed the Wicked Witch. Besides, you have white in your frock, and only witches and sorceresses wear white."
-                            </figcaption>
-                        </figure>
-                        <p><blockquote>"Queequeg," said I, "do you think that we can make out a supper for us both on one clam?"</blockquote></p>
-                        <p>However, a warm savory steam from the kitchen served to belie the apparently cheerless prospect before us. But when that smoking chowder came in, the mystery was delightfully explained. Oh, sweet friends! hearken to me. It was made of small juicy clams, scarcely bigger than hazel nuts, mixed with pounded ship biscuit, and salted pork cut up into little flakes; the whole enriched with butter, and plentifully seasoned with pepper and salt. Our appetites being sharpened by the frosty voyage, and in particular, Queequeg seeing his favourite fishing food before him, and the chowder being surpassingly excellent, we despatched it with great expedition: when leaning back a moment and bethinking me of Mrs. Hussey's clam and cod announcement, I thought I would try a little experiment. Stepping to the kitchen door, I uttered the word "cod" with great emphasis, and resumed my seat. In a few moments the savoury steam came forth again, but with a different flavor, and in good time a fine cod-chowder was placed before us.</p>
-                        <footer>
-                            <p><small>Creative Commons Attribution-ShareAlike License</small></p>
-                        </footer>
-                    </article>
-                </div>
-                <section class="xlarge-30 large-30 medium-40 small-100 tiny-100">
-                    <h2>Related</h2>
-                    <ul class="unstyled">
-                        <li class="column-group half-gutters">
-                            <div class="all-40 small-50 tiny-50"><img src="holder.js/640x380/auto/ink" alt=""></div>
-                            <div class="all-60 small-50 tiny-50"><p>"Where's them crabs, Hoo-Hoo?" Edwin demanded. "Granser's set upon  having a snack."</p></div>
-                        </li>
-                        <li class="column-group half-gutters">
-                            <div class="all-40 small-50 tiny-50"><img src="holder.js/640x380/auto/ink" alt=""></div>
-                            <div class="all-60 small-50 tiny-50"><p>"Where's them crabs, Hoo-Hoo?" Edwin demanded. "Granser's set upon  having a snack."</p></div>
-                        </li>
-                        <li class="column-group half-gutters">
-                            <div class="all-40 small-50 tiny-50"><img src="holder.js/640x380/auto/ink" alt=""></div>
-                            <div class="all-60 small-50 tiny-50"><p>"Where's them crabs, Hoo-Hoo?" Edwin demanded. "Granser's set upon  having a snack."</p></div>
-                        </li>
-                        <li class="column-group half-gutters">
-                            <div class="all-40 small-50 tiny-50"><img src="holder.js/640x380/auto/ink" alt=""></div>
-                            <div class="all-60 small-50 tiny-50"><p>"Where's them crabs, Hoo-Hoo?" Edwin demanded. "Granser's set upon  having a snack."</p></div>
-                        </li>
-                        <li class="column-group half-gutters">
-                            <div class="all-40 small-50 tiny-50"><img src="holder.js/640x380/auto/ink" alt=""></div>
-                            <div class="all-60 small-50 tiny-50"><p>"Where's them crabs, Hoo-Hoo?" Edwin demanded. "Granser's set upon  having a snack."</p></div>
-                        </li>
-                    </ul>
+            <div class="column-group gutters article">
+                <section class="large-30 medium-100 small-100">
+                    <div id="docMenu">
+	                    <h2>Documentation</h2>
+	                    <nav>
+	                        <ol>
+	                            <li>
+	                               <a href="#app">Pink application interface</a>
+	                               <ol>
+	                                   <li>
+	                                       <a href="#appAttributes" class="sub-menu" data-target="#appAttributesMenu">Attributes</a>
+	                                       <ol id="appAttributesMenu" class="hide-all">
+	                                           <li><a href="#modalModule">modalModule</a></li>
+                                               <li><a href="#alertModule">alertModule</a></li>
+                                               <li><a href="#infoModule">infoModule</a></li>
+                                               <li><a href="#rootRoute">rootRoute</a></li>
+                                               <li><a href="#undefinedRoute">undefinedRoute</a></li>
+                                               <li><a href="#mainModule">mainModule</a></li>
+                                               <li><a href="#definedRoutes">definedRoutes</a></li>
+	                                       </ol>
+	                                   </li>
+	                                   <li>
+	                                       <a href="#appMethods" class="sub-menu" data-target="#appMethodsMenu">Methods</a>
+	                                       <ol id="appMethodsMenu" class="hide-all">
+                                               <li><a href="#showInfoToast">showInfoToast</a></li>
+                                               <li><a href="#showErrorToast">showErrorToast</a></li>
+                                               <li><a href="#showSuccessToast">showSuccessToast</a></li>
+                                               <li><a href="#showModalWindow">showModalWindow</a></li>
+                                               <li><a href="#showMiniModalWindow">showMiniModalWindow</a></li>
+                                               <li><a href="#showSmallModalWindow">showSmallModalWindow</a></li>
+                                               <li><a href="#showLargeModalWindow">showLargeModalWindow</a></li>
+                                               <li><a href="#showConfirm">showConfirm</a></li>
+                                               <li><a href="#showInfoBox">showInfoBox</a></li>
+                                               <li><a href="#showStandby">showStandby</a></li>
+                                               <li><a href="#hideStandby">hideStandby</a></li>
+                                               <li><a href="#listVisibleRoutes">listVisibleRoutes</a></li>
+                                               <li><a href="#listInvisibleRoutes">listInvisibleRoutes</a></li>
+                                               <li><a href="#addVisibleRoute">addVisibleRoute</a></li>
+                                               <li><a href="#addInvisibleRoute">addInvisibleRoute</a></li>
+                                               <li><a href="#addCustomSignals">addCustomSignals</a></li>
+                                               <li><a href="#navigateTo">navigateTo</a></li>
+                                               <li><a href="#navigateToStart">navigateToStart</a></li>
+                                               <li><a href="#listPluginModules">listPluginModules</a></li>
+                                               <li><a href="#run">run</a></li>
+                                               <li><a href="#ready">ready</a></li>
+	                                       </ol>
+	                                   </li>
+	                               </ol>
+	                            </li>
+	                            <li><a href="#routing">Routing</a></li>
+	                            <li><a href="#signals">Signals</a></li>
+	                            <li>
+	                               <a href="#uiModules" class="sub-menu" data-target="#uiModulesMenu">UI Modules</a>
+	                               <ol id="uiModulesMenu" class="hide-all">
+	                                    <li><a href="#modules">Custom modules</a></li>
+	                                    <li><a href="#modalwindow">ModalWindow</a></li>
+	                                    <li><a href="#grid">Grid</a></li>
+	                                    <li><a href="#paginator">Paginator</a></li>
+	                                    <li><a href="#autocomplete">AutoComplete</a></li>
+	                                    <li><a href="#tooltip">Tooltip</a></li>
+	                                    <li><a href="#dragdrop">Drag&Drop</a></li>
+	                                    <li><a href="#kanban">Kanban</a></li>
+	                               </ol>
+	                            </li>
+	                        </ol>
+	                    </nav>
+                    </div>
                 </section>
-            </section>
-            <section class="column-group gutters">
-                <div class="all-20 small-100 tiny-100">
-                    <h3>heading</h3>
-                    <img class="half-bottom-space" src="holder.js/1200x600/auto/ink" alt="">
-                    <p>"Red is not the right word," was the reply. "The plague was scarlet.  The whole face and body turned scarlet in an hour's time. Don't I  know? Didn't I see enough of it? And I am telling you it was scarlet  because&mdash;well, because it was scarlet. There is no other word for it."</p>
-                </div>
-                <div class="all-20 small-100 tiny-100">
-                    <h3>heading</h3>
-                    <img class="half-bottom-space" src="holder.js/1200x600/auto/ink" alt="">
-                    <p>"Red is not the right word," was the reply. "The plague was scarlet.  The whole face and body turned scarlet in an hour's time. Don't I  know? Didn't I see enough of it? And I am telling you it was scarlet  because&mdash;well, because it was scarlet. There is no other word for it."</p>
-                </div>
-                <div class="all-20 small-100 tiny-100">
-                    <h3>heading</h3>
-                    <img class="half-bottom-space" src="holder.js/1200x600/auto/ink" alt="">
-                    <p>"Red is not the right word," was the reply. "The plague was scarlet.  The whole face and body turned scarlet in an hour's time. Don't I  know? Didn't I see enough of it? And I am telling you it was scarlet  because&mdash;well, because it was scarlet. There is no other word for it."</p>
-                </div>
-                <div class="all-20 small-100 tiny-100">
-                    <h3>heading</h3>
-                    <img class="half-bottom-space" src="holder.js/1200x600/auto/ink" alt="">
-                    <p>"Red is not the right word," was the reply. "The plague was scarlet.  The whole face and body turned scarlet in an hour's time. Don't I  know? Didn't I see enough of it? And I am telling you it was scarlet  because&mdash;well, because it was scarlet. There is no other word for it."</p>
-                </div>
-                <div class="all-20 small-100 tiny-100">
-                    <h3>heading</h3>
-                    <img class="half-bottom-space" src="holder.js/1200x600/auto/ink" alt="">
-                    <p>"Red is not the right word," was the reply. "The plague was scarlet.  The whole face and body turned scarlet in an hour's time. Don't I  know? Didn't I see enough of it? And I am telling you it was scarlet  because&mdash;well, because it was scarlet. There is no other word for it."</p>
-                </div>
-            </section>            
-        </div>
-        <footer class="clearfix">
-            <div class="ink-grid">
-                <div class="column-group">
-                    <div class="all-50 vertical-space">
-                        <h3>Pink is built with:</h3>
+                <section class="large-70 medium-100 small-100">
+                    <article class="docs-article">
+                        <a id="app"></a>
+                        <header>
+                            <h2 class="push-left">Application interface</h2>
+                        </header>
+                        <summary>
+                            The main module of every Pink application must inherit its prototype from the "Ink.App" module.
+                            The app's modules should require this module in their dependencies to access the framework's public interface.
+                        </summary>
+                        <br>
+                        <h4><em>Attributes</em></h4>
                         <ul class="unstyled">
-                            <li><a href="http://ink.sapo.pt">Ink</a></li>
-                            <li><a href="http://knockoutjs.com">Knockout</a></li>
-                            <li><a href="http://projects.jga.me/routie/">Routie</a></li>
-                            <li><a href="http://millermedeiros.github.io/js-signals/">Signals</a></li>
+                            <li>
+                                <a id="modalModule"></a>
+                                <strong>modalModule : object</strong><br>
+                                <div class="details">
+		                            Exposes a generic modal viewmodel for databinding, usually used in the application main layout.
+		                            Must be bound to a DOM element for the app's "showModalWindow" method to work.
+		                            
+		                            <blockquote><pre>&lt;div data-bind="module: app.modalModule"&gt;&lt;/div&gt;</pre></blockquote>
+	                            </div>
+                            </li>
+                            <li>
+                                <a id="alertModule"></a>
+                                <strong>alertModule : object</strong><br>
+                                <div class="details">
+	                                Exposes a confirm modal viewmodel for databinding, usually used in the application main layout.
+	                                Must be bound to a DOM element for the app's "showConfirm" method to work.
+	                                
+	                                <blockquote><pre>&lt;div data-bind="module: app.alertModule"&gt;&lt;/div&gt;</pre></blockquote>
+	                            </div>
+                            </li>
+                            <li>
+                                <a id="infoModule"></a>
+                                <strong>infoModule : object</strong><br>
+                                <div class="details">
+	                                Exposes an informative modal viewmodel for databinding, usually used in the application main layout.
+	                                Must be bound to a DOM element for the app's "showInfoBox" method to work.
+	                                
+	                                <blockquote><pre>&lt;div data-bind="module: app.infoModule"&gt;&lt;/div&gt;</pre></blockquote>
+	                            </div>
+                            </li>
+                            <li>
+                                <a id="rootModule"></a>
+                                <strong>rootRoute : string</strong><br>
+                                <div class="details">
+                                    The default route to show when the app is loaded, or the url fragment is empty.
+                                </div> 
+                            </li>
+                            <li>
+                                <a id="undefinedRoute"></a>
+                                <strong>undefinedRoute : string</strong><br>
+                                <div class="details">
+                                    The route to show when there's an non existent route on the url fragment.
+                                </div>
+                            </li>
+                            <li>
+                                <a id="mainModule"></a>
+                                <strong>mainModule: object</strong><br>
+                                <div class="details">
+	                                Exposes the active route's (taken from the url fragment) module for databinding, usually used in the application main layout.
+	                                Must be bound to a DOM element.
+	                                
+	                                <blockquote><pre>&lt;section data-bind="module: mainModule"/&gt;</pre></blockquote>
+	                            </div>
+                            </li>
+                            <li>
+                                <a id="definedRoutes"></a>
+                                <strong>definedRoutes: object</strong><br>
+                                <div class="details">
+                                    Exposes the application's defined routing parameters for databinding, usually used in the application main menu.
+                                    
+                                    <blockquote>
+                                        <pre>
+ &lt;ul id="mainMenuDropDown" class="menu vertical white"&gt;
+     &lt;!-- ko foreach:  definedRoutes.visibleRoutes --&gt;
+         &lt;li data-bind="css: { active: isActive }"&gt;
+             &lt;a data-bind="attr: { href: '#'+hash }, html: caption"&gt;&lt;/a&gt;
+         &lt;/li&gt;
+     &lt;!-- /ko --&gt;
+ &lt;/ul&gt;
+						                </pre>
+                                    </blockquote>
+                                </div>
                         </ul>
-                    </div>
-                    <div class="all-50 vertical-space align-right">
-                        <p class="note">Pink is licensed under the MIT Licence.</p>
-                    </div>
-                </div>
+
+                        <br>
+                        <h4><em>Methods</em></h4>
+                        <ul class="unstyled">
+                            <li>
+                                <a id="showInfoToast"></a>
+                                <strong>showInfoToast(message) : void</strong><br>
+                                <div class="details">
+                                    Shows a temporary notification panel in the UI for information purposes.<br>
+                                    <em>Note: The app's DOM must have an element with an id "toastPanel", usually in the main layout.</em>
+                                    <blockquote><pre>app.showInfoToast('Hello there!');</pre></blockquote>
+                                </div>
+                            </li>
+                            <li>
+                                <a id="showErrorToast"></a>
+                                <strong>showErrorToast(message) : void</strong><br>
+                                <div class="details">
+                                    Shows a temporary notification panel in the UI for application error purposes.<br>
+                                    <em>Note: The app's DOM must have an element with an id "toastPanel", usually in the main layout.</em>
+                                    <blockquote><pre>app.showErrorToast('Oops, an error occurred :(');</pre></blockquote>
+                                </div>
+                            </li>
+                            <li>
+                                <a id="showSuccessToast"></a>
+                                <strong>showSuccessToast(message) : void</strong><br>
+                                <div class="details">
+                                    Shows a temporary notification panel in the UI to notify the user that some action completed with success.<br>
+                                    <em>Note: The app's DOM must have an element with an id "toastPanel", usually in the main layout.</em>
+                                    <blockquote><pre>app.showErrorToast('Document saved');</pre></blockquote>
+                                </div>
+                            </li>
+                            <li>
+                                <a id="showModalWindow"></a>
+                                <strong>showModalWindow(title, moduleName, params, modalStyle) : void</strong><br>
+                                <div class="details">
+	                                <ul>
+	                                    <li><strong>title</strong> - string with modal's title</li>
+	                                    <li><strong>moduleName</strong> - string with a Pink's UI module name</li>
+	                                    <li><strong>params</strong> - object with the parameters to pass to the module</li>
+	                                    <li><strong>modalStyle</strong> - object with modal window style parameters<br> {width : string, height : string, cancelVisible : bool, confirmCaption : string}</li> 
+	                                </ul>
+                                    Shows a modal window with a custom module in the contents area.<br><br>
+                                    <em>Note: See the modalModule attribute</em>
+                                    <blockquote><pre>app.showModalWindow('Edit item', 'App.Item.Edit', {item: item}, {width: '600px', height: '400px'});</pre></blockquote>                                    
+                                </div>
+                            </li>                            
+                            <li>
+                                <a id="showMiniModalWindow"></a>
+                                <strong>showMiniModalWindow(title, moduleName, params, modalStyle) : void</strong><br>
+                                <div class="details">
+                                    Shows a mini modal window with a custom module in the contents area.<br><br>
+                                    <em>Note: See showModalWindow for details and example usage</em>
+                                </div>
+                            </li>                            
+                            <li>
+                                <a id="showSmallModalWindow"></a>
+                                <strong>showSmallModalWindow(title, moduleName, params, modalStyle) : void</strong><br>
+                                <div class="details">
+                                    Shows a small modal window with a custom module in the contents area.<br><br>
+                                    <em>Note: See showModalWindow for details and example usage</em>
+                                </div>
+                            </li>                            
+                            <li>
+                                <a id="showLargeModalWindow"></a>
+                                <strong>showLargeModalWindow(title, moduleName, params, modalStyle) : void</strong><br>
+                                <div class="details">
+                                    Shows a large modal window with a custom module in the contents area.<br><br>
+                                    <em>Note: See showModalWindow for details and example usage</em>
+                                </div>
+                            </li>
+                            <li>
+                                <a id="showConfirm"></a>
+                                <strong>showConfirm(title, message, confirmCallback, cancelCallback) : void</strong>
+                                <div class="details">
+	                                <ul>
+	                                    <li><strong>title</strong> - string with modal's title</li>
+	                                    <li><strong>message</strong> - string with the message for the user</li>
+	                                    <li><strong>confirmCallback</strong> - function to be called if the user confirms the action</li>
+	                                    <li><strong>cancelCallback</strong> - function to be called if the user cancels the action</li> 
+	                                </ul>
+                                    Shows a modal window for the user to respond to a confirm action.
+                                    <blockquote><pre>app.showConfirm('Please confirm...', 'Remove the item?', confirmHandler, cancelHandler);</pre></blockquote>                                    
+                                </div>
+                            </li>
+                            <li>
+                                <a id="showInfoBox"></a>
+                                <strong>showInfoBox(title, message) : void</strong>
+                                <div class="details">
+                                    <ul>
+                                        <li><strong>title</strong> - string with modal's title</li>
+                                        <li><strong>message</strong> - string with the message for the user</li>
+                                    </ul>
+                                    Shows a modal window with a simple message.
+                                    <blockquote><pre>app.showInfoBox('User info', 'Here is some extra info');</pre></blockquote>                                    
+                                </div>
+                            </li>
+                            <li>
+                                <a id="showStandby"></a>
+                                <strong>showStandby() : void</strong>
+                                <div class="details">
+                                    Shows a standby panel that disables user input.<br><br>
+                                    <em>Note: There must exist a DOM element with the id "standbyLightBox" for this method to work</em>
+                                </div>
+                            </li>                            
+                            <li>
+                                <a id="hideStandby"></a>
+                                <strong>hideStandby() : void</strong>
+                                <div class="details">
+                                    Hides the standby panel.<br><br>
+                                    <em>Note: There must exist a DOM element with the id "standbyLightBox" for this method to work</em>
+                                </div>
+                            </li>
+                            <li>
+                                <a id="listVisibleRoutes"></a>
+                                <strong>listVisibleRoutes() : array</strong>
+                                <div class="details">
+                                    This method should be overriden by the application main module, to return the routes to be 
+                                    rendered in the main application menu.
+                                    
+                                    <blockquote>
+                                        <pre>
+ Module.prototype.listVisibleRoutes = function() {
+     return [
+       {isActive: ko.observable(true), caption: 'To-do', hash: 'todo', module: 'App.Tasks.Home', arguments: {filter: 'todo'}},
+       {isActive: ko.observable(false), caption: 'Incomplete', hash: 'incomplete', module: 'App.Tasks.Home', arguments: {filter: 'incomplete'}},
+       {isActive: ko.observable(false), caption: 'Completed', hash: 'completed', module: 'App.Tasks.Home', arguments: {filter: 'complete'}}
+     ];
+ };
+                                        </pre>
+                                    </blockquote>
+                                </div>
+                            </li>
+                            <li>
+                                <a id="listInvisibleRoutes"></a>
+                                <strong>listInvisibleRoutes() : array</strong>
+                                <div class="details">
+                                    This method should be overriden by the application main module, to return the routes not visible
+                                    in the application's main menu.
+                                    
+                                    <blockquote>
+                                        <pre>
+ Module.prototype.listInvisibleRoutes = function() {
+     return [
+       {hash: 'users\\?search=:search', module: 'App.Example.ListUsers', parentModule: 'App.Example.ListUsers'}
+     ];
+ };
+                                        </pre>
+                                    </blockquote>
+                                    
+                                    <em>Note: If the invisible route's parentModule attribute is defined, it's used to set the parentModule's route active flag to true</em>
+                                </div>
+                            </li>
+                            <li>
+                                <a id="addVisibleRoute"></a>
+                                <strong>addVisibleRoute(route) : void</strong>
+                                <div class="details">
+								    Allows a plugin to add a new visible route.
+								    The plugin should call this method on it's initialization code
+
+                                    <blockquote>
+                                        <pre>app.addVisibleRoute({isActive: ko.observable(false), caption: 'Export', hash: 'export', module: 'App.Tasks.Plugins.Export'})</pre>
+                                    </blockquote>                                    
+                                </div>
+                            </li>
+                            <li>
+                                <a id="addInvisibleRoute"></a>
+                                <strong>addInvisibleRoute(route) : void</strong>
+                                <div class="details">
+                                    Allows a plugin to add a new invisible route.
+                                    The plugin should call this method on it's initialization code
+
+                                    <blockquote>
+                                        <pre>app.addInvisibleRoute({caption: 'Export item', hash: 'export\\?item=:item', module: 'App.Tasks.Plugins.ExportItem'})</pre>
+                                    </blockquote>                                    
+                                </div>
+                            </li>
+                            <li>
+                                <a id="addCustomSignals"></a>
+                                <strong>addCustomSignals() : void</strong>
+                                <div class="details">
+                                    Should be overriden in the application's main module, to define custom client side events for application UI logic.
+                                    
+                                    <blockquote>
+                                        <pre>
+ Module.prototype.addCustomSignals = function() {
+     this.signals.taskAdded = new Signal();
+     this.signals.taskUpdated = new Signal();
+ };
+                                        </pre>
+                                    </blockquote>
+                                </div>
+                            </li>
+                            <li>
+                                <a id="navigateTo"></a>
+                                <strong>navigateTo(path, options) : void</strong>
+                                <div class="details">
+                                    <ul>
+                                        <li><strong>path</strong> - string with url fragement</li>
+                                        <li><strong>options</strong> - object {silent: bool} allows to change the url without the routing logic</li>
+                                    </ul>
+                                    Instructs the router to navigate to a new route inside the app.
+
+                                    <blockquote><pre>app.navigateTo('#home');</pre></blockquote>                                    
+                                </div>
+                            </li>
+                            <li>
+                                <a id="navigateToStart"></a>
+                                <strong>navigateToStart() : void</strong>
+                                <div class="details">
+                                    Instructs the router to navigate to the route defined in the "rootRoute" attribute. 
+
+                                    <blockquote><pre>app.navigateToStart();</pre></blockquote>                                    
+                                </div>
+                            </li>
+                            <li>
+                                <a id="listPluginModules"></a>
+                                <strong>listPluginModules() : array</strong>
+                                <div class="details">
+                                    Should be overriden by the apps main module to return an array with the names of the modules
+                                    to loaded on the app's bootstrap.
+                                </div>
+                            </li>
+                            <li>
+                                <a id="run"></a>
+                                <strong>run() : void</strong>
+                                <div class="details">
+                                    Must be called on the main page to start the application bootstrap process.
+                                    
+                                    <blockquote>
+                                        <pre>
+ &lt;script type="text/javascript"&gt;
+     Ink.requireModules(['App.Tasks'], function(app) {
+         app.run();
+     });        
+ &lt;/script&gt;
+                                        </pre>
+                                    </blockquote>
+                                </div>
+                            </li>
+                            <li>
+                                <a id="ready"></a>
+                                <strong>ready() : void</strong>
+                                <div class="details">
+       					            Override this method to add your own custom initialization logic.
+								    If you override this method, you must call start() when ready.
+                                    
+                                    <blockquote>
+                                        <pre>
+ Module.prototype.ready = function() {
+     var self=this;
+     
+     Ink.requireModules(['App.Images.View'], function() {
+         self.start();
+     });
+ };
+                                        </pre>
+                                    </blockquote>
+                                </div>
+                            </li>
+                        </ul>
+                    </article>
+                    <article>
+                        <a id="routing"></a>
+                        <header>
+                            <h2 class="push-left">Routing</h2>
+                        </header>
+                        <p>However, a warm savory steam from the kitchen served to belie the apparently cheerless prospect before us. But when that smoking chowder came in, the mystery was delightfully explained. Oh, sweet friends! hearken to me. It was made of small juicy clams, scarcely bigger than hazel nuts, mixed with pounded ship biscuit, and salted pork cut up into little flakes; the whole enriched with butter, and plentifully seasoned with pepper and salt. Our appetites being sharpened by the frosty voyage, and in particular, Queequeg seeing his favourite fishing food before him, and the chowder being surpassingly excellent, we despatched it with great expedition: when leaning back a moment and bethinking me of Mrs. Hussey's clam and cod announcement, I thought I would try a little experiment. Stepping to the kitchen door, I uttered the word "cod" with great emphasis, and resumed my seat. In a few moments the savoury steam came forth again, but with a different flavor, and in good time a fine cod-chowder was placed before us.</p>
+                    </article>
+                    <article>
+                        <a id="signals"></a>
+                        <header>
+                            <h2 class="push-left">Signals</h2>
+                        </header>
+                        <p>However, a warm savory steam from the kitchen served to belie the apparently cheerless prospect before us. But when that smoking chowder came in, the mystery was delightfully explained. Oh, sweet friends! hearken to me. It was made of small juicy clams, scarcely bigger than hazel nuts, mixed with pounded ship biscuit, and salted pork cut up into little flakes; the whole enriched with butter, and plentifully seasoned with pepper and salt. Our appetites being sharpened by the frosty voyage, and in particular, Queequeg seeing his favourite fishing food before him, and the chowder being surpassingly excellent, we despatched it with great expedition: when leaning back a moment and bethinking me of Mrs. Hussey's clam and cod announcement, I thought I would try a little experiment. Stepping to the kitchen door, I uttered the word "cod" with great emphasis, and resumed my seat. In a few moments the savoury steam came forth again, but with a different flavor, and in good time a fine cod-chowder was placed before us.</p>
+                    </article>
+                    <article>
+                        <a id="modules"></a>
+                        <header>
+                            <h2 class="push-left">Custom Modules</h2>
+                        </header>
+                        <p>However, a warm savory steam from the kitchen served to belie the apparently cheerless prospect before us. But when that smoking chowder came in, the mystery was delightfully explained. Oh, sweet friends! hearken to me. It was made of small juicy clams, scarcely bigger than hazel nuts, mixed with pounded ship biscuit, and salted pork cut up into little flakes; the whole enriched with butter, and plentifully seasoned with pepper and salt. Our appetites being sharpened by the frosty voyage, and in particular, Queequeg seeing his favourite fishing food before him, and the chowder being surpassingly excellent, we despatched it with great expedition: when leaning back a moment and bethinking me of Mrs. Hussey's clam and cod announcement, I thought I would try a little experiment. Stepping to the kitchen door, I uttered the word "cod" with great emphasis, and resumed my seat. In a few moments the savoury steam came forth again, but with a different flavor, and in good time a fine cod-chowder was placed before us.</p>
+                    </article>
+                    <article>
+                        <a id="modalwindow"></a>
+                        <header>
+                            <h2 class="push-left">ModalWindow</h2>
+                        </header>
+                        <p>However, a warm savory steam from the kitchen served to belie the apparently cheerless prospect before us. But when that smoking chowder came in, the mystery was delightfully explained. Oh, sweet friends! hearken to me. It was made of small juicy clams, scarcely bigger than hazel nuts, mixed with pounded ship biscuit, and salted pork cut up into little flakes; the whole enriched with butter, and plentifully seasoned with pepper and salt. Our appetites being sharpened by the frosty voyage, and in particular, Queequeg seeing his favourite fishing food before him, and the chowder being surpassingly excellent, we despatched it with great expedition: when leaning back a moment and bethinking me of Mrs. Hussey's clam and cod announcement, I thought I would try a little experiment. Stepping to the kitchen door, I uttered the word "cod" with great emphasis, and resumed my seat. In a few moments the savoury steam came forth again, but with a different flavor, and in good time a fine cod-chowder was placed before us.</p>
+                    </article>
+                    <article>
+                        <a id="grid"></a>
+                        <header>
+                            <h2 class="push-left">Grid</h2>
+                        </header>
+                        <p>However, a warm savory steam from the kitchen served to belie the apparently cheerless prospect before us. But when that smoking chowder came in, the mystery was delightfully explained. Oh, sweet friends! hearken to me. It was made of small juicy clams, scarcely bigger than hazel nuts, mixed with pounded ship biscuit, and salted pork cut up into little flakes; the whole enriched with butter, and plentifully seasoned with pepper and salt. Our appetites being sharpened by the frosty voyage, and in particular, Queequeg seeing his favourite fishing food before him, and the chowder being surpassingly excellent, we despatched it with great expedition: when leaning back a moment and bethinking me of Mrs. Hussey's clam and cod announcement, I thought I would try a little experiment. Stepping to the kitchen door, I uttered the word "cod" with great emphasis, and resumed my seat. In a few moments the savoury steam came forth again, but with a different flavor, and in good time a fine cod-chowder was placed before us.</p>
+                    </article>
+                    <article>
+                        <a id="paginator"></a>
+                        <header>
+                            <h2 class="push-left">Paginator</h2>
+                        </header>
+                        <p>However, a warm savory steam from the kitchen served to belie the apparently cheerless prospect before us. But when that smoking chowder came in, the mystery was delightfully explained. Oh, sweet friends! hearken to me. It was made of small juicy clams, scarcely bigger than hazel nuts, mixed with pounded ship biscuit, and salted pork cut up into little flakes; the whole enriched with butter, and plentifully seasoned with pepper and salt. Our appetites being sharpened by the frosty voyage, and in particular, Queequeg seeing his favourite fishing food before him, and the chowder being surpassingly excellent, we despatched it with great expedition: when leaning back a moment and bethinking me of Mrs. Hussey's clam and cod announcement, I thought I would try a little experiment. Stepping to the kitchen door, I uttered the word "cod" with great emphasis, and resumed my seat. In a few moments the savoury steam came forth again, but with a different flavor, and in good time a fine cod-chowder was placed before us.</p>
+                    </article>
+                    <article>
+                        <a id="autocomplete"></a>
+                        <header>
+                            <h2 class="push-left">AutoComplete</h2>
+                        </header>
+                        <p>However, a warm savory steam from the kitchen served to belie the apparently cheerless prospect before us. But when that smoking chowder came in, the mystery was delightfully explained. Oh, sweet friends! hearken to me. It was made of small juicy clams, scarcely bigger than hazel nuts, mixed with pounded ship biscuit, and salted pork cut up into little flakes; the whole enriched with butter, and plentifully seasoned with pepper and salt. Our appetites being sharpened by the frosty voyage, and in particular, Queequeg seeing his favourite fishing food before him, and the chowder being surpassingly excellent, we despatched it with great expedition: when leaning back a moment and bethinking me of Mrs. Hussey's clam and cod announcement, I thought I would try a little experiment. Stepping to the kitchen door, I uttered the word "cod" with great emphasis, and resumed my seat. In a few moments the savoury steam came forth again, but with a different flavor, and in good time a fine cod-chowder was placed before us.</p>
+                    </article>
+                    <article>
+                        <a id="tooltip"></a>
+                        <header>
+                            <h2 class="push-left">ToolTip</h2>
+                        </header>
+                        <p>However, a warm savory steam from the kitchen served to belie the apparently cheerless prospect before us. But when that smoking chowder came in, the mystery was delightfully explained. Oh, sweet friends! hearken to me. It was made of small juicy clams, scarcely bigger than hazel nuts, mixed with pounded ship biscuit, and salted pork cut up into little flakes; the whole enriched with butter, and plentifully seasoned with pepper and salt. Our appetites being sharpened by the frosty voyage, and in particular, Queequeg seeing his favourite fishing food before him, and the chowder being surpassingly excellent, we despatched it with great expedition: when leaning back a moment and bethinking me of Mrs. Hussey's clam and cod announcement, I thought I would try a little experiment. Stepping to the kitchen door, I uttered the word "cod" with great emphasis, and resumed my seat. In a few moments the savoury steam came forth again, but with a different flavor, and in good time a fine cod-chowder was placed before us.</p>
+                    </article>
+                    <article>
+                        <a id="dragdrop"></a>
+                        <header>
+                            <h2 class="push-left">Drag & Drop</h2>
+                        </header>
+                        <p>However, a warm savory steam from the kitchen served to belie the apparently cheerless prospect before us. But when that smoking chowder came in, the mystery was delightfully explained. Oh, sweet friends! hearken to me. It was made of small juicy clams, scarcely bigger than hazel nuts, mixed with pounded ship biscuit, and salted pork cut up into little flakes; the whole enriched with butter, and plentifully seasoned with pepper and salt. Our appetites being sharpened by the frosty voyage, and in particular, Queequeg seeing his favourite fishing food before him, and the chowder being surpassingly excellent, we despatched it with great expedition: when leaning back a moment and bethinking me of Mrs. Hussey's clam and cod announcement, I thought I would try a little experiment. Stepping to the kitchen door, I uttered the word "cod" with great emphasis, and resumed my seat. In a few moments the savoury steam came forth again, but with a different flavor, and in good time a fine cod-chowder was placed before us.</p>
+                    </article>
+                    <article>
+                        <a id="kanban"></a>
+                        <header>
+                            <h2 class="push-left">Kanban</h2>
+                        </header>
+                        <p>However, a warm savory steam from the kitchen served to belie the apparently cheerless prospect before us. But when that smoking chowder came in, the mystery was delightfully explained. Oh, sweet friends! hearken to me. It was made of small juicy clams, scarcely bigger than hazel nuts, mixed with pounded ship biscuit, and salted pork cut up into little flakes; the whole enriched with butter, and plentifully seasoned with pepper and salt. Our appetites being sharpened by the frosty voyage, and in particular, Queequeg seeing his favourite fishing food before him, and the chowder being surpassingly excellent, we despatched it with great expedition: when leaning back a moment and bethinking me of Mrs. Hussey's clam and cod announcement, I thought I would try a little experiment. Stepping to the kitchen door, I uttered the word "cod" with great emphasis, and resumed my seat. In a few moments the savoury steam came forth again, but with a different flavor, and in good time a fine cod-chowder was placed before us.</p>
+                    </article>
+                </section>
             </div>
-        </footer>
+        </div>
+        
+		<script>
+		    Ink.requireModules( ['Ink.UI.Sticky_1', 'Ink.UI.Toggle_1', 'Ink.Util.Array_1'], function( Sticky, Toggle, InkArray) {
+		    	InkArray.forEach(Ink.ss('.sub-menu'), function(element) {
+	                new Toggle(element);
+		    	});
+	    	    new Sticky('#docMenu', {inlineDimensions: true});
+		    });
+		</script>        
     </body>
 </html>

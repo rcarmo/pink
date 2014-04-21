@@ -331,7 +331,7 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
 
     /*
      * Build the app's custom signals (client side)
-     * (Abstract method to be overriden by subclasses)
+     * (Method to be overriden by subclasses)
      *
      * Add custom signals to this.signals
      *

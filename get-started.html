@@ -11,27 +11,10 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
 
         <!-- load inks css from the cdn -->
-        <link rel="stylesheet" type="text/css" href="http://cdn.ink.sapo.pt/3.0.0/css/ink-flex.min.css">
-        <link rel="stylesheet" type="text/css" href="http://cdn.ink.sapo.pt/3.0.0/css/font-awesome.min.css">
-
-        <!-- load inks css for IE8 -->
-        <!--[if lt IE 9 ]>
-            <link rel="stylesheet" href="http://cdn.ink.sapo.pt/3.0.0/css/ink-ie.min.css" type="text/css" media="screen" title="no title" charset="utf-8">
-        <![endif]-->
-
-        <!-- test browser flexbox support and load legacy grid if unsupported -->
-        <script type="text/javascript" src="http://cdn.ink.sapo.pt/3.0.0/js/modernizr.js"></script>
-        <script type="text/javascript">
-            Modernizr.load({
-              test: Modernizr.flexbox,
-              nope : 'http://cdn.ink.sapo.pt/3.0.0/css/ink-legacy.min.css'
-            });
-        </script>
+        <link rel="stylesheet" type="text/css" href="content/css/ink.css">
 
         <!-- load inks javascript files from the cdn -->
-        <script type="text/javascript" src="http://cdn.ink.sapo.pt/3.0.0/js/holder.js"></script>
-        <script type="text/javascript" src="http://cdn.ink.sapo.pt/3.0.0/js/ink-all.min.js"></script>
-        <script type="text/javascript" src="http://cdn.ink.sapo.pt/3.0.0/js/autoload.js"></script>
+        <script type="text/javascript" src="content/libs/ink-all.js"></script>
 
         <link rel="stylesheet" type="text/css" href="content/css/docs.css">
     </head>
@@ -50,28 +33,32 @@
 
             <header class="vertical-space">
                 <h1><a href="index.html"><img src="content/img/logo-small.png" height="50" alt=""></a><small>Single page app framework</small></h1>
-                <nav class="ink-navigation">
+                <nav class="ink-navigation quarter-top-space">
                     <ul class="menu horizontal black">
-                        <li class="active"><a href="docs/get-started.html">Get started</a></li>
+                        <li class="active"><a href="get-started.html">Get started</a></li>
                         <li><a href="docs.html">Docs</a></li>
-                        <li><a href="sample-app.html" target="_blank">Sample app</a></li>
+                        <li><a href="samples.html">Sample apps</a></li>
                         <li><a href="http://github.com/rcarmo/pink" target="_blank">GitHub</a></li>
                     </ul>
                 </nav>
             </header>
             
             <section class="column-group gutters article">
-                <div class="all-100">
+                <div class="large-100">
                     <article>
                         <header>
-                            <h1 class="push-left">How to build a simple app</h1>
+                            <h1>How to build a simple app</h1>
                         </header>
-                        <summary>Pink is a Javascript framework to build single page apps, so we'll show you how to get started with a simple tutorial.</summary>
-                        <p>
-                            <h2>Application structure</h2>
-                        </p>
+                        <summary>
+                            Pink is a Javascript framework to build single page apps, we'll show you 
+                            how to get started with a simple tutorial based on the "Image search" sample app.
+                        </summary>
+
+                        <br>
                         
-                        <div class="highlight">
+                        <h2>Application structure</h2>
+                        
+                        <blockquote>
 	                        <pre> 
 	                            <code>
       +App
@@ -97,13 +84,372 @@
       |index.html
 	                            </code>
 	                        </pre>                        
-                        </div>
+                        </blockquote>
 
-                        <p><blockquote>"Queequeg," said I, "do you think that we can make out a supper for us both on one clam?"</blockquote></p>
-                        <p>However, a warm savory steam from the kitchen served to belie the apparently cheerless prospect before us. But when that smoking chowder came in, the mystery was delightfully explained. Oh, sweet friends! hearken to me. It was made of small juicy clams, scarcely bigger than hazel nuts, mixed with pounded ship biscuit, and salted pork cut up into little flakes; the whole enriched with butter, and plentifully seasoned with pepper and salt. Our appetites being sharpened by the frosty voyage, and in particular, Queequeg seeing his favourite fishing food before him, and the chowder being surpassingly excellent, we despatched it with great expedition: when leaning back a moment and bethinking me of Mrs. Hussey's clam and cod announcement, I thought I would try a little experiment. Stepping to the kitchen door, I uttered the word "cod" with great emphasis, and resumed my seat. In a few moments the savoury steam came forth again, but with a different flavor, and in good time a fine cod-chowder was placed before us.</p>
-                        <footer>
-                            <p><small>Creative Commons Attribution-ShareAlike License</small></p>
-                        </footer>
+                        <p>
+                            Pink's was heavly influenced from Ink's module structure and Durandal.js framework. 
+                            With that foundation we built a modular structure based on conventions for the names of files and the
+                            directory tree that is used to arrange components. An app is comprised of modules, a module is a piece
+                            of UI logic that serves a single well defined purpose. Pink modules can be purely logic expressed in 
+                            javascript (lib.js) or can also have an UI template (tpl.html).
+                        </p>
+
+                        <h2>index.html</h2>
+
+                        <p>
+                            At the root of the application is the main html file, in this case "index.html". 
+                            This file is the only page the browser loads throught the aplication lifecycle.
+                        </p>
+                            
+                        <blockquote>
+                            <pre> 
+                                <code>
+    ...
+    
+    &lt;body&gt;
+        &ltdiv id="applicationHost" data-bind="module: 'App.Images.Shell'"&gt;&lt/div&gt;
+        
+        &lt;script src="libs/ink-all.js"&gt;&lt;/script&gt;
+        &lt;script type="text/javascript"&gt;
+            Ink.setPath('App', 'App/');
+            Ink.setPath('Ink', 'libs/Ink/');
+    
+            Ink.requireModules(['App.Images'], function(app) {
+                app.run();
+            });        
+        &lt;/script&gt;
+   &lt;/body&gt;
+&lt;/html&gt;
+                                </code>
+                            </pre>                        
+                        </blockquote>
+
+		                <p>
+		                    In the body of the page we find the div with the initial data binding directive, that tells the framework 
+		                    what is the main UI module to load. Usually this module has the application layout, with menus and the main application
+		                    module.
+		                </p>
+		                
+		                <p>
+		                    The "Ink.setPath" command defines where Ink can find the modules needed by the app, this should include the application
+		                    folder (usually "App") and Ink & Pink libraries folder (usually "libs/Ink").
+		                </p>
+		                
+		                <p>
+		                    After that, we find the "Ink.requireModules" command, that instructs Ink to load the needed application modules, and
+		                    when the module is ready, call the application run method. 
+		                </p>
+
+                        <h2>App/Images/lib.js</h2>
+
+                        <blockquote>
+                            <pre> 
+                                <code>
+Ink.createModule('App.Images', '1', ['Ink.App_1', 'Ink.Plugin.Signals_1', 'Ink.Data.Binding_1'], function(App, Signal, ko) {
+    var Module = function() {
+        App.call(this, 'search', 'search'); 
+
+        this.appTitle = 'Image search sample';
+    };
+    
+    Module.prototype = new App();
+    Module.constructor = Module;
+
+    Module.prototype.listInvisibleRoutes = function() {
+        return [
+          {hash: 'search', module: 'App.Images.Search'},
+          {hash: 'view', module: 'App.Images.View'}
+        ];
+    };
+    
+    Module.prototype.addCustomSignals = function() {
+        this.signals.viewPhoto = new Signal();
+    };
+
+    Module.prototype.ready = function() {
+        var self=this;
+        
+        Ink.requireModules(['App.Images.View'], function() {
+            self.start();
+        });
+    };
+
+    return new Module();
+});
+                                </code>
+                            </pre>                        
+                        </blockquote>
+                        
+                        <p>
+                            The main application module must inherit it's prototype from the "Ink.App" module.
+                            As this simple application as no visible menus, we only need to redefine the app's 
+                            "listInvisibleRoutes" method that must return an array of route definitions.
+                            <br>
+                            A route definition matches an url fragment (hash) with a module name, this match is made through 
+                            a regular expression that can have parameter placeholders.
+                        </p>
+                        
+                        <p>
+                            We also override the "addCustomSignals" method from "Ink.App", this allows us to add new client signals
+                            to the app. Although not required, is's a good pratice to decouple the app's modules, so that they have
+                            very limited knowledge about the other parts of the application, allowing those parts to be easly replaced. 
+                            For this decoupling we usually use custom events to signal the ocurrence of some actions, like the success 
+                            of an entity save, or the change in a search widget's terms.
+                        </p>
+                        
+                        <p>
+                            In this example we create a new signal called "viewPhoto" that will notify the "App.Images.View" module to show
+                            the photo's details. The photo details will be passed along with event. 
+                        </p>
+                        
+                        <p>
+                            The "ready" method from "Ink.App" is also overriden to add custom startup logic. In our example we require the 
+                            preload of the "App.Images.View" module, so that it can subscribe to "viewPhoto" events. After that we call "Ink.App"
+                            "start" method, that begins the data binding process, in our case, loading the "App.Images.Shell" method referenced in
+                            "index.html". 
+                        </p>
+                        
+                        <h2>App/Images/Shell/lib.js</h2>
+                        
+                        <blockquote>
+                            <pre> 
+                                <code>
+Ink.createModule('App.Images.Shell', '1', ['App.Images'], function(app) {
+    var Module = function() {
+        var self=this;
+
+        this.appTitle = app.appTitle;
+        this.mainModule = app.mainModule;
+        this.modalModule = app.modalModule;
+        this.alertModule = app.alertModule;
+        this.infoModule = app.infoModule;
+    };
+
+    Module.prototype.afterRender = function() {
+        app.signals.shellRendered.dispatch();
+    };
+
+    return new Module();
+});
+                                </code>
+                            </pre>                        
+                        </blockquote>
+
+                        <p>
+                            The "App.Images.Shell" module, is the main app layout were we define the app's title, the main module 
+                            that is loaded from the app's current active route, and optionally modal window modules.
+                            
+                            The "afterRender" method is called by the framework after the module's template is rendered, so we use that 
+                            to notify other parts of the app that the app's layout is ready.
+                        </p>
+
+                        <h2>App/Images/Shell/tpl.html</h2>
+                        
+                        <blockquote>
+                            <pre> 
+                                <code>
+&lt;div id="appContainer" class="ink-grid toggle no-padding"&gt;
+    &lt;div id="toastPanel"&gt;&lt;/div&gt;
+    &lt;div id="standbyLightBox"&gt;
+        &lt;div class="lightbox-container"&gt;
+            &lt;i class="icon-spinner icon-spin icon-4x"&gt;&lt;/i&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="column-group"&gt;
+        &lt;nav id="mainMenu" class="ink-navigation"&gt;
+            &lt;ul class="menu horizontal white"&gt;
+                &lt;li&gt;&lt;a href="#search"&gt;&lt;i class="icon-home"&gt;&lt;/i&gt;&lt;/a&gt;&lt;/li&gt;
+            &lt;/ul&gt;
+            &lt;h4 class="menu-title" data-bind="text: appTitle"&gt;&lt;/h4&gt;
+        &lt;/nav&gt;
+    
+        &lt;section data-bind="module: mainModule"&gt;
+        &lt;/section&gt;
+            
+        &lt;div data-bind="module: modalModule"&gt;&lt;/div&gt;
+        &lt;div data-bind="module: alertModule"&gt;&lt;/div&gt;
+        &lt;div data-bind="module: infoModule"&gt;&lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+                                </code>
+                            </pre>                        
+                        </blockquote>
+
+                        <p>
+                            The "App.Images.Shell" template (App/Images/Shell/tpl.html), has the app's main layout markup,
+                            responsible for UI composition through the use
+                            of the "module" binding directive. Here we instruct the framework to load the active route's module (mainModule).
+                            If we want to show modal dialogs, we should also include, the "Ink.App"'s "modalModule", "alertModule"
+                            and "infoModule".
+                        </p>
+
+                        <h2>App/Images/Search/lib.js</h2>
+                        
+                        <blockquote>
+                            <pre> 
+                                <code>
+Ink.createModule('App.Images.Search', '1', ['App.Images', 'Ink.Data.Binding', 'Ink.Net.JsonP_1'], function(app, ko, JsonP) {
+    var Module = function() {
+        var self=this;
+        
+        this.photos = ko.observableArray();
+        this.noPhotos = ko.computed(function() {
+            return self.photos().length==0;
+        });
+        this.search = ko.observable('');
+        this.searching = ko.observable(false);
+        
+        this.search.subscribe(this.searchChangeHandler.bind(this));
+    };
+    
+    Module.prototype.searchChangeHandler = function(search) {
+        if (this.timer) {
+            window.clearTimeout(this.timer);
+        }
+        
+        if (search.length > 2) {
+            this.timer = window.setTimeout(this.doSearch.bind(this, search), 1000);
+        }
+    };
+    
+    Module.prototype.doSearch = function(search) {
+        var self=this;
+        var uri = 'http://services.sapo.pt/Photos/JSON2?u='+search;
+
+        this.searching(true);
+        this.photos([]);
+        
+        new JsonP(uri, {
+            params: {limit: '40'}, 
+            onSuccess: function(data) {
+                var aItems = data.rss.channel.item;
+                var photos = [];
+                var i;
+
+                if (aItems) {
+                    for(i=0, total=aItems.length; i < total; i++) {
+                        photos.push({
+                            tbUrl: aItems[i]['media:thumbnail'][2].url,
+                            url: aItems[i]['media:content'].url,
+                            title: aItems[i].title,
+                            clickHandler: self.viewPhoto.bind(self)
+                        });
+                    }
+                }
+                
+                self.searching(false);
+                self.photos(photos);
+            }, 
+            onFailure: function() {
+                self.searching(false);
+                app.showErrorToast('Failure in photos service');
+            }
+        });
+    };
+    
+    Module.prototype.viewPhoto = function(photo) {
+        app.signals.viewPhoto.dispatch(photo);
+    };
+
+    return new Module();
+});
+                                </code>
+                            </pre>                        
+                        </blockquote>
+
+                        <p>
+                            The 'App.Images.Search' module is the application home module, where the user can input a simple
+                            keyword query to make a search in SAPO's photo service.
+                        </p>
+                        
+                        <p>
+                            When the clicks on a photo, the module emits a "viewPhoto" signal with the selected photo. 
+                        </p>
+
+                        <h2>App/Images/Search/tpl.html</h2>
+                        
+                        <blockquote>
+                            <pre> 
+                                <code>
+&lt;div class="half-space"&gt;
+    &lt;div class="ink-form"&gt;
+        &lt;div class="control-group column-group half-right-space"&gt;
+            &lt;div class="control"&gt;
+                &lt;input type="search" placeholder="Search terms..." data-bind="value: search, valueUpdate: 'afterkeydown'"&gt;&lt;/input&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;!-- ko if: searching  --&gt;
+        &lt;i class="icon-spinner icon-spin icon-4x"&gt;&lt;/i&gt;
+    &lt;!-- /ko --&gt;
+    &lt;!-- ko ifnot: searching --&gt;
+        &lt;div class="top-space" data-bind="foreach: photos"&gt;
+            &lt;div class="thumbnail"&gt;
+                &lt;a href="javascript:void(0)" data-bind="click: clickHandler"&gt;
+                   &lt;img data-bind="attr: {src: tbUrl}" height="120"&gt;
+                &lt;/a&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div class="top-space" data-bind="visible: noPhotos"&gt;
+            No results
+        &lt;/div&gt;
+    &lt;!-- /ko --&gt;
+&lt;/div&gt;
+                                </code>
+                            </pre>                        
+                        </blockquote>
+                        
+                        <p>
+                            The search template binds the view model's (App/Images/Search/lib.js), "search", "searching", "photos",
+                            and "noPhotos" properties to build the home UI.  
+                        </p>
+
+                        <h2>App/Images/View/lib.js</h2>
+                        
+                        <blockquote>
+                            <pre> 
+                                <code>
+Ink.createModule('App.Images.View', '1', ['App.Images', 'Ink.Data.Binding_1'], function(app, ko) {
+    var Module = function() {
+        app.signals.viewPhoto.add(this.viewPhoto.bind(this));
+        
+        this.photoSrc = ko.observable('');
+        this.photoTitle = ko.observable('');
+    };
+    
+    
+    Module.prototype.viewPhoto = function(photo) {
+        this.photoSrc(photo.url);
+        this.photoTitle(photo.title);
+        app.navigateTo('#view');
+    };
+
+    return new Module();
+});
+                                </code>
+                            </pre>                        
+                        </blockquote>
+
+                        <p>
+                            The "App.Images.View" module subscribes to "viewPhoto" signals, and when it'receives them, updates the
+                            "photoSrc" and "photoTitle" properties and tells the app to change the active route to the "view" route.                                                        
+                        </p>
+
+                        <h2>App/Images/View/tpl.html</h2>
+                        
+                        <blockquote>
+                            <pre> 
+                                <code>
+&lt;div class="space"&gt;
+    &lt;h3 data-bind="text: photoTitle"&gt;&lt;/h3&gt;
+&lt;/div&gt;
+&lt;div class="space"&gt;
+    &lt;img data-bind="attr: {src: photoSrc}"&gt;
+&lt;/div&gt;
+                                </code>
+                            </pre>                        
+                        </blockquote>
+
                     </article>
                 </div>
             </section>
@@ -111,7 +457,7 @@
         <footer class="clearfix">
             <div class="ink-grid">
                 <div class="column-group">
-                    <div class="all-50 vertical-space">
+                    <div class="large-50 vertical-space">
                         <h3>Pink is built with:</h3>
                         <ul class="unstyled">
                             <li><a href="http://ink.sapo.pt">Ink</a></li>
@@ -120,7 +466,7 @@
                             <li><a href="http://millermedeiros.github.io/js-signals/">Signals</a></li>
                         </ul>
                     </div>
-                    <div class="all-50 vertical-space align-right">
+                    <div class="large-50 vertical-space content-right">
                         <p class="note">Pink is licensed under the MIT Licence.</p>
                     </div>
                 </div>

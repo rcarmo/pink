@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title>Pink - Single Page App framework</title>
+        <meta name="description" content="">
+        <meta name="author" content="ink, cookbook, recipes">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+
+        <!-- load inks css from the cdn -->
+        <link rel="stylesheet" type="text/css" href="content/css/ink.css">
+
+        <!-- load inks javascript files from the cdn -->
+        <script type="text/javascript" src="content/libs/ink-all.js"></script>
+
+        <link rel="stylesheet" type="text/css" href="content/css/docs.css">
+    </head>
+
+    <body>
+        <div class="ink-grid">
+            <!--[if lte IE 9 ]>
+            <div class="ink-alert basic">
+                <button class="ink-dismiss">&times;</button>
+                <p>
+                    <strong>You are using an outdated Internet Explorer version.</strong>
+                    Please <a href="http://browsehappy.com/">upgrade to a browser</a> to improve your web experience.
+                </p>
+            </div>
+            -->
+
+            <header class="vertical-space">
+                <h1><a href="index.html"><img src="content/img/logo-small.png" height="50" alt=""></a><small>Single page app framework</small></h1>
+                <nav class="ink-navigation quarter-top-space">
+                    <ul class="menu horizontal black">
+                        <li><a href="docs/get-started.html">Get started</a></li>
+                        <li><a href="docs.html">Docs</a></li>
+                        <li class="active"><a href="samples.html">Sample apps</a></li>
+                        <li><a href="http://github.com/rcarmo/pink" target="_blank">GitHub</a></li>
+                    </ul>
+                </nav>
+            </header>
+            
+            <section class="column-group gutters article">
+                <div class="large-100">
+                    <header>
+                        <h1>Sample apps created with Pink</h1>
+                        <hr>
+                    </header>
+
+                    <article>
+                        <header>
+                            <h2>Todo app</h2>
+                        </header>
+                        <summary class="quarter-vertical-space">
+                            Simple getting things done kind of app. Has a responsive layout that shows the stuff to get done in
+                            a kanban for desktop screens and a simple grid for smaller screens. The items are persisted in local storage.
+                        </summary>
+
+                        <figure class="ink-image vertical-space">
+                            <a target="_blank" href="todo-app.html"><img src="content/img/todo-app.png"></a>
+                        </figure>
+                        
+                        <a target="_blank" href="todo-app.html">View sample&nbsp;<i class="icon-external-link"></i></a>
+                    </article>
+
+                    <article>
+                        <header>
+                            <h2>Image search app</h2>
+                        </header>
+                        <summary class="quarter-vertical-space">
+                            Search for photos on SAPO Photos service through a simple interface. 
+                        </summary>
+
+                        <figure class="ink-image vertical-space">
+                            <a target="_blank" href="images-app.html"><img src="content/img/image-search-app.png"></a>
+                        </figure>
+
+                        <a target="_blank" href="images-app.html">View sample&nbsp;<i class="icon-external-link"></i></a>
+                    </article>
+                </div>
+            </section>
+        </div>
+        <footer class="clearfix">
+            <div class="ink-grid">
+                <div class="column-group">
+                    <div class="large-50 vertical-space">
+                        <h3>Pink is built with:</h3>
+                        <ul class="unstyled">
+                            <li><a href="http://ink.sapo.pt">Ink</a></li>
+                            <li><a href="http://knockoutjs.com">Knockout</a></li>
+                            <li><a href="http://projects.jga.me/routie/">Routie</a></li>
+                            <li><a href="http://millermedeiros.github.io/js-signals/">Signals</a></li>
+                        </ul>
+                    </div>
+                    <div class="large-50 vertical-space content-right">
+                        <p class="note">Pink is licensed under the MIT Licence.</p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </body>
+</html>
