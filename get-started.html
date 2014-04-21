@@ -126,7 +126,7 @@
 
 		                <p>
 		                    In the body of the page we find the div with the initial data binding directive, that tells the framework 
-		                    what is the main UI module to load. Usually this module has the application layout, with menus and the main application
+		                    what is the first UI module to load. Usually this module has the application layout, with menus and the active route's
 		                    module.
 		                </p>
 		                
@@ -181,7 +181,7 @@ Ink.createModule('App.Images', '1', ['Ink.App_1', 'Ink.Plugin.Signals_1', 'Ink.D
                         </blockquote>
                         
                         <p>
-                            The main application module must inherit it's prototype from the "Ink.App" module.
+                            The application module must inherit it's prototype from the "Ink.App" module.
                             As this simple application as no visible menus, we only need to redefine the app's 
                             "listInvisibleRoutes" method that must return an array of route definitions.
                             <br>
