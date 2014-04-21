@@ -28,7 +28,7 @@
             </div>
             -->
 
-            <header class="vertical-space">
+            <header id="mainMenu" class="vertical-space">
                 <h1><a href="index.html"><img src="content/img/logo-small.png" height="50" alt=""></a><small>Single page app framework</small></h1>
                 <nav class="ink-navigation quarter-top-space">
                     <ul class="menu horizontal black">
@@ -40,75 +40,73 @@
                 </nav>
             </header>
             
-            <div class="column-group gutters article">
-                <section class="large-30 medium-100 small-100">
-                    <div id="docMenu">
-	                    <h2>Documentation</h2>
-	                    <nav>
-	                        <ol>
-	                            <li>
-	                               <a href="#app">Pink application interface</a>
-	                               <ol>
-	                                   <li>
-	                                       <a href="#appAttributes" class="sub-menu" data-target="#appAttributesMenu">Attributes</a>
-	                                       <ol id="appAttributesMenu" class="hide-all">
-	                                           <li><a href="#modalModule">modalModule</a></li>
-                                               <li><a href="#alertModule">alertModule</a></li>
-                                               <li><a href="#infoModule">infoModule</a></li>
-                                               <li><a href="#rootRoute">rootRoute</a></li>
-                                               <li><a href="#undefinedRoute">undefinedRoute</a></li>
-                                               <li><a href="#mainModule">mainModule</a></li>
-                                               <li><a href="#definedRoutes">definedRoutes</a></li>
-	                                       </ol>
-	                                   </li>
-	                                   <li>
-	                                       <a href="#appMethods" class="sub-menu" data-target="#appMethodsMenu">Methods</a>
-	                                       <ol id="appMethodsMenu" class="hide-all">
-                                               <li><a href="#showInfoToast">showInfoToast</a></li>
-                                               <li><a href="#showErrorToast">showErrorToast</a></li>
-                                               <li><a href="#showSuccessToast">showSuccessToast</a></li>
-                                               <li><a href="#showModalWindow">showModalWindow</a></li>
-                                               <li><a href="#showMiniModalWindow">showMiniModalWindow</a></li>
-                                               <li><a href="#showSmallModalWindow">showSmallModalWindow</a></li>
-                                               <li><a href="#showLargeModalWindow">showLargeModalWindow</a></li>
-                                               <li><a href="#showConfirm">showConfirm</a></li>
-                                               <li><a href="#showInfoBox">showInfoBox</a></li>
-                                               <li><a href="#showStandby">showStandby</a></li>
-                                               <li><a href="#hideStandby">hideStandby</a></li>
-                                               <li><a href="#listVisibleRoutes">listVisibleRoutes</a></li>
-                                               <li><a href="#listInvisibleRoutes">listInvisibleRoutes</a></li>
-                                               <li><a href="#addVisibleRoute">addVisibleRoute</a></li>
-                                               <li><a href="#addInvisibleRoute">addInvisibleRoute</a></li>
-                                               <li><a href="#addCustomSignals">addCustomSignals</a></li>
-                                               <li><a href="#navigateTo">navigateTo</a></li>
-                                               <li><a href="#navigateToStart">navigateToStart</a></li>
-                                               <li><a href="#listPluginModules">listPluginModules</a></li>
-                                               <li><a href="#run">run</a></li>
-                                               <li><a href="#ready">ready</a></li>
-	                                       </ol>
-	                                   </li>
-	                               </ol>
-	                            </li>
-	                            <li><a href="#routing">Routing</a></li>
-	                            <li><a href="#signals">Signals</a></li>
-	                            <li>
-	                               <a href="#uiModules" class="sub-menu" data-target="#uiModulesMenu">UI Modules</a>
-	                               <ol id="uiModulesMenu" class="hide-all">
-	                                    <li><a href="#modules">Custom modules</a></li>
-	                                    <li><a href="#modalwindow">ModalWindow</a></li>
-	                                    <li><a href="#grid">Grid</a></li>
-	                                    <li><a href="#paginator">Paginator</a></li>
-	                                    <li><a href="#autocomplete">AutoComplete</a></li>
-	                                    <li><a href="#tooltip">Tooltip</a></li>
-	                                    <li><a href="#dragdrop">Drag&Drop</a></li>
-	                                    <li><a href="#kanban">Kanban</a></li>
-	                               </ol>
-	                            </li>
-	                        </ol>
-	                    </nav>
-                    </div>
-                </section>
-                <section class="large-70 medium-100 small-100">
+            <div id="docsContainer" class="column-group gutters large-100">
+                <div id="docMenu">
+                    <h2>Documentation</h2>
+                    <nav>
+                        <ol>
+                            <li>
+                               <a href="#app">Pink application interface</a>
+                               <ol>
+                                   <li>
+                                       <a href="#appAttributes" class="sub-menu" data-target="#appAttributesMenu">Attributes</a>
+                                       <ol id="appAttributesMenu" class="hide-all">
+                                           <li><a href="#modalModule">modalModule</a></li>
+                                           <li><a href="#alertModule">alertModule</a></li>
+                                           <li><a href="#infoModule">infoModule</a></li>
+                                           <li><a href="#rootRoute">rootRoute</a></li>
+                                           <li><a href="#undefinedRoute">undefinedRoute</a></li>
+                                           <li><a href="#mainModule">mainModule</a></li>
+                                           <li><a href="#definedRoutes">definedRoutes</a></li>
+                                       </ol>
+                                   </li>
+                                   <li>
+                                       <a href="#appMethods" class="sub-menu" data-target="#appMethodsMenu">Methods</a>
+                                       <ol id="appMethodsMenu" class="hide-all">
+                                           <li><a href="#showInfoToast">showInfoToast</a></li>
+                                           <li><a href="#showErrorToast">showErrorToast</a></li>
+                                           <li><a href="#showSuccessToast">showSuccessToast</a></li>
+                                           <li><a href="#showModalWindow">showModalWindow</a></li>
+                                           <li><a href="#showMiniModalWindow">showMiniModalWindow</a></li>
+                                           <li><a href="#showSmallModalWindow">showSmallModalWindow</a></li>
+                                           <li><a href="#showLargeModalWindow">showLargeModalWindow</a></li>
+                                           <li><a href="#showConfirm">showConfirm</a></li>
+                                           <li><a href="#showInfoBox">showInfoBox</a></li>
+                                           <li><a href="#showStandby">showStandby</a></li>
+                                           <li><a href="#hideStandby">hideStandby</a></li>
+                                           <li><a href="#listVisibleRoutes">listVisibleRoutes</a></li>
+                                           <li><a href="#listInvisibleRoutes">listInvisibleRoutes</a></li>
+                                           <li><a href="#addVisibleRoute">addVisibleRoute</a></li>
+                                           <li><a href="#addInvisibleRoute">addInvisibleRoute</a></li>
+                                           <li><a href="#addCustomSignals">addCustomSignals</a></li>
+                                           <li><a href="#navigateTo">navigateTo</a></li>
+                                           <li><a href="#navigateToStart">navigateToStart</a></li>
+                                           <li><a href="#listPluginModules">listPluginModules</a></li>
+                                           <li><a href="#run">run</a></li>
+                                           <li><a href="#ready">ready</a></li>
+                                       </ol>
+                                   </li>
+                               </ol>
+                            </li>
+                            <li><a href="#routing">Routing</a></li>
+                            <li><a href="#signals">Signals</a></li>
+                            <li>
+                               <a href="#uiModules" class="sub-menu" data-target="#uiModulesMenu">UI Modules</a>
+                               <ol id="uiModulesMenu" class="hide-all">
+                                    <li><a href="#modules">Custom modules</a></li>
+                                    <li><a href="#modalwindow">ModalWindow</a></li>
+                                    <li><a href="#grid">Grid</a></li>
+                                    <li><a href="#paginator">Paginator</a></li>
+                                    <li><a href="#autocomplete">AutoComplete</a></li>
+                                    <li><a href="#tooltip">Tooltip</a></li>
+                                    <li><a href="#dragdrop">Drag&Drop</a></li>
+                                    <li><a href="#kanban">Kanban</a></li>
+                               </ol>
+                            </li>
+                        </ol>
+                    </nav>
+                </div>
+                <div id="docArea">
                     <article class="docs-article">
                         <a id="app"></a>
                         <header>
@@ -525,7 +523,7 @@
                         </header>
                         <p>However, a warm savory steam from the kitchen served to belie the apparently cheerless prospect before us. But when that smoking chowder came in, the mystery was delightfully explained. Oh, sweet friends! hearken to me. It was made of small juicy clams, scarcely bigger than hazel nuts, mixed with pounded ship biscuit, and salted pork cut up into little flakes; the whole enriched with butter, and plentifully seasoned with pepper and salt. Our appetites being sharpened by the frosty voyage, and in particular, Queequeg seeing his favourite fishing food before him, and the chowder being surpassingly excellent, we despatched it with great expedition: when leaning back a moment and bethinking me of Mrs. Hussey's clam and cod announcement, I thought I would try a little experiment. Stepping to the kitchen door, I uttered the word "cod" with great emphasis, and resumed my seat. In a few moments the savoury steam came forth again, but with a different flavor, and in good time a fine cod-chowder was placed before us.</p>
                     </article>
-                </section>
+                </div>
             </div>
         </div>
         

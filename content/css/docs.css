@@ -67,12 +67,28 @@ blockquote>pre {
     word-wrap: normal;
 }
 
+#docsContainer {
+    position: relative;    
+}
+
 #docMenu {
 	position: fixed;
-    top: 10em;
+    top: 10.3em;
 	bottom: 0px ! important;
-	width: 25%;
-	overflow-y: auto
+	width: 18em;
+	overflow-y: auto;
+}
+
+#docArea {
+    position: absolute;
+    top: 0px;
+    left: 19em;
+    right: 0px;
+    margin-right: -2em;
+}
+
+#mainMenu {
+    margin-left: -2em;
 }
 
 /*****************************
@@ -82,8 +98,20 @@ blockquote>pre {
 @media screen and (max-width: 970px) {
     #docMenu {
        position: relative ! important;
-       width: auto ! important;
+       width: 100% ! important;
        height: auto ! important;
        top: 0px ! important;
+       margin-left: 1.5em ! important;
+    }
+    
+    #docArea {
+       position: relative ! important;
+       width: 100% ! important;
+       left: 0px;
+       margin-left: 1.5em ! important;
+    }
+    
+    #mainMenu {
+        margin-left: 0px;    
     }
 }
