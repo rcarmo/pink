@@ -458,7 +458,47 @@
                         <header>
                             <h2 class="push-left">Routing</h2>
                         </header>
-                        <p>However, a warm savory steam from the kitchen served to belie the apparently cheerless prospect before us. But when that smoking chowder came in, the mystery was delightfully explained. Oh, sweet friends! hearken to me. It was made of small juicy clams, scarcely bigger than hazel nuts, mixed with pounded ship biscuit, and salted pork cut up into little flakes; the whole enriched with butter, and plentifully seasoned with pepper and salt. Our appetites being sharpened by the frosty voyage, and in particular, Queequeg seeing his favourite fishing food before him, and the chowder being surpassingly excellent, we despatched it with great expedition: when leaning back a moment and bethinking me of Mrs. Hussey's clam and cod announcement, I thought I would try a little experiment. Stepping to the kitchen door, I uttered the word "cod" with great emphasis, and resumed my seat. In a few moments the savoury steam came forth again, but with a different flavor, and in good time a fine cod-chowder was placed before us.</p>
+                        <p>
+                            Pink provides an hash based routing module (Routie), that is used to manage the view change logic.
+                            The routing callback infers what is the active module from the window url hash fragment, by looking at the 
+                            application's defined visible and invisible routes.
+                        </p>
+                        <p>
+                            All routes have an "hash" attribute that can be parameterized (eg. for invisible routes), a "module" attribute with the name of the
+                            Pink UI module to load, and an optional "arguments" attribute that can contain extra options to pass to the module.
+                        </p>
+                        <p>
+                            The visible routes, should be used in the application layout module, to build a menu, by binding to the app's 
+                            <a href="#definedRoutes">"definedRoutes"</a> attribute. They can be defined in the app's 
+                            <a href="#listVisibleRoutes">"listVisibleRoutes"</a> method, or by calling 
+                            the <a href="#addVisibleRoute">"addVisibleRoute"</a> method.
+                        </p>
+                        <p>
+                            The visible route has two aditional attributes named 'isActive' and 'caption, that indicate what should be the selected menu option,
+                            and the menu item's caption respectively.
+                        </p>
+                        <p>
+                            The invisible routes, defined in the app's <a href="#listInvisibleRoutes">"listInvisibleRoutes"</a>, or by calling the
+                            <a href="#addInvisibleRoute">"addInvisibleRoute"</a> method, allow the definition of parameterized routes eg:
+                            <blockquote>
+                                <pre>
+ {hash: 'users\\?search=:search', module: 'App.Example.ListUsers', parentModule: 'App.Example.ListUsers'}
+                                </pre>
+                            </blockquote>
+                            In this example,for the route to match, the defined hash must have a search term, that is passed to the module's options.
+                        </p>
+                        <p>
+                            In addition, the invisible route can provide an optional "parentModule" attribute, that tells the framework what should
+                            be the selected menu option relating to this route. 
+                        </p>                    
+                        <p>
+                            The routing callback is also responsible for updating the app's <a href="#mainModule">"mainModule"</a> attribute with 
+                            the module's name and parameters, notifing the "module" binding handler to reload.
+                        </p>
+                        <p>
+                            The module parameters are passed as an object to the module's constructor or to module's "activate" method, in case of a
+                            a class or static module repectively.
+                        </p>                            
                     </article>
                     <article>
                         <a id="signals"></a>
