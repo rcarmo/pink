@@ -13,7 +13,7 @@
         <link rel="stylesheet" type="text/css" href="content/css/ink.css">
         <link rel="stylesheet" type="text/css" href="content/css/docs.css">
         <link rel="stylesheet" type="text/css" href="libs/prettify/prettify.css">
-        <link rel="stylesheet" type="text/css" href="libs/prettify/themes/ghink.css">
+        <link rel="stylesheet" type="text/css" href="libs/prettify/themes/ghink2.css">
 
         <script type="text/javascript" src="libs/ink-all.js"></script>
         <script type="text/javascript" src="libs/prettify/prettify.js"></script>
@@ -202,7 +202,7 @@
                                 <strong>showInfoToast(message) : void</strong><br>
                                 <div class="details">
                                     Shows a temporary notification panel in the UI for information purposes.<br>
-                                    <em>Note: The app's DOM must have an element with an id <code>toastPanel</code>, usually in the main layout.</em>
+                                    <span class="note"><i class="icon-exclamation-sign"></i> The app's DOM must have an element with an id <code>toastPanel</code>, usually in the main layout.</span>
                                     <pre class="prettyprint lang-js">app.showInfoToast('Hello there!');</pre>
                                 </div>
                             </li>
@@ -211,7 +211,7 @@
                                 <strong>showErrorToast(message) : void</strong><br>
                                 <div class="details">
                                     Shows a temporary notification panel in the UI for application error purposes.<br>
-                                    <em>Note: The app's DOM must have an element with an id <code>toastPanel</code>, usually in the main layout.</em>
+                                    <span class="note"><i class="icon-exclamation-sign"></i> The app's DOM must have an element with an id <code>toastPanel</code>, usually in the main layout.</span>
                                     <pre class="prettyprint lang-js">app.showErrorToast('Oops, an error occurred :(');</pre>
                                 </div>
                             </li>
@@ -220,7 +220,7 @@
                                 <strong>showSuccessToast(message) : void</strong><br>
                                 <div class="details">
                                     Shows a temporary notification panel in the UI to notify the user that some action completed with success.<br>
-                                    <em>Note: The app's DOM must have an element with an id <code>toastPanel</code>, usually in the main layout.</em>
+                                    <span class="note"><i class="icon-exclamation-sign"></i> The app's DOM must have an element with an id <code>toastPanel</code>, usually in the main layout.</span>
                                     <pre class="prettyprint lang-js">app.showErrorToast('Document saved');</pre>
                                 </div>
                             </li>
@@ -234,8 +234,8 @@
 	                                    <li><strong>params</strong> - object with the parameters to pass to the module</li>
                                         <li><strong>modalStyle</strong> - object with modal window style parameters<br> <code class="prettify lang-js">{width : string, height : string, cancelVisible : bool, confirmCaption : string}</code></li> 
 	                                </ul>
-                                    Shows a modal window with a custom module in the contents area.<br><br>
-                                    <em>Note: See the <code>modalModule</code> attribute</em>
+                                    Shows a modal window with a custom module in the contents area.<br>
+                                    <span class="note"><i class="icon-exclamation-sign"></i> See the <code>modalModule</code> attribute</span>
                                     <pre class="prettyprint lang-js">app.showModalWindow('Edit item', 'App.Item.Edit', {item: item}, {width: '600px', height: '400px'});</pre>                                    
                                 </div>
                             </li>                            
@@ -243,24 +243,24 @@
                                 <a id="showMiniModalWindow"></a>
                                 <strong>showMiniModalWindow(title, moduleName, params, modalStyle) : void</strong><br>
                                 <div class="details">
-                                    Shows a mini modal window with a custom module in the contents area.<br><br>
-                                    <em>Note: See <code>showModalWindow</code> for details and example usage</em>
+                                    Shows a mini modal window with a custom module in the content area.<br>
+                                    <span class="note"><i class="icon-exclamation-sign"></i> See <code>showModalWindow</code> for details and example usage</span>
                                 </div>
                             </li>                            
                             <li>
                                 <a id="showSmallModalWindow"></a>
                                 <strong>showSmallModalWindow(title, moduleName, params, modalStyle) : void</strong><br>
                                 <div class="details">
-                                    Shows a small modal window with a custom module in the contents area.<br><br>
-                                    <em>Note: See <code>showModalWindow</code> for details and example usage</em>
+                                    Shows a small modal window with a custom module in the content area.<br>
+                                    <span class="note"><i class="icon-exclamation-sign"></i> See <code>showModalWindow</code> for details and example usage</span>
                                 </div>
                             </li>                            
                             <li>
                                 <a id="showLargeModalWindow"></a>
                                 <strong>showLargeModalWindow(title, moduleName, params, modalStyle) : void</strong><br>
                                 <div class="details">
-                                    Shows a large modal window with a custom module in the contents area.<br><br>
-                                    <em>Note: See <code>showModalWindow</code> for details and example usage</em>
+                                    Shows a large modal window with a custom module in the contents area.<br>
+                                    <span class="note"><i class="icon-exclamation-sign"></i> See <code>showModalWindow</code> for details and example usage</span>
                                 </div>
                             </li>
                             <li>
@@ -293,16 +293,16 @@
                                 <a id="showStandby"></a>
                                 <strong>showStandby() : void</strong>
                                 <div class="details">
-                                    Shows a standby panel that disables user input.<br><br>
-                                    <em>Note: There must exist a DOM element with the id <code>standbyLightBox</code> for this method to work</em>
+                                    Shows a standby panel that disables user input.<br>
+                                    <span class="note"><i class="icon-exclamation-sign"></i> There must exist a DOM element with the id <code>standbyLightBox</code> for this method to work</span>
                                 </div>
                             </li>                            
                             <li>
                                 <a id="hideStandby"></a>
                                 <strong>hideStandby() : void</strong>
                                 <div class="details">
-                                    Hides the standby panel.<br><br>
-                                    <em>Note: There must exist a DOM element with the id <code>standbyLightBox</code> for this method to work</em>
+                                    Hides the standby panel.<br>
+                                    <span class="note"><i class="icon-exclamation-sign"></i> There must exist a DOM element with the id <code>standbyLightBox</code> for this method to work</span>
                                 </div>
                             </li>
                             <li>
@@ -336,7 +336,7 @@
      ];
  };</pre>
                                     
-                                        <em>Note: If the invisible route's <code>parentModule</code> attribute is defined, it's used to set the parent module's route active flag to <code>true</code>.</em>
+                                        <span class="note"><i class="icon-exclamation-sign"></i> If the invisible route's <code>parentModule</code> attribute is defined, it's used to set the parent module's route active flag to <code>true</code>.</span>
                                 </div>
                             </li>
                             <li>
@@ -556,6 +556,7 @@
 	                new Toggle(element);
 		    	});
 	    	    new Sticky('#docMenu', {inlineDimensions: true});
+                prettyPrint();
 		    });
 		</script>        
     </body>
