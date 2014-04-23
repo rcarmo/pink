@@ -130,7 +130,7 @@
 		                            Exposes a generic modal viewmodel for databinding, usually used in the application main layout.
                                     Must be bound to a DOM element for the app's <code>showModalWindow</code> method to work.
 		                            
-		                            <pre class="prettyprint lang-js">&lt;div data-bind="module: app.modalModule"&gt;&lt;/div&gt;</pre>
+		                            <blockquote><pre class="prettyprint lang-html">&lt;div data-bind="module: app.modalModule"&gt;&lt;/div&gt;</pre></blockquote>
 	                            </div>
                             </li>
                             <li>
@@ -140,7 +140,7 @@
 	                                Exposes a confirm modal viewmodel for databinding, usually used in the application main layout.
                                     Must be bound to a DOM element for the app's <code>showConfirm</code> method to work.
 	                                
-	                                <pre class="prettyprint lang-js">&lt;div data-bind="module: app.alertModule"&gt;&lt;/div&gt;</pre>
+	                                <blockquote><pre class="prettyprint lang-html">&lt;div data-bind="module: app.alertModule"&gt;&lt;/div&gt;</pre></blockquote>
 	                            </div>
                             </li>
                             <li>
@@ -150,7 +150,7 @@
 	                                Exposes an informative modal viewmodel for databinding, usually used in the application main layout.
                                     Must be bound to a DOM element for the app's <code>showInfoBox</code> method to work.
 	                                
-	                                <pre class="prettyprint lang-js">&lt;div data-bind="module: app.infoModule"&gt;&lt;/div&gt;</pre>
+	                                <blockquote><pre class="prettyprint lang-html">&lt;div data-bind="module: app.infoModule"&gt;&lt;/div&gt;</pre></blockquote>
 	                            </div>
                             </li>
                             <li>
@@ -174,7 +174,7 @@
 	                                Exposes the active route's module (taken from the url fragment) for databinding, usually used in the application main layout.
 	                                Must be bound to a DOM element.
 	                                
-	                                <pre class="prettyprint lang-js">&lt;section data-bind="module: mainModule"/&gt;</pre>
+	                                <blockquote><pre class="prettyprint lang-html">&lt;section data-bind="module: mainModule"/&gt;</pre></blockquote>
 	                            </div>
                             </li>
                             <li>
@@ -182,15 +182,15 @@
                                 <strong>definedRoutes: object</strong><br>
                                 <div class="details">
                                     Exposes the application's defined routing parameters for databinding, usually used in the application main menu.
-                                    
-                                        <pre class="prettyprint lang-js">
+                                    <blockquote><pre class="prettyprint lang-html">
  &lt;ul id="mainMenuDropDown" class="menu vertical white"&gt;
      &lt;!-- ko foreach:  definedRoutes.visibleRoutes --&gt;
          &lt;li data-bind="css: { active: isActive }"&gt;
              &lt;a data-bind="attr: { href: '#'+hash }, html: caption"&gt;&lt;/a&gt;
          &lt;/li&gt;
      &lt;!-- /ko --&gt;
- &lt;/ul&gt;</pre>
+ &lt;/ul&gt;
+                                    </pre></blockquote>
                                 </div>
                         </ul>
 
@@ -203,7 +203,7 @@
                                 <div class="details">
                                     Shows a temporary notification panel in the UI for information purposes.<br>
                                     <span class="note"><i class="icon-exclamation-sign"></i> The app's DOM must have an element with an id <code>toastPanel</code>, usually in the main layout.</span>
-                                    <pre class="prettyprint lang-js">app.showInfoToast('Hello there!');</pre>
+                                    <blockquote><pre class="prettyprint lang-js">app.showInfoToast('Hello there!');</pre></blockquote>
                                 </div>
                             </li>
                             <li>
@@ -212,7 +212,7 @@
                                 <div class="details">
                                     Shows a temporary notification panel in the UI for application error purposes.<br>
                                     <span class="note"><i class="icon-exclamation-sign"></i> The app's DOM must have an element with an id <code>toastPanel</code>, usually in the main layout.</span>
-                                    <pre class="prettyprint lang-js">app.showErrorToast('Oops, an error occurred :(');</pre>
+                                    <blockquote><pre class="prettyprint lang-js">app.showErrorToast('Oops, an error occurred :(');</pre></blockquote>
                                 </div>
                             </li>
                             <li>
@@ -221,7 +221,7 @@
                                 <div class="details">
                                     Shows a temporary notification panel in the UI to notify the user that some action completed with success.<br>
                                     <span class="note"><i class="icon-exclamation-sign"></i> The app's DOM must have an element with an id <code>toastPanel</code>, usually in the main layout.</span>
-                                    <pre class="prettyprint lang-js">app.showErrorToast('Document saved');</pre>
+                                    <blockquote><pre class="prettyprint lang-js">app.showErrorToast('Document saved');</pre></blockquote>
                                 </div>
                             </li>
                             <li>
@@ -236,7 +236,7 @@
 	                                </ul>
                                     Shows a modal window with a custom module in the contents area.<br>
                                     <span class="note"><i class="icon-exclamation-sign"></i> See the <code>modalModule</code> attribute</span>
-                                    <pre class="prettyprint lang-js">app.showModalWindow('Edit item', 'App.Item.Edit', {item: item}, {width: '600px', height: '400px'});</pre>                                    
+                                    <blockquote><pre class="prettyprint lang-js">app.showModalWindow('Edit item', 'App.Item.Edit', {item: item}, {width: '600px', height: '400px'});</pre></blockquote>                                    
                                 </div>
                             </li>                            
                             <li>
@@ -274,7 +274,7 @@
 	                                    <li><strong>cancelCallback</strong> - function to be called if the user cancels the action</li> 
 	                                </ul>
                                     Shows a modal window for the user to respond to a confirm action.
-                                    <pre class="prettyprint lang-js">app.showConfirm('Please confirm...', 'Remove the item?', confirmHandler, cancelHandler);</pre>                                    
+                                    <blockquote><pre class="prettyprint lang-js">app.showConfirm('Please confirm...', 'Remove the item?', confirmHandler, cancelHandler);</pre></blockquote>                                    
                                 </div>
                             </li>
                             <li>
@@ -286,7 +286,7 @@
                                         <li><strong>message</strong> - string with the message for the user</li>
                                     </ul>
                                     Shows a modal window with a simple message.
-                                    <pre class="prettyprint lang-js">app.showInfoBox('User info', 'Here is some extra info');</pre>                                    
+                                    <blockquote><pre class="prettyprint lang-js">app.showInfoBox('User info', 'Here is some extra info');</pre></blockquote>                                    
                                 </div>
                             </li>
                             <li>
@@ -312,14 +312,14 @@
                                     This method should be overriden by the application main module, to return the routes to be 
                                     rendered in the main application menu.
                                     
-                                        <pre class="prettyprint lang-js">
+                                        <blockquote><pre class="prettyprint lang-js">
  Module.prototype.listVisibleRoutes = function() {
      return [
        {isActive: ko.observable(true), caption: 'To-do', hash: 'todo', module: 'App.Tasks.Home', arguments: {filter: 'todo'}},
        {isActive: ko.observable(false), caption: 'Incomplete', hash: 'incomplete', module: 'App.Tasks.Home', arguments: {filter: 'incomplete'}},
        {isActive: ko.observable(false), caption: 'Completed', hash: 'completed', module: 'App.Tasks.Home', arguments: {filter: 'complete'}}
      ];
- };</pre>
+ };</pre></blockquote>
                                 </div>
                             </li>
                             <li>
@@ -329,12 +329,12 @@
                                     This method should be overriden by the application main module, to return the routes not visible
                                     in the application's main menu.
                                     
-                                        <pre class="prettyprint lang-js">
+                                        <blockquote><pre class="prettyprint lang-js">
  Module.prototype.listInvisibleRoutes = function() {
      return [
        {hash: 'users\\?search=:search', module: 'App.Example.ListUsers', parentModule: 'App.Example.ListUsers'}
      ];
- };</pre>
+ };</pre></blockquote>
                                     
                                         <span class="note"><i class="icon-exclamation-sign"></i> If the invisible route's <code>parentModule</code> attribute is defined, it's used to set the parent module's route active flag to <code>true</code>.</span>
                                 </div>
@@ -346,7 +346,7 @@
 								    Allows a plugin to add a new visible route.
 								    The plugin should call this method on its initialization code
 
-                                        <pre class="prettyprint lang-js">app.addVisibleRoute({isActive: ko.observable(false), caption: 'Export', hash: 'export', module: 'App.Tasks.Plugins.Export'})</pre>
+                                        <blockquote><pre class="prettyprint lang-js">app.addVisibleRoute({isActive: ko.observable(false), caption: 'Export', hash: 'export', module: 'App.Tasks.Plugins.Export'})</pre></blockquote>
                                 </div>
                             </li>
                             <li>
@@ -356,7 +356,7 @@
                                     Allows a plugin to add a new invisible route.
                                     The plugin should call this method on its initialization code
 
-                                        <pre class="prettyprint lang-js">app.addInvisibleRoute({caption: 'Export item', hash: 'export\\?item=:item', module: 'App.Tasks.Plugins.ExportItem'})</pre>
+                                        <blockquote><pre class="prettyprint lang-js">app.addInvisibleRoute({caption: 'Export item', hash: 'export\\?item=:item', module: 'App.Tasks.Plugins.ExportItem'})</pre></blockquote>
                                 </div>
                             </li>
                             <li>
@@ -365,12 +365,12 @@
                                 <div class="details">
                                     Should be overriden in the application's main module, to define custom client side events for application UI logic.
                                     
-                                        <pre class="prettyprint lang-js">
+                                        <blockquote><pre class="prettyprint lang-js">
  Module.prototype.addCustomSignals = function() {
      this.signals.taskAdded = new Signal();
      this.signals.taskUpdated = new Signal();
  };
-                                        </pre>
+                                        </pre></blockquote>
                                 </div>
                             </li>
                             <li>
@@ -383,7 +383,7 @@
                                     </ul>
                                     Instructs the router to navigate to a new route inside the app.
 
-                                    <pre class="prettyprint lang-js">app.navigateTo('#home');</pre>                                    
+                                    <blockquote><pre class="prettyprint lang-js">app.navigateTo('#home');</pre></blockquote>                                    
                                 </div>
                             </li>
                             <li>
@@ -392,7 +392,7 @@
                                 <div class="details">
                                     Instructs the router to navigate to the route defined in the <code>rootRoute</code> attribute.
 
-                                    <pre class="prettyprint lang-js">app.navigateToStart();</pre>                                    
+                                    <blockquote><pre class="prettyprint lang-js">app.navigateToStart();</pre></blockquote>                                    
                                 </div>
                             </li>
                             <li>
@@ -408,12 +408,12 @@
                                 <div class="details">
                                     Must be called on the main page to start the application bootstrap process.
                                     
-                                        <pre class="prettyprint lang-js">
+                                        <blockquote><pre class="prettyprint lang-html">
  &lt;script type="text/javascript"&gt;
      Ink.requireModules(['App.Tasks'], function(app) {
          app.run();
      });        
- &lt;/script&gt; </pre>
+ &lt;/script&gt; </pre></blockquote>
                                 </div>
                             </li>
                             <li>
@@ -423,14 +423,14 @@
        					            Override this method to add your own custom initialization logic.
                                     If you override this method, you must call <code>start()</code> when ready.
                                     
-                                        <pre class="prettyprint lang-js">
+                                        <blockquote><pre class="prettyprint lang-js">
  Module.prototype.ready = function() {
      var self=this;
      
      Ink.requireModules(['App.Images.View'], function() {
          self.start();
      });
- }; </pre>
+ }; </pre></blockquote>
                                 </div>
                             </li>
                         </ul>
@@ -461,9 +461,9 @@
                         <p>
                         The invisible routes, defined in the app's <a href="#listInvisibleRoutes"><code>listInvisibleRoutes</code></a>, or by calling the
                         <a href="#addInvisibleRoute"><code>addInvisibleRoute</code></a> method, allow the definition of parameterized routes eg:
-                                <pre class="prettyprint lang-js">
+                                <blockquote><pre class="prettyprint lang-js">
  {hash: 'users\\?search=:search', module: 'App.Example.ListUsers', parentModule: 'App.Example.ListUsers'}
-                                </pre>
+                                </pre></blockquote>
                             In this example,for the route to match, the defined hash must have a search term, that is passed to the module's options.
                         </p>
                         <p>
@@ -550,7 +550,7 @@
             </div>
         </div>
         
-		<script>
+		<script type="text/javascript">
 		    Ink.requireModules( ['Ink.UI.Sticky_1', 'Ink.UI.Toggle_1', 'Ink.Util.Array_1'], function( Sticky, Toggle, InkArray) {
 		    	InkArray.forEach(Ink.ss('.sub-menu'), function(element) {
 	                new Toggle(element);

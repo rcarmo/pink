@@ -50,14 +50,10 @@
 .fun {
   color: #FF0000; }
 
-/* Put a border around prettyprinted code snippets. */
 pre.prettyprint {
-  background-color: #EEEEEE;
-  padding: 10px;
-  border: 3px solid #FAFAFA;
-  -moz-border-radius: 5px;
-  border-radius: 5px;
-  }
+  border: 0px;
+  background-color: #FAFAFA;
+}
 
 /* Specify class=linenums on a pre to get line numbering */
 ol.linenums {

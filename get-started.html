@@ -10,13 +10,13 @@
         <meta name="MobileOptimized" content="320">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
 
-        <!-- load inks css from the cdn -->
         <link rel="stylesheet" type="text/css" href="content/css/ink.css">
-
-        <!-- load inks javascript files from the cdn -->
-        <script type="text/javascript" src="content/libs/ink-all.js"></script>
-
         <link rel="stylesheet" type="text/css" href="content/css/docs.css">
+        <link rel="stylesheet" type="text/css" href="libs/prettify/prettify.css">
+        <link rel="stylesheet" type="text/css" href="libs/prettify/themes/ghink2.css">
+
+        <script type="text/javascript" src="libs/ink-all.js"></script>
+        <script type="text/javascript" src="libs/prettify/prettify.js"></script>
     </head>
 
     <body>
@@ -58,9 +58,7 @@
                         
                         <h2>Application structure</h2>
                         
-                        <blockquote>
-	                        <pre> 
-	                            <code>
+                        <blockquote><pre class="prettyprint lang-html">
       +App
       +--ImageSearch
       +----Search
@@ -82,9 +80,7 @@
       +--img
       +libs
       |index.html
-	                            </code>
-	                        </pre>                        
-                        </blockquote>
+	                    </pre></blockquote>                        
 
                         <p>
                             Pink's was heavly influenced from Ink's module structure and Durandal.js framework. 
@@ -101,9 +97,7 @@
                             This file is the only page the browser loads throught the aplication lifecycle.
                         </p>
                             
-                        <blockquote>
-                            <pre> 
-                                <code>
+                        <blockquote><pre class="prettyprint lang-html">
     ...
     
     &lt;body&gt;
@@ -120,9 +114,7 @@
         &lt;/script&gt;
    &lt;/body&gt;
 &lt;/html&gt;
-                                </code>
-                            </pre>                        
-                        </blockquote>
+                        </pre></blockquote>                        
 
 		                <p>
 		                    In the body of the page we find the div with the initial data binding directive, that tells the framework 
@@ -142,9 +134,7 @@
 
                         <h2>App/Images/lib.js</h2>
 
-                        <blockquote>
-                            <pre> 
-                                <code>
+                        <blockquote><pre class="prettyprint lang-js">
 Ink.createModule('App.Images', '1', ['Ink.App_1', 'Ink.Plugin.Signals_1', 'Ink.Data.Binding_1'], function(App, Signal, ko) {
     var Module = function() {
         App.call(this, 'search', 'search'); 
@@ -176,9 +166,7 @@ Ink.createModule('App.Images', '1', ['Ink.App_1', 'Ink.Plugin.Signals_1', 'Ink.D
 
     return new Module();
 });
-                                </code>
-                            </pre>                        
-                        </blockquote>
+                        </pre></blockquote>                        
                         
                         <p>
                             The application module must inherit it's prototype from the "Ink.App" module.
@@ -211,9 +199,7 @@ Ink.createModule('App.Images', '1', ['Ink.App_1', 'Ink.Plugin.Signals_1', 'Ink.D
                         
                         <h2>App/Images/Shell/lib.js</h2>
                         
-                        <blockquote>
-                            <pre> 
-                                <code>
+                        <blockquote><pre class="prettyprint lang-js">
 Ink.createModule('App.Images.Shell', '1', ['App.Images'], function(app) {
     var Module = function() {
         var self=this;
@@ -231,9 +217,7 @@ Ink.createModule('App.Images.Shell', '1', ['App.Images'], function(app) {
 
     return new Module();
 });
-                                </code>
-                            </pre>                        
-                        </blockquote>
+                        </pre></blockquote>                        
 
                         <p>
                             The "App.Images.Shell" module, is the main app layout were we define the app's title, the main module 
@@ -245,9 +229,7 @@ Ink.createModule('App.Images.Shell', '1', ['App.Images'], function(app) {
 
                         <h2>App/Images/Shell/tpl.html</h2>
                         
-                        <blockquote>
-                            <pre> 
-                                <code>
+                        <blockquote><pre class="prettyprint lang-html">
 &lt;div id="appContainer" class="ink-grid toggle no-padding"&gt;
     &lt;div id="toastPanel"&gt;&lt;/div&gt;
     &lt;div id="standbyLightBox"&gt;
@@ -271,9 +253,7 @@ Ink.createModule('App.Images.Shell', '1', ['App.Images'], function(app) {
         &lt;div data-bind="module: infoModule"&gt;&lt;/div&gt;
     &lt;/div&gt;
 &lt;/div&gt;
-                                </code>
-                            </pre>                        
-                        </blockquote>
+                        </pre></blockquote>                        
 
                         <p>
                             The "App.Images.Shell" template (App/Images/Shell/tpl.html), has the app's main layout markup,
@@ -285,9 +265,7 @@ Ink.createModule('App.Images.Shell', '1', ['App.Images'], function(app) {
 
                         <h2>App/Images/Search/lib.js</h2>
                         
-                        <blockquote>
-                            <pre> 
-                                <code>
+                        <blockquote><pre class="prettyprint lang-js">
 Ink.createModule('App.Images.Search', '1', ['App.Images', 'Ink.Data.Binding', 'Ink.Net.JsonP_1'], function(app, ko, JsonP) {
     var Module = function() {
         var self=this;
@@ -353,9 +331,7 @@ Ink.createModule('App.Images.Search', '1', ['App.Images', 'Ink.Data.Binding', 'I
 
     return new Module();
 });
-                                </code>
-                            </pre>                        
-                        </blockquote>
+                        </pre></blockquote>                        
 
                         <p>
                             The 'App.Images.Search' module is the application home module, where the user can input a simple
@@ -368,9 +344,7 @@ Ink.createModule('App.Images.Search', '1', ['App.Images', 'Ink.Data.Binding', 'I
 
                         <h2>App/Images/Search/tpl.html</h2>
                         
-                        <blockquote>
-                            <pre> 
-                                <code>
+                        <blockquote><pre class="prettyprint lang-html">
 &lt;div class="half-space"&gt;
     &lt;div class="ink-form"&gt;
         &lt;div class="control-group column-group half-right-space"&gt;
@@ -395,9 +369,7 @@ Ink.createModule('App.Images.Search', '1', ['App.Images', 'Ink.Data.Binding', 'I
         &lt;/div&gt;
     &lt;!-- /ko --&gt;
 &lt;/div&gt;
-                                </code>
-                            </pre>                        
-                        </blockquote>
+                        </pre></blockquote>                        
                         
                         <p>
                             The search template binds the view model's (App/Images/Search/lib.js), "search", "searching", "photos",
@@ -406,9 +378,7 @@ Ink.createModule('App.Images.Search', '1', ['App.Images', 'Ink.Data.Binding', 'I
 
                         <h2>App/Images/View/lib.js</h2>
                         
-                        <blockquote>
-                            <pre> 
-                                <code>
+                        <blockquote><pre class="prettyprint lang-js">
 Ink.createModule('App.Images.View', '1', ['App.Images', 'Ink.Data.Binding_1'], function(app, ko) {
     var Module = function() {
         app.signals.viewPhoto.add(this.viewPhoto.bind(this));
@@ -426,9 +396,7 @@ Ink.createModule('App.Images.View', '1', ['App.Images', 'Ink.Data.Binding_1'], f
 
     return new Module();
 });
-                                </code>
-                            </pre>                        
-                        </blockquote>
+                        </pre></blockquote>                        
 
                         <p>
                             The "App.Images.View" module subscribes to "viewPhoto" signals, and when it'receives them, updates the
@@ -436,19 +404,15 @@ Ink.createModule('App.Images.View', '1', ['App.Images', 'Ink.Data.Binding_1'], f
                         </p>
 
                         <h2>App/Images/View/tpl.html</h2>
-                        
-                        <blockquote>
-                            <pre> 
-                                <code>
+
+                        <blockquote><pre class="prettyprint lang-html">                        
 &lt;div class="space"&gt;
     &lt;h3 data-bind="text: photoTitle"&gt;&lt;/h3&gt;
 &lt;/div&gt;
 &lt;div class="space"&gt;
     &lt;img data-bind="attr: {src: photoSrc}"&gt;
 &lt;/div&gt;
-                                </code>
-                            </pre>                        
-                        </blockquote>
+                        </pre></blockquote>                        
 
                     </article>
                 </div>
@@ -472,5 +436,9 @@ Ink.createModule('App.Images.View', '1', ['App.Images', 'Ink.Data.Binding_1'], f
                 </div>
             </div>
         </footer>
+
+        <script type="text/javascript">
+	        prettyPrint();
+        </script>        
     </body>
 </html>
