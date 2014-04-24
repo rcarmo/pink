@@ -481,7 +481,67 @@
                         <header>
                             <h2 class="push-left">Signals</h2>
                         </header>
-                        <p>This section is forthcoming.</p>
+                        <p>
+                            Although not required, we suggest you adopt a decoupled modular arquitecture for your Pink projects through 
+                            the use of a client side application event bus.
+                        </p>
+                        <p> 
+                            <b>The main beneficts of an event bus are:</b><br>
+                            - Public interfaces for client side actions (eg. File saved event).<br>
+                            - Each module needs only a limited knowledge about the rest of the aplication, besides the main application 
+                            interface and available signals, allowing easy implementation exchange. (eg. swap a global search widget with 
+                            a voice recognition service).<br>
+                            - Easier unit testing because there are less dependencies between the modules, and the events can be readly 
+                            emitted in tests.<br>
+                        
+                        <p>
+                            Every Pink application has the following events:<br>                        
+                            <ul class="unstyled">
+                                <li><b>viewChanged(route)</b> - Emitted by the framework when the router detects a new route.</li>
+                                <li><b>shellRendered</b> - Emitted when the application main layout is rendered (usually in the Shell module).</li>
+                                <li><b>appReady</b> - Emitted by the framework after the initial modules and plugins have loaded</li>
+                            </ul>    
+                        </p>
+                        <p>
+                            To register new events your application must assign a new instance of "Ink.Plugin.Signals_1" to app.signals.&lt;signal-name&gt;.
+                            This is usally done by overriding the addCustomSignals application's method.  
+                        </p>
+                        
+                        <blockquote><pre class="prettyprint lang-js">
+Module.prototype.addCustomSignals = function() {
+    this.signals.taskAdded = new Signal();
+    this.signals.taskUpdated = new Signal();
+};
+                        </pre></blockquote>
+                        
+                        <p>
+                            When you need to emit a registered event (eg. when a task is updated), you should call the signal's dispatch method,
+                            passing additional event parameters if needed.
+                        </p>
+                        
+                        <blockquote><pre class="prettyprint lang-js">
+app.signals.taskSaved.dispatch(task);
+                        </pre></blockquote>
+
+                        <p>
+                            To subscribe to an event your module needs to call the signal's "add" method with a callback function.                           
+                        </p>
+
+                        <blockquote><pre class="prettyprint lang-js">
+app.signals.taskSaved.add(taskSavedHandler);
+                        </pre></blockquote>
+                        
+                        <p>
+                            To remove a previous subscription call the signal's "remove" method.
+                        </p>
+                        
+                        <blockquote><pre class="prettyprint lang-js">
+app.signals.taskSaved.remove(taskSavedHandler);
+                        </pre></blockquote>
+                        
+                        <p>
+                           For more details about the Signals module go to the <a href="millermedeiros.github.io/js-signals/">js-signals</a> project page.
+                        </p>
                     </article>
                     <article>
                         <a id="modules"></a>
