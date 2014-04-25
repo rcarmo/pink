@@ -535,9 +535,7 @@ app.signals.taskSaved.add(taskSavedHandler);
                             To remove a previous subscription call the signal's "remove" method.
                         </p>
                         
-                        <blockquote><pre class="prettyprint lang-js">
-app.signals.taskSaved.remove(taskSavedHandler);
-                        </pre></blockquote>
+                        <blockquote><pre class="prettyprint lang-js">app.signals.taskSaved.remove(taskSavedHandler);</pre></blockquote>
                         
                         <p>
                            For more details about the Signals module go to the <a href="millermedeiros.github.io/js-signals/">js-signals</a> project page.
@@ -546,9 +544,67 @@ app.signals.taskSaved.remove(taskSavedHandler);
                     <article>
                         <a id="modules"></a>
                         <header>
-                            <h2 class="push-left">Custom Modules</h2>
+                            <h2 class="push-left">Custom UI Modules</h2>
                         </header>
-                        <p>This section is forthcoming.</p>
+                        <p>
+                            Pink's UI modules are created by a <code>module</code> binding handler (Knockout extension), this handler dinamically loads 
+                            and binds an <a href="http://ink.sapo.pt/javascript/">Ink's class or static module</a> 
+                            file (the view model) named 'lib.js', to a template markup file (the view) named 'tpl.html'.
+                        </p>
+                        <p>                            
+                            The new UI module must have a fully qualified package style name (eg. App.Tasks.Shell), and be placed in a directory path
+                            with the same structure (eg. App/Tasks/Shell).
+                        </p>
+                        <p>
+                            Every Pink app should have at least one UI module declared in the html page using Pink's <code>module</code> binding handler,
+                            this module is normaly the app's main layout module.  
+                        </p>
+                        <p>
+                            
+                        </p>
+                        <h3>Custom/Native Platform UI support</h3>
+                        <p>
+                            If you wan't to support multiple platforms, you can detect the current environment and set the the template file name 
+                            in the app's constructor function.
+                            <blockquote><pre class="prettyprint lang-js">
+ var Module = function() {
+     App.call(this, 'home'); 
+
+     /*detect runtime environment*/
+
+     if (environment=='android') {
+         ko.bindingHandlers.module.templateName='tpl.android.html';
+     }     
+ };
+                            </pre></blockquote>
+                        </p>
+                        <h3>Module's lifecycle</h3>
+                        <p>
+	                        The framework calls the following UI module's functions during it's lifecycle:<br>
+	                        
+	                        <ul class="unstyled">
+	                           <li><b>constructor(data:object):void</b> Called on class modules after the module is loaded.</li>
+                               <li><b>initialize(data:object):void</b> Called on static modules after the module is loaded.</li>
+                               <li><b>afterRender(template_elements:array):void</b> Called after Knockout has data bound the module's template.</li>
+                               <li><b>finalize:void</b> Called when the module is about to be destroyed.</li>
+	                        </ul>
+                        </p>
+                        <h3>Binding handler</h3>
+                        <h4><em>Declaration</em></h4>
+                        <p>
+                            <blockquote><pre class="prettyprint lang-html">&lt;div data-bind="module: str|object"&gt;&lt;/div&gt;</pre></blockquote>                            
+                        </p>
+                        <h4><em>Binding value</em></h4>
+                        <p>
+                            <b>module_name_str | {name: module_name_str, data: module_parameters_object, notifyReady: ready_callback, notifyBeforeDestroy: before_destroy_callback}</b>
+                            
+                            <ul class="unstyled">
+                                <li><b>module_name_str</b> <em>(Observable)</em> Fully qualified module name (eg. 'App.Tasks.Shell').</li>
+                                <li><b>module_parameters_object</b> <em>(Observable)</em> Object with the parameters to pass to the modules constructor or initializer function.</li>
+                                <li><b>ready_callback(boundElement)</b> Function called after Knockout has data bound the module's template.</li>
+                                <li><b>before_destroy_callback(boundElement)</b> Function called when the module is about to be destroyed.</li>
+                            </ul>
+                        </p>
                     </article>
                     <article>
                         <a id="modalwindow"></a>
