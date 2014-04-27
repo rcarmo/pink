@@ -25,7 +25,8 @@ Ink.createModule('Ink.Data.ModalWindow', '1', ['Ink.Data.Binding_1', 'Ink.Dom.Se
             return ko.unwrap(options.confirmCaption) || 'Confirm';
         });
         this.taskButtons = ko.observableArray();
-        
+
+        // Options passed to the content module
         this.moduleData = {
             confirmHandler: undefined, 
             cancelHandler: undefined, 
@@ -40,7 +41,7 @@ Ink.createModule('Ink.Data.ModalWindow', '1', ['Ink.Data.Binding_1', 'Ink.Dom.Se
 
         this.notifyContentReady = function() {
             self.contentReady = true;
-        }
+        };
 
         options.parent['modal'] = {
             show: function(params) {

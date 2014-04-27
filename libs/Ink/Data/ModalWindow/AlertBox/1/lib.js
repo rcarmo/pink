@@ -15,14 +15,14 @@ Ink.createModule('Ink.Data.ModalWindow.AlertBox', '1', ['Ink.Data.Binding_1'], f
         modal.confirmHandler = this.confirm.bind(this);
         this.message(modal.params.message);
         this.confirmCallback = modal.params.confirmCallback;
-    }
+    };
 
     Module.prototype.confirm = function() {
         this.modal.hide();
         if (typeof this.confirmCallback == 'function') {
             this.confirmCallback();
         }
-    }
+    };
 
     return new Module();
 });

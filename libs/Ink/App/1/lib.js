@@ -26,7 +26,9 @@ Ink.createModule('Ink.App', '1', ['Ink.Data.Binding_1', 'Ink.Plugin.Router_1', '
 	    		title: this._modalData.title, 
 	    		contentModule: this._modalData.content, 
 	    		modalWidth: this._modalData.width, 
-	    		modalHeight: this._modalData.height
+	    		modalHeight: this._modalData.height,
+	    		cancelVisible: this._modalData.cancelVisible,
+	    		confirmCaption: this._modalData.confirmCaption
 	    	}
         };
         

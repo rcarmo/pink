@@ -12,6 +12,6 @@ Ink.createModule('App.Images.View', '1', ['App.Images', 'Ink.Data.Binding_1'], f
     	this.photoTitle(photo.title);
     	app.navigateTo('#view');
     };
-
+    
     return new Module();
 });

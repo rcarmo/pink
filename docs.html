@@ -228,14 +228,19 @@
                                 <a id="showModalWindow"></a>
                                 <strong>showModalWindow(title, moduleName, params, modalStyle) : void</strong><br>
                                 <div class="details">
+                                    Shows a modal window dialog with a custom module in the contents area.<br>
 	                                <ul>
 	                                    <li><strong>title</strong> - string containing the modal's title</li>
-	                                    <li><strong>moduleName</strong> - string containing a valid Pink UI module name</li>
-	                                    <li><strong>params</strong> - object with the parameters to pass to the module</li>
+	                                    <li><strong>moduleName</strong> - string containing a valid Pink UI module name (eg. 'App.Tasks.EditDialog')</li>
+	                                    <li><strong>params</strong> - object with the parameters to pass to the module<br>Aditionally to custom parameters you may want to pass, there are two special parameters, named
+	                                    "confirmCallback" and "cancelCallback", that if defined should be called when the user confirms or cancel the dialog respectively. The "cancelCallback" is called by  
+	                                    the framework's code, but the "confirmCallback" must be called from the modal content's module code.
+	                                    <br><span class="note"><i class="icon-exclamation-sign"></i> Goto the <a href="#modalwindow">ModalWindow</a> section for more detais on the modal's contents module interface</span>
+	                                    </li>
                                         <li><strong>modalStyle</strong> - object with modal window style parameters<br> <code class="prettify lang-js">{width : string, height : string, cancelVisible : bool, confirmCaption : string}</code></li> 
 	                                </ul>
-                                    Shows a modal window with a custom module in the contents area.<br>
-                                    <span class="note"><i class="icon-exclamation-sign"></i> See the <code>modalModule</code> attribute</span>
+                                    
+                                    <span class="note"><i class="icon-exclamation-sign"></i> See the <code>modalModule</code> attribute</span><br>
                                     <blockquote><pre class="prettyprint lang-js">app.showModalWindow('Edit item', 'App.Item.Edit', {item: item}, {width: '600px', height: '400px'});</pre></blockquote>                                    
                                 </div>
                             </li>                            
@@ -267,13 +272,13 @@
                                 <a id="showConfirm"></a>
                                 <strong>showConfirm(title, message, confirmCallback, cancelCallback) : void</strong>
                                 <div class="details">
+                                    Shows a modal window for the user to respond to a confirm action.
 	                                <ul>
 	                                    <li><strong>title</strong> - string containing the modal's title</li>
 	                                    <li><strong>message</strong> - string with the message for the user</li>
 	                                    <li><strong>confirmCallback</strong> - function to be called if the user confirms the action</li>
 	                                    <li><strong>cancelCallback</strong> - function to be called if the user cancels the action</li> 
 	                                </ul>
-                                    Shows a modal window for the user to respond to a confirm action.
                                     <blockquote><pre class="prettyprint lang-js">app.showConfirm('Please confirm...', 'Remove the item?', confirmHandler, cancelHandler);</pre></blockquote>                                    
                                 </div>
                             </li>
@@ -281,11 +286,11 @@
                                 <a id="showInfoBox"></a>
                                 <strong>showInfoBox(title, message) : void</strong>
                                 <div class="details">
+                                    Shows a modal window with a simple message.
                                     <ul>
                                         <li><strong>title</strong> - string containing the modal's title</li>
                                         <li><strong>message</strong> - string with the message for the user</li>
                                     </ul>
-                                    Shows a modal window with a simple message.
                                     <blockquote><pre class="prettyprint lang-js">app.showInfoBox('User info', 'Here is some extra info');</pre></blockquote>                                    
                                 </div>
                             </li>
@@ -377,11 +382,11 @@
                                 <a id="navigateTo"></a>
                                 <strong>navigateTo(path, options) : void</strong>
                                 <div class="details">
+                                    Instructs the router to navigate to a new route inside the app.
                                     <ul>
                                         <li><strong>path</strong> - string with url fragement</li>
                                         <li><strong>options</strong> - object <code>{silent: bool}</code> allows to change the url without the routing logic</li>
                                     </ul>
-                                    Instructs the router to navigate to a new route inside the app.
 
                                     <blockquote><pre class="prettyprint lang-js">app.navigateTo('#home');</pre></blockquote>                                    
                                 </div>
@@ -564,7 +569,7 @@ app.signals.taskSaved.add(taskSavedHandler);
                         </p>
                         <h3>Custom/Native Platform UI support</h3>
                         <p>
-                            If you wan't to support multiple platforms, you can detect the current environment and set the the template file name 
+                            If you want to support multiple platforms, you can detect the current environment and set the the template file name 
                             in the app's constructor function.
                             <blockquote><pre class="prettyprint lang-js">
  var Module = function() {
@@ -589,8 +594,8 @@ app.signals.taskSaved.add(taskSavedHandler);
                                <li><b>finalize:void</b> Called when the module is about to be destroyed.</li>
 	                        </ul>
                         </p>
-                        <h3>Binding handler</h3>
-                        <h4><em>Declaration</em></h4>
+                        <h3>Data binding</h3>
+                        <h4><em>Binding declaration</em></h4>
                         <p>
                             <blockquote><pre class="prettyprint lang-html">&lt;div data-bind="module: str|object"&gt;&lt;/div&gt;</pre></blockquote>                            
                         </p>
@@ -611,7 +616,50 @@ app.signals.taskSaved.add(taskSavedHandler);
                         <header>
                             <h2 class="push-left">ModalWindow</h2>
                         </header>
-                        <p>This section is forthcoming.</p>
+                        <p>
+                            Pink's modal window module is a data binding wrapper around Ink's 'Ink.UI.Modal' widget, that loads an 
+                            UI module as it's content. 
+                        </p>
+                        <p>
+                            See Pink's app helper methods <a href="#showMiniModalWindow">showMiniModalWindow</a>, 
+                            <a href="#showSmallModalWindow">showSmallModalWindow</a> and 
+                            <a href="#shoLargeModalWindow">showLargeModalWindow</a> for a simple standard way to show UI modules in a modal dialog. 
+                        </p>
+                        <h3>Modal contents module interface</h3>
+                        <p>
+                            The modals content module constructor or initializer function, receives an object with
+                            the follwing attributes:
+                            <ul>
+                                <li><b>confirmHandler</b> Should be assigned to a modal's content module method responsible for doing the logic required by the user's confirm action.
+                                Normally this implies making an async call, calling the "params.confirmCallback()" function when the call succeeds, and calling "hide()".</li>
+                                <li><b>confirmDisabled</b> <em>Observable</em> boolean. Usually assigned to a computed observable responsible for validating the user input, returning true if there's invalid input.</li>
+                                <li><strong>params</strong> - object with the parameters passed to the module.<br>Aditionally to custom parameters you may want to pass, there are two special parameters, named
+	                                "confirmCallback" and "cancelCallback", that if defined should be called when the user confirms or cancel the dialog respectively. The "cancelCallback" is called by  
+	                                the framework's code, so there's no need to call it directly, but the "confirmCallback" must be called from the modal content's module code.
+                                </li>
+                                <li><b>hide</b> Function to be called by the content's module, to hide the modal dialog.</li>
+                            </ul>   
+                        </p>
+
+                        <h3>Data binding</h3>
+                        <h4><em>Binding declaration</em></h4>
+                        <p>
+                            <blockquote><pre class="prettyprint lang-html">&lt;div data-bind="module: object"&gt;&lt;/div&gt;</pre></blockquote>                            
+                        </p>
+                        <h4><em>Binding value</em></h4>
+                        <p>
+                            <b>{name: 'Ink.Data.ModalWindow_1', data: {parent: modal_host, title: modal_title_str, modalWidth: width_str, modalHeight: height_str, contentModule: module_name_str, cancelVisible: cancel_visible_bool, confirmCaption: confirm_caption_str}}</b>
+                            
+                            <ul class="unstyled">
+                                <li><b>module_host</b> Object to host the "modal" interface:  {modal: {show: function(params:object):void}}, reponsible to show the modal dialog, and pass parameters to the loaded module.</li>
+                                <li><b>modal_title_str</b> <em>Observable</em> String with the modal dialog's title</li>
+                                <li><b>width_str</b> <em>Observable</em> String with css units for the dialog's width (eg. '20em')</li>
+                                <li><b>height_str</b> <em>Observable</em> String with css units for the dialog's height (eg. '10em')</li>
+                                <li><b>module_name_str</b> <em>Observable</em> String with a Pink's UI module name (eg. 'App.Tasks.View') to load in the contents area</li>
+                                <li><b>cancel_visible_bool</b> <em>Observable</em> Boolean, indicates if the cancel button is visible</li>
+                                <li><b>confirm_caption_str</b> <em>Observable</em> String with the confirm button caption</li> 
+                            </ul>
+                        </p>
                     </article>
                     <article>
                         <a id="grid"></a>
