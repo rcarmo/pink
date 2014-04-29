@@ -446,7 +446,7 @@
                             <h2 class="push-left">Routing</h2>
                         </header>
                         <p>
-                            Pink provides a hash based routing module (Routie), that is used to manage the view change logic.
+                            Pink provides an hash based routing module (Routie), that is used to manage the view change logic.
                             The routing callback infers what is the active module from the window url hash fragment by looking at the application's defined visible and invisible routes.
                         </p>
                         <p>
@@ -666,7 +666,68 @@ app.signals.taskSaved.add(taskSavedHandler);
                         <header>
                             <h2 class="push-left">Grid</h2>
                         </header>
-                        <p>This section is forthcoming.</p>
+                        <p>
+                            The grid module provides a Knockout binding handler to render an HTML table, fully customizable through 
+                            the use of Knockout templates, and also an extendable javascript model for 
+                            tabular data, supporting client side pagination and custom row sort handling logic (server/client).  
+                        </p>
+                        <h3>Data binding</h3>
+                        <h4><em>Binding declaration</em></h4>
+                        <p>
+                            <blockquote><pre class="prettyprint lang-html">
+/* Example grid binding with a custom cell renderer */
+
+&lt;div data-bind="simpleGrid: tableModel"&gt;&lt;/div&gt;
+&lt;script id="shapeTemplate" type="text/html"&gt;
+    &lt;img data-bind="attr: {src: $data.shape+'.png'}"&gt;
+&lt;/script&gt;
+                            </pre></blockquote>                            
+                        </p>
+                        <h4><em>Binding value</em></h4>
+                        <p>
+                            <blockquote><pre class="prettyprint lang-html">
+/* Example view model attribute for a table model */
+
+Ink.createModule('App.Shapes.Home', '1', ['Ink.Data.Grid_1'], function(Grid) {
+    var Module = function() {
+        this.tableModel = new Grid({
+            data: [
+                {id: 1, shape: 'square'},
+                {id: 2, shape: 'circle'},
+            ],
+            columns: [
+                {headerText: 'Id', rowText: 'id'},
+                {headerText: 'Shape', rowTemplate: 'shapeTemplate'},
+            ]
+        });
+...
+                            </pre></blockquote>                            
+                        </p>                                            
+                        <p>
+                            Grid model options object (passed to constructor):
+                            
+                            <ul class="unstyled">
+                                <li><b>data</b> <em>Observable</em> Array with the table data rows.</li>
+                                <li><b>columns</b> Array of columnDefinition objects</li>
+                            </ul>
+                        </p>
+                        <p>
+                            Column definition object:
+
+                            <ul class="unstyled">
+                                <li><b>headerText</b> String with the column header text.</li>
+                                <li><b>headerClass</b> String with a custom column header CSS class name.</li>
+                                <li><b>headerSortOrder</b> Function that returns a columns sort order: 'asc' for ascending ordering, 'desc' for descending 
+                                ordering and 'sort' for default sort order.</li>
+                                <li><b>headerSortHandler</b> Function that handles the custom sorting logic.</li>
+                                <li><b>visible</b> <em>Observable</em> boolean that indicates if the column if visible.
+                                <li><b>cellClass</b> String with a custom column cell CSS class name.</li>
+                                <li><b>rowHandler</b> Function to be assigned to a cell's click handler</li>
+                                <li><b>href</b> Function that returns an href anchor attribute string for a row.</li>
+                                <li><b>rowText</b> String with the row's data field name or Function that returns a calculated value from the row's data.</li>
+                                <li><b>rowTemplate</b> String with a Knockout template id, for a custom cell renderer.</li>   
+                            </ul>
+                        </p>
                     </article>
                     <article>
                         <a id="paginator"></a>
