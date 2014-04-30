@@ -18,9 +18,7 @@ This is an attempt at providing a reference implementation for rich client-side 
 - Various data-bind ready components: Autocomplete, Drag&Drop, Kanban, Grid, Tooltip, ModalWindow, ...
 
 
-## Demo
-
-Check a sample todo app created with the framework:
+## Documentation & Code examples
 
 http://rcarmo.github.io/pink/
 

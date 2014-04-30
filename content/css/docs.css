@@ -68,27 +68,42 @@ blockquote>pre {
 }
 
 #docsContainer {
-    position: relative;    
 }
 
 #docMenu {
 	position: fixed;
-    top: 10.3em;
+    top: 8em;
 	bottom: 0px ! important;
 	width: 18em;
 	overflow-y: auto;
+	left: 1em;
 }
 
 #docArea {
     position: absolute;
-    top: 0px;
-    left: 19em;
-    right: 0px;
-    margin-right: -2em;
+    top: 8em;
+    left: 20em;
+    right: 1em;
 }
 
 #mainMenu {
-    margin-left: -2em;
+	position: fixed;
+	left: 0px;
+	right: 0px;
+	padding-top: 1em;
+	z-index: 9999;
+	background-color: #EDEDED;
+}
+
+#mainMenu>h1 {
+	margin-left: 0.4em;
+}
+
+a.bookmark {
+	display: block; 
+	position: relative; 
+	top: -8em; 
+	visibility: hidden;
 }
 
 /*****************************
@@ -100,18 +115,11 @@ blockquote>pre {
        position: relative ! important;
        width: 100% ! important;
        height: auto ! important;
-       top: 0px ! important;
-       margin-left: 1.5em ! important;
     }
     
     #docArea {
        position: relative ! important;
        width: 100% ! important;
-       left: 0px;
-       margin-left: 1.5em ! important;
-    }
-    
-    #mainMenu {
-        margin-left: 0px;    
+       left: 1em;
     }
 }

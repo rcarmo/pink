@@ -31,7 +31,7 @@
             </div>
             -->
 
-            <header id="mainMenu" class="vertical-space">
+            <header id="mainMenu">
                 <h1><a href="index.html"><img src="content/img/logo-small.png" height="50" alt=""></a><small>Single page app framework</small></h1>
                 <nav class="ink-navigation quarter-top-space">
                     <ul class="menu horizontal black">
@@ -112,7 +112,7 @@
                 </div>
                 <div id="docArea">
                     <article class="docs-article">
-                        <a id="app"></a>
+                        <a class="bookmark" id="app"></a>
                         <header>
                             <h2 class="push-left">Application Interface</h2>
                         </header>
@@ -124,7 +124,7 @@
                         <h4><em>Attributes</em></h4>
                         <ul class="unstyled">
                             <li>
-                                <a id="modalModule"></a>
+                                <a class="bookmark" id="modalModule"></a>
                                 <strong>modalModule : object</strong><br>
                                 <div class="details">
 		                            Exposes a generic modal viewmodel for databinding, usually used in the application main layout.
@@ -134,7 +134,7 @@
 	                            </div>
                             </li>
                             <li>
-                                <a id="alertModule"></a>
+                                <a class="bookmark" id="alertModule"></a>
                                 <strong>alertModule : object</strong><br>
                                 <div class="details">
 	                                Exposes a confirm modal viewmodel for databinding, usually used in the application main layout.
@@ -144,7 +144,7 @@
 	                            </div>
                             </li>
                             <li>
-                                <a id="infoModule"></a>
+                                <a class="bookmark" id="infoModule"></a>
                                 <strong>infoModule : object</strong><br>
                                 <div class="details">
 	                                Exposes an informative modal viewmodel for databinding, usually used in the application main layout.
@@ -154,21 +154,21 @@
 	                            </div>
                             </li>
                             <li>
-                                <a id="rootModule"></a>
+                                <a class="bookmark" id="rootModule"></a>
                                 <strong>rootRoute : string</strong><br>
                                 <div class="details">
                                     The default route to show when the app is loaded, or the url fragment is empty.
                                 </div> 
                             </li>
                             <li>
-                                <a id="undefinedRoute"></a>
+                                <a class="bookmark" id="undefinedRoute"></a>
                                 <strong>undefinedRoute : string</strong><br>
                                 <div class="details">
                                     The route to show when there's an non existent route on the url fragment.
                                 </div>
                             </li>
                             <li>
-                                <a id="mainModule"></a>
+                                <a class="bookmark" id="mainModule"></a>
                                 <strong>mainModule: object</strong><br>
                                 <div class="details">
 	                                Exposes the active route's module (taken from the url fragment) for databinding, usually used in the application main layout.
@@ -178,7 +178,7 @@
 	                            </div>
                             </li>
                             <li>
-                                <a id="definedRoutes"></a>
+                                <a class="bookmark" id="definedRoutes"></a>
                                 <strong>definedRoutes: object</strong><br>
                                 <div class="details">
                                     Exposes the application's defined routing parameters for databinding, usually used in the application main menu.
@@ -198,7 +198,7 @@
                         <h4><em>Methods</em></h4>
                         <ul class="unstyled">
                             <li>
-                                <a id="showInfoToast"></a>
+                                <a class="bookmark" id="showInfoToast"></a>
                                 <strong>showInfoToast(message) : void</strong><br>
                                 <div class="details">
                                     Shows a temporary notification panel in the UI for information purposes.<br>
@@ -207,7 +207,7 @@
                                 </div>
                             </li>
                             <li>
-                                <a id="showErrorToast"></a>
+                                <a class="bookmark" id="showErrorToast"></a>
                                 <strong>showErrorToast(message) : void</strong><br>
                                 <div class="details">
                                     Shows a temporary notification panel in the UI for application error purposes.<br>
@@ -216,7 +216,7 @@
                                 </div>
                             </li>
                             <li>
-                                <a id="showSuccessToast"></a>
+                                <a class="bookmark" id="showSuccessToast"></a>
                                 <strong>showSuccessToast(message) : void</strong><br>
                                 <div class="details">
                                     Shows a temporary notification panel in the UI to notify the user that some action completed with success.<br>
@@ -225,7 +225,7 @@
                                 </div>
                             </li>
                             <li>
-                                <a id="showModalWindow"></a>
+                                <a class="bookmark" id="showModalWindow"></a>
                                 <strong>showModalWindow(title, moduleName, params, modalStyle) : void</strong><br>
                                 <div class="details">
                                     Shows a modal window dialog with a custom module in the contents area.<br>
@@ -245,7 +245,7 @@
                                 </div>
                             </li>                            
                             <li>
-                                <a id="showMiniModalWindow"></a>
+                                <a class="bookmark" id="showMiniModalWindow"></a>
                                 <strong>showMiniModalWindow(title, moduleName, params, modalStyle) : void</strong><br>
                                 <div class="details">
                                     Shows a mini modal window with a custom module in the content area.<br>
@@ -253,7 +253,7 @@
                                 </div>
                             </li>                            
                             <li>
-                                <a id="showSmallModalWindow"></a>
+                                <a class="bookmark" id="showSmallModalWindow"></a>
                                 <strong>showSmallModalWindow(title, moduleName, params, modalStyle) : void</strong><br>
                                 <div class="details">
                                     Shows a small modal window with a custom module in the content area.<br>
@@ -261,7 +261,7 @@
                                 </div>
                             </li>                            
                             <li>
-                                <a id="showLargeModalWindow"></a>
+                                <a class="bookmark" id="showLargeModalWindow"></a>
                                 <strong>showLargeModalWindow(title, moduleName, params, modalStyle) : void</strong><br>
                                 <div class="details">
                                     Shows a large modal window with a custom module in the contents area.<br>
@@ -269,7 +269,7 @@
                                 </div>
                             </li>
                             <li>
-                                <a id="showConfirm"></a>
+                                <a class="bookmark" id="showConfirm"></a>
                                 <strong>showConfirm(title, message, confirmCallback, cancelCallback) : void</strong>
                                 <div class="details">
                                     Shows a modal window for the user to respond to a confirm action.
@@ -283,7 +283,7 @@
                                 </div>
                             </li>
                             <li>
-                                <a id="showInfoBox"></a>
+                                <a class="bookmark" id="showInfoBox"></a>
                                 <strong>showInfoBox(title, message) : void</strong>
                                 <div class="details">
                                     Shows a modal window with a simple message.
@@ -295,7 +295,7 @@
                                 </div>
                             </li>
                             <li>
-                                <a id="showStandby"></a>
+                                <a class="bookmark" id="showStandby"></a>
                                 <strong>showStandby() : void</strong>
                                 <div class="details">
                                     Shows a standby panel that disables user input.<br>
@@ -303,7 +303,7 @@
                                 </div>
                             </li>                            
                             <li>
-                                <a id="hideStandby"></a>
+                                <a class="bookmark" id="hideStandby"></a>
                                 <strong>hideStandby() : void</strong>
                                 <div class="details">
                                     Hides the standby panel.<br>
@@ -311,7 +311,7 @@
                                 </div>
                             </li>
                             <li>
-                                <a id="listVisibleRoutes"></a>
+                                <a class="bookmark" id="listVisibleRoutes"></a>
                                 <strong>listVisibleRoutes() : array</strong>
                                 <div class="details">
                                     This method should be overriden by the application main module, to return the routes to be 
@@ -328,7 +328,7 @@
                                 </div>
                             </li>
                             <li>
-                                <a id="listInvisibleRoutes"></a>
+                                <a class="bookmark" id="listInvisibleRoutes"></a>
                                 <strong>listInvisibleRoutes() : array</strong>
                                 <div class="details">
                                     This method should be overriden by the application main module, to return the routes not visible
@@ -345,7 +345,7 @@
                                 </div>
                             </li>
                             <li>
-                                <a id="addVisibleRoute"></a>
+                                <a class="bookmark" id="addVisibleRoute"></a>
                                 <strong>addVisibleRoute(route) : void</strong>
                                 <div class="details">
 								    Allows a plugin to add a new visible route.
@@ -355,7 +355,7 @@
                                 </div>
                             </li>
                             <li>
-                                <a id="addInvisibleRoute"></a>
+                                <a class="bookmark" id="addInvisibleRoute"></a>
                                 <strong>addInvisibleRoute(route) : void</strong>
                                 <div class="details">
                                     Allows a plugin to add a new invisible route.
@@ -365,7 +365,7 @@
                                 </div>
                             </li>
                             <li>
-                                <a id="addCustomSignals"></a>
+                                <a class="bookmark" id="addCustomSignals"></a>
                                 <strong>addCustomSignals() : void</strong>
                                 <div class="details">
                                     Should be overriden in the application's main module, to define custom client side events for application UI logic.
@@ -379,7 +379,7 @@
                                 </div>
                             </li>
                             <li>
-                                <a id="navigateTo"></a>
+                                <a class="bookmark" id="navigateTo"></a>
                                 <strong>navigateTo(path, options) : void</strong>
                                 <div class="details">
                                     Instructs the router to navigate to a new route inside the app.
@@ -392,7 +392,7 @@
                                 </div>
                             </li>
                             <li>
-                                <a id="navigateToStart"></a>
+                                <a class="bookmark" id="navigateToStart"></a>
                                 <strong>navigateToStart() : void</strong>
                                 <div class="details">
                                     Instructs the router to navigate to the route defined in the <code>rootRoute</code> attribute.
@@ -401,14 +401,14 @@
                                 </div>
                             </li>
                             <li>
-                                <a id="listPluginModules"></a>
+                                <a class="bookmark" id="listPluginModules"></a>
                                 <strong>listPluginModules() : array</strong>
                                 <div class="details">
                                     Should be overriden by the apps main module to return an array with the names of the modules to be loaded on the app's bootstrap.
                                 </div>
                             </li>
                             <li>
-                                <a id="run"></a>
+                                <a class="bookmark" id="run"></a>
                                 <strong>run() : void</strong>
                                 <div class="details">
                                     Must be called on the main page to start the application bootstrap process.
@@ -422,7 +422,7 @@
                                 </div>
                             </li>
                             <li>
-                                <a id="ready"></a>
+                                <a class="bookmark" id="ready"></a>
                                 <strong>ready() : void</strong>
                                 <div class="details">
        					            Override this method to add your own custom initialization logic.
@@ -441,7 +441,7 @@
                         </ul>
                     </article>
                     <article>
-                        <a id="routing"></a>
+                        <a class="bookmark" id="routing"></a>
                         <header>
                             <h2 class="push-left">Routing</h2>
                         </header>
@@ -482,7 +482,7 @@
                         </p>                            
                     </article>
                     <article>
-                        <a id="signals"></a>
+                        <a class="bookmark" id="signals"></a>
                         <header>
                             <h2 class="push-left">Signals</h2>
                         </header>
@@ -547,7 +547,7 @@ app.signals.taskSaved.add(taskSavedHandler);
                         </p>
                     </article>
                     <article>
-                        <a id="modules"></a>
+                        <a class="bookmark" id="modules"></a>
                         <header>
                             <h2 class="push-left">Custom UI Modules</h2>
                         </header>
@@ -612,7 +612,7 @@ app.signals.taskSaved.add(taskSavedHandler);
                         </p>
                     </article>
                     <article>
-                        <a id="modalwindow"></a>
+                        <a class="bookmark" id="modalwindow"></a>
                         <header>
                             <h2 class="push-left">ModalWindow</h2>
                         </header>
@@ -662,7 +662,7 @@ app.signals.taskSaved.add(taskSavedHandler);
                         </p>
                     </article>
                     <article>
-                        <a id="grid"></a>
+                        <a class="bookmark" id="grid"></a>
                         <header>
                             <h2 class="push-left">Grid</h2>
                         </header>
@@ -730,42 +730,42 @@ Ink.createModule('App.Shapes.Home', '1', ['Ink.Data.Grid_1'], function(Grid) {
                         </p>
                     </article>
                     <article>
-                        <a id="paginator"></a>
+                        <a class="bookmark" id="paginator"></a>
                         <header>
                             <h2 class="push-left">Paginator</h2>
                         </header>
                         <p>This section is forthcoming.</p>
                     </article>
                     <article>
-                        <a id="autocomplete"></a>
+                        <a class="bookmark" id="autocomplete"></a>
                         <header>
                             <h2 class="push-left">AutoComplete</h2>
                         </header>
                         <p>This section is forthcoming.</p>
                     </article>
                     <article>
-                        <a id="tooltip"></a>
+                        <a class="bookmark" id="tooltip"></a>
                         <header>
                             <h2 class="push-left">ToolTip</h2>
                         </header>
                         <p>This section is forthcoming.</p>
                     </article>
                     <article>
-                        <a id="dragdrop"></a>
+                        <a class="bookmark" id="dragdrop"></a>
                         <header>
                             <h2 class="push-left">Drag & Drop</h2>
                         </header>
                         <p>This section is forthcoming.</p>
                     </article>
                     <article>
-                        <a id="kanban"></a>
+                        <a class="bookmark" id="kanban"></a>
                         <header>
                             <h2 class="push-left">Kanban</h2>
                         </header>
                         <p>This section is forthcoming.</p>
                     </article>
                     <article>
-                        <a id="plugins"></a>
+                        <a class="bookmark" id="plugins"></a>
                         <header>
                             <h2 class="push-left">Plugins</h2>
                         </header>
@@ -780,7 +780,6 @@ Ink.createModule('App.Shapes.Home', '1', ['Ink.Data.Grid_1'], function(Grid) {
 		    	InkArray.forEach(Ink.ss('.sub-menu'), function(element) {
 	                new Toggle(element);
 		    	});
-	    	    new Sticky('#docMenu', {inlineDimensions: true});
                 prettyPrint();
 		    });
 		</script>        
