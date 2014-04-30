@@ -76,18 +76,19 @@ blockquote>pre {
 	bottom: 0px ! important;
 	width: 18em;
 	overflow-y: auto;
-	left: 1em;
+	left: 2em;
 }
 
 #docArea {
     position: absolute;
     top: 8em;
-    left: 20em;
+    left: 21em;
     right: 1em;
 }
 
 #mainMenu {
 	position: fixed;
+	top: 0px;
 	left: 0px;
 	right: 0px;
 	padding-top: 1em;
@@ -96,7 +97,15 @@ blockquote>pre {
 }
 
 #mainMenu>h1 {
-	margin-left: 0.4em;
+	margin-left: 1em;
+}
+
+#mainMenu>nav>ul {
+    padding-left: 2em;
+}
+
+#headerPadding {
+    height: 8em;    
 }
 
 a.bookmark {
@@ -106,6 +115,9 @@ a.bookmark {
 	visibility: hidden;
 }
 
+.ink-grid {
+    max-width: none ! important;
+}
 /*****************************
  Media Queries
 *****************************/
