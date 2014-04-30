@@ -22,7 +22,7 @@ Ink.createModule('Ink.Data.DragDrop', '1', ['Ink.Data.Binding_1', 'Ink.UI.Dragga
      * - {string} hoverClass: class name to add to the element when a draggable hovers over it 
      * - {function} dropHandler: function to execute when a draggable is dropped in this droppable (receives selectedData as a parameter)
      * 
-     * Binding example: {hoverClass: 'my-drop-panel', dropHandler: handleDrop)}
+     * Binding example: {hoverClass: 'my-drop-panel', dropHandler: handleDrop}
      * 
      */
     ko.bindingHandlers.droppable = {
@@ -106,9 +106,10 @@ Ink.createModule('Ink.Data.DragDrop', '1', ['Ink.Data.Binding_1', 'Ink.UI.Dragga
      * 
      * Binding value: {Object}
      * Binding value properties: 
-     * - {object} source: Array or ObservableArray that containes the draggable objects 
+     * - {object} source: Array or ObservableArray that contains the draggable objects 
      * - {string} draggableTemplate: id of template to render the draggable
-     * - {function} dropHandler: function to execute when a draggable from this container is dropped in a droppable (receives the selectedData as a parameter)
+     * - {function} dragOutHandler: function to execute when a draggable from this container is dropped in a droppable (receives the selectedData as a parameter)
+     * - {function} afterDraggableRender: function to execute after knockout renders a draggable (receives the rendered element)
      * 
      * Binding example: {source: grayItems, draggableTemplate: 'veggieTemplate', dragOutHandler: onDragOut}
      * 

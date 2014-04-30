@@ -667,7 +667,7 @@ app.signals.taskSaved.add(taskSavedHandler);
                             <h2 class="push-left">Grid</h2>
                         </header>
                         <p>
-                            The grid module provides a Knockout binding handler to render an HTML table, fully customizable through 
+                            The 'Ink.Data.Grid' module provides a Knockout binding handler to render an HTML table, fully customizable through 
                             the use of Knockout templates, and also an extendable javascript model for 
                             tabular data, supporting client side pagination and custom row sort handling logic (server/client).  
                         </p>
@@ -734,28 +734,204 @@ Ink.createModule('App.Shapes.Home', '1', ['Ink.Data.Grid_1'], function(Grid) {
                         <header>
                             <h2 class="push-left">Paginator</h2>
                         </header>
-                        <p>This section is forthcoming.</p>
+                        <p>
+                            The 'Ink.Data.Paginator' module, provides a Knockout binding handler to render a pagination bar widget, and a javascript model that handles the actual
+                            data pagination.
+                        </p>
+                        <h3>Data binding</h3>
+                        <h4><em>Binding declaration</em></h4>
+                        <p>
+                            <blockquote><pre class="prettyprint lang-html">
+/* Example paginator binding */
+
+&lt;div data-bind="foreach: pageItems"&gt;
+    &lt;div data-bind="text: $data"/&gt;
+&lt;/div&gt;
+&lt;div data-bind="paginator: paginatedModel"&gt;&lt;/div&gt;
+                            </pre></blockquote>                            
+                        </p>
+                        <h4><em>Binding value</em></h4>
+                        <p>
+                            <blockquote><pre class="prettyprint lang-html">
+/* Example view model attribute for a paginator */
+
+Ink.createModule('App.Names.List', '1', ['Ink.Data.Paginator_1'], function(Paginator) {
+    var Module = function() {
+        this.paginatedModel = new Paginator({
+            data: ['Alice', 'Sara', 'John', 'Peter', 'Mark', 'Beatriz', 'Roger', 'Paul', 'Trent', 'Daniela', 'Samuel'],
+            pageSize: 5,
+            pageSizeOptionList: [5, 10, 20]   
+        });
+        this.pageItems=this.paginatedModel.itemsOnCurrentPage;
+...
+                            </pre></blockquote>                            
+                        </p>                                            
+                        <p>
+                            Paginator model options object (passed to constructor):
+                            
+                            <ul class="unstyled">
+                                <li><b>data</b> <em>Observable</em> Array with the data rows.</li>
+                                <li><b>pageSize</b> int value with number of rows per page.</li>
+                                <li><b>pageSizeOptionList</b> array with page sizes.</li>
+                            </ul>
+                        </p>
                     </article>
                     <article>
                         <a class="bookmark" id="autocomplete"></a>
                         <header>
                             <h2 class="push-left">AutoComplete</h2>
                         </header>
-                        <p>This section is forthcoming.</p>
+                        <p>
+                            The 'Ink.Data.AutoComplete' module provides a Knockout binding handler that renders an autocomplete widget bound to an observable array of values.
+                        </p>
+                        <h3>Data binding</h3>
+                        <h4><em>Binding declaration</em></h4>
+                        <p>
+                            <blockquote><pre class="prettyprint lang-html">
+/* Example autoComplete binding */
+
+&lt;input type="text" data-bind="autoComplete: users, value: selectedUserId, optionsText: 'name', optionsValue: 'id'" /&gt;
+                            </pre></blockquote>                            
+                        </p>
+                        <h4><em>Binding value</em></h4>
+                        <p>
+                            <blockquote><pre class="prettyprint lang-html">
+/* 
+    Example view model
+
+    Your app must declare the dependency to the 'Ink.Data.AutoComplete' module 
+    to register the 'autoComplete' binding handler. 
+*/
+
+Ink.createModule('App.Names.List', '1', ['Ink.Data.Binding_1, 'Ink.Data.AutoComplete_1'], function(ko) {
+    var Module = function() {
+        this.users = ko.observableArray([
+                {id: 1, name: 'Alice'}, 
+                {id: 2, name: 'Sarah'}, 
+                {id: 3, name: 'John'}, 
+                {id: 4, name: 'Peter'}, 
+                {id: 5, name: 'Mark'}, 
+                {id: 6, name: 'Bea'}, 
+                {id: 7, name: 'Roger'}, 
+                {id: 8, name: 'Paul'}, 
+                {id: 9, name: 'Trent'}, 
+                {id:10, name: 'Daniela'},
+                {id:11, name: 'Sam'}
+        ]);
+        this.selectedUserId = ko.observable();
+...
+                            </pre></blockquote>                            
+                        </p>                                            
                     </article>
                     <article>
                         <a class="bookmark" id="tooltip"></a>
                         <header>
                             <h2 class="push-left">ToolTip</h2>
                         </header>
-                        <p>This section is forthcoming.</p>
+                        <p>
+                            'Ink.Data.Tooltip' provides a simple Ink Tooltip binding handler.
+                        </p>
+                        <h3>Data binding</h3>
+                        <h4><em>Binding declaration</em></h4>
+                        <p>
+                            <blockquote><pre class="prettyprint lang-html">
+/* Example tooltip binding */
+
+&lt;img data-bind="tooltip: userTooltip, attr: {src: photo}"&gt;
+                            </pre></blockquote>                            
+                        </p>
+                        <h4><em>Binding value</em></h4>
+                        <p>
+                            <blockquote><pre class="prettyprint lang-html">
+/* 
+    Example view model
+
+    Your app must declare the dependency to the 'Ink.Data.Tooltip' module 
+    to register the 'tooltip' binding handler. 
+*/
+
+Ink.createModule('App.Example.Home', '1', ['Ink.Data.Binding_1, 'Ink.Data.Tooltip_1'], function(ko) {
+    var Module = function() {
+        this.name = ko.observable('John Doe');
+        this.photo = ko.observable('john.png');
+        this.userTooltip = {text: this.name};
+...
+                            </pre></blockquote>                            
+                            <span class="note"><i class="icon-exclamation-sign"></i> Check <a href="http://ink.sapo.pt/javascript/Ink.UI.Tooltip/">Ink.UI.Tooltip</a> Ink's docs, for details on the tooltip value object options.</span>
+                        </p>
                     </article>
                     <article>
                         <a class="bookmark" id="dragdrop"></a>
                         <header>
                             <h2 class="push-left">Drag & Drop</h2>
                         </header>
-                        <p>This section is forthcoming.</p>
+                        <p>
+                            'Ink.Data.DragDrop' provides binding handlers to render drop targets and draggable elements containers.
+                            These bindings allow a clean separation of the rendered draggable and the underlying data object, meaning that the view model only needs to 
+                            handle pure js objects instead of DOM elements.   
+                        </p>
+                        <p>
+                            The 'draggableContainer' handler builds a container widget for draggables, delegating the draggable rendering to a specified Knockout template.
+                        </p>
+                        <p>
+                            The 'droppable' handler adds drop target capabilities to an element and can be combined with a 'draggableContainer' to allow full drag&drop.
+                        </p>
+                        <h3>Data binding</h3>
+                        <h4><em>Binding declaration</em></h4>
+                        <p>
+                            <blockquote><pre class="prettyprint lang-html">
+/* Example trash bin with draggableContainer & droppable bindings */
+
+&lt;div data-bind="draggableContainer: container" /&gt;
+&lt;div data-bind="droppable: trash" /&gt;
+&lt;script id="colorTemplate" type="text/html"&gt;&lt;img data-bind="attr: {src: $data+'.png'}"/&gt;script&gt;
+                            </pre></blockquote>                            
+                        </p>
+                        <h4><em>Binding value</em></h4>
+                        <p>
+                            <blockquote><pre class="prettyprint lang-html">
+/* 
+    Example view model
+
+    Your app must declare the dependency to the 'Ink.Data.DragDrop' module 
+    to register both 'draggableContainer' and 'droppable' binding handlers. 
+*/
+
+Ink.createModule('App.Example.Home', '1', ['Ink.Data.Binding_1, 'Ink.Data.DragDrop_1'], function(ko) {
+    var Module = function() {
+        var self=this;
+        
+        this.dataItems = ko.observableArray(['blue', 'red', 'cyan', 'green', 'black', 'white']);
+        
+        this.trash = {
+            hoverClass: 'my-drop-panel', 
+            dropHandler: function(data, index) {
+                var i;
+                
+                data = (data.length?data:[data]);
+                for (i=0; i < data.length; i++) {
+                    self.dataItems.remove(data[i]);
+                }
+            } 
+        };
+        
+        this.container = {
+            source: this.dataItems,
+            draggableTemplate: 'colorTemplate'
+        };
+...
+                            </pre></blockquote>
+                        </p>
+                        <p>
+                            Draggable container options:
+
+                            <ul class="unstyled">
+                                <li><b>source</b> <em>Observable</em> Array with the draggable objects.</li>
+                                <li><b>draggableTemplate</b> String with the id of a Knockout template.</li>
+                                <li><b>dragOutHandler</b> Function that is called when an object from this container is dropped in a droppable.</li>
+                                <li><b>afterDraggableRender</b> Function that is called after Knockout renders each draggable</li>
+                            </ul>
+                        </p>
                     </article>
                     <article>
                         <a class="bookmark" id="kanban"></a>
