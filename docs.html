@@ -644,11 +644,27 @@ app.signals.taskSaved.add(taskSavedHandler);
                         <h3>Data binding</h3>
                         <h4><em>Binding declaration</em></h4>
                         <p>
-                            <blockquote><pre class="prettyprint lang-html">&lt;div data-bind="module: object"&gt;&lt;/div&gt;</pre></blockquote>                            
+                            <blockquote><pre class="prettyprint lang-html">&lt;div data-bind="module: {name: 'Ink.Data.ModalWindow_1', data: modalModel}"&gt;&lt;/div&gt;</pre></blockquote>                            
                         </p>
                         <h4><em>Binding value</em></h4>
                         <p>
-                            <b>{name: 'Ink.Data.ModalWindow_1', data: {parent: modal_host, title: modal_title_str, modalWidth: width_str, modalHeight: height_str, contentModule: module_name_str, cancelVisible: cancel_visible_bool, confirmCaption: confirm_caption_str}}</b>
+                            <blockquote><pre class="prettyprint lang-js">
+Ink.createModule('App.Example.Shell', '1', ['App.Example'], function(app) {
+    var Module = function() {
+        this.modalModel = {
+            parent: this, 
+            title: 'Example modal window', 
+            modalWidth: '400px', 
+            modalHeight: '200px', 
+            contentModule: 'App.Example.QueryDialog', 
+            cancelVisible: true, 
+            confirmCaption: 'Confirm'
+        };
+...
+                            </pre></blockquote>                            
+                        </p>                                            
+                        <p>
+                            - Modal options:
                             
                             <ul class="unstyled">
                                 <li><b>module_host</b> Object to host the "modal" interface:  {modal: {show: function(params:object):void}}, reponsible to show the modal dialog, and pass parameters to the loaded module.</li>
@@ -704,7 +720,7 @@ Ink.createModule('App.Shapes.Home', '1', ['Ink.Data.Grid_1'], function(Grid) {
                             </pre></blockquote>                            
                         </p>                                            
                         <p>
-                            Grid model options object (passed to constructor):
+                            - Grid model options object (passed to constructor):
                             
                             <ul class="unstyled">
                                 <li><b>data</b> <em>Observable</em> Array with the table data rows.</li>
@@ -712,7 +728,7 @@ Ink.createModule('App.Shapes.Home', '1', ['Ink.Data.Grid_1'], function(Grid) {
                             </ul>
                         </p>
                         <p>
-                            Column definition object:
+                            - Column definition object:
 
                             <ul class="unstyled">
                                 <li><b>headerText</b> String with the column header text.</li>
@@ -767,7 +783,7 @@ Ink.createModule('App.Names.List', '1', ['Ink.Data.Paginator_1'], function(Pagin
                             </pre></blockquote>                            
                         </p>                                            
                         <p>
-                            Paginator model options object (passed to constructor):
+                            - Paginator model options object (passed to constructor):
                             
                             <ul class="unstyled">
                                 <li><b>data</b> <em>Observable</em> Array with the data rows.</li>
@@ -803,7 +819,7 @@ Ink.createModule('App.Names.List', '1', ['Ink.Data.Paginator_1'], function(Pagin
     to register the 'autoComplete' binding handler. 
 */
 
-Ink.createModule('App.Names.List', '1', ['Ink.Data.Binding_1, 'Ink.Data.AutoComplete_1'], function(ko) {
+Ink.createModule('App.Names.List', '1', ['Ink.Data.Binding_1', 'Ink.Data.AutoComplete_1'], function(ko) {
     var Module = function() {
         this.users = ko.observableArray([
                 {id: 1, name: 'Alice'}, 
@@ -850,7 +866,7 @@ Ink.createModule('App.Names.List', '1', ['Ink.Data.Binding_1, 'Ink.Data.AutoComp
     to register the 'tooltip' binding handler. 
 */
 
-Ink.createModule('App.Example.Home', '1', ['Ink.Data.Binding_1, 'Ink.Data.Tooltip_1'], function(ko) {
+Ink.createModule('App.Example.Home', '1', ['Ink.Data.Binding_1', 'Ink.Data.Tooltip_1'], function(ko) {
     var Module = function() {
         this.name = ko.observable('John Doe');
         this.photo = ko.observable('john.png');
@@ -897,7 +913,7 @@ Ink.createModule('App.Example.Home', '1', ['Ink.Data.Binding_1, 'Ink.Data.Toolti
     to register both 'draggableContainer' and 'droppable' binding handlers. 
 */
 
-Ink.createModule('App.Example.Home', '1', ['Ink.Data.Binding_1, 'Ink.Data.DragDrop_1'], function(ko) {
+Ink.createModule('App.Example.Home', '1', ['Ink.Data.Binding_1', 'Ink.Data.DragDrop_1'], function(ko) {
     var Module = function() {
         var self=this;
         
@@ -923,7 +939,7 @@ Ink.createModule('App.Example.Home', '1', ['Ink.Data.Binding_1, 'Ink.Data.DragDr
                             </pre></blockquote>
                         </p>
                         <p>
-                            Draggable container options:
+                            - Draggable container options:
 
                             <ul class="unstyled">
                                 <li><b>source</b> <em>Observable</em> Array with the draggable objects.</li>
@@ -938,7 +954,91 @@ Ink.createModule('App.Example.Home', '1', ['Ink.Data.Binding_1, 'Ink.Data.DragDr
                         <header>
                             <h2 class="push-left">Kanban</h2>
                         </header>
-                        <p>This section is forthcoming.</p>
+                        <p>
+                            The Kanban UI module provides a simple interface to create customizable lists of tasks generaly used for "getting things done".
+                            The tasks, also called cards, are arranged in sections and can be moved from one section to another by drag&drop. 
+                            The styling of the sections and task's card, is made through the use of Knockout templates, and allows for custom headers, contents and footers, 
+                            and custom CSS classes.  
+                        </p>
+                        <p>
+                            Additionally to the UI customization, there are javascript view models for sections and cards, that ease the kanban's creation and hide the undelying UI logic.
+                        </p>
+                        <h3>Data binding</h3>
+                        <h4><em>Binding declaration</em></h4>
+                        <p>
+                            <blockquote><pre class="prettyprint lang-html">
+&lt;!--ko module: {name:'Ink.Data.KanBan_1', data: kanbanModel}--&gt;
+&lt;!--/ko--&gt;
+                            </pre></blockquote>
+                        </p>
+                        <h4><em>Binding value</em></h4>
+                        <p>
+                            <blockquote><pre class="prettyprint lang-js">
+/* 
+    Example view model
+*/
+
+Ink.createModule('App.Example.Todo', '1', ['Ink.Data.Binding_1'], function(ko) {
+    var Module = function() {
+        this.todoTasks = ko.observableArray([
+            {title: 'Buy wood', content: 'Oak wood 10"x5"'},
+            {title: 'Buy paint', content: 'White (2 gallons)'}
+            {title: 'Repair table', content: 'Repair living room table'}
+        ]);
+        this.completedTasks = ko.observableArray();        
+        this.incompleteTasks = ko.observableArray();
+        
+        this.sections = [
+            {title: 'Todo', items: this.todoTasks}, 
+            {title: 'Incomplete', items: this.incompleteTasks}, 
+            {title: 'Complete', items: this.completedTasks}
+        ];
+        
+        this.kanbanModel = {
+            sections: this.sections 
+        };
+        
+...
+                            </pre></blockquote>
+                        </p>
+                        <p>
+                            - Kanban options:
+
+                            <ul class="unstyled">
+                                <li><b>sections</b> <em>Observable</em> Array with the sections.</li>
+                                <li><b>showSectionTooltip</b> If falsie hide's the section tooltip</li>
+                                <li><b>previewMoveHandler(targetItems:observableArray,movedData:array,targetIndex:int)</b> Function called before a card is moved. Must return true if the move is to be allowed.</li>
+                                <li><b>cardsMovedHandler(targetItems:observableArray,movedData:array,targetIndex:int)</b> Function called after a card is moved.</li>
+                                <li><b>afterRender(sectionsDomEl:array,kanbanModel:object)</b> Function called after the kanban's sections are rendered (init or update).</li>
+                            </ul>
+                        </p>
+                        <p>
+                            - Section options:
+
+                            <ul class="unstyled">
+                                <li><b>title</b> String with the section's title.</li>
+                                <li><b>subtitle</b> String with the section's subtitle.</li>
+                                <li><b>headerTemplate</b> String with the id of a Knockout template to render the section header.</li>
+                                <li><b>footerTemplate</b> String with the id of a Knockout template to render the section footer.</li>
+                                <li><b>items</b> <em>Observable</em> Array with the section cards.</li>
+                                <li><b>droppable</b> <em>Optional</em> If false, prevent drops (default: true).</li>  
+                                <li><b>css</b> String with class names to add to the section.</li>
+                                <li><b>settingsHandler</b> <em>Optional</em> Callback function for section settings link. If 'undefined' the settings link will be hidden.</li>
+                                <li><b>settingsCaption</b> <em>Optional</em> If defined, should be a string with the settings link title.</li>
+                                <li><b>afterCardRender(cardDomEls:array)</b> Function called after each section's card is rendered.</li>
+                            </ul>
+                        </p>
+                        <p>
+                            - Card options:
+
+                            <ul class="unstyled">
+                                <li><b>title</b> String with the card's title.</li>
+                                <li><b>contentTemplate</b> <em>Optional</em> String with the id of a Knockout template to render the card's content.</li>
+                                <li><b>content</b> String with the card's message, or Object with the card's details (if 'contentTemplate' is defined).</li>
+                                <li><b>cardClass</b> <em>Optional</em> String with class names to add to the card.</li>
+                                <li><b>editHandler</b>  Function with the card's edit link handler, or array of {handler, icon, caption} menu items.</li>
+                            </ul>
+                        </p>
                     </article>
                     <article>
                         <a class="bookmark" id="plugins"></a>
