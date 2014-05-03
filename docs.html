@@ -961,7 +961,7 @@ Ink.createModule('App.Example.Home', '1', ['Ink.Data.Binding_1', 'Ink.Data.DragD
                             and custom CSS classes.  
                         </p>
                         <p>
-                            Additionally to the UI customization, there are javascript view models for sections and cards, that ease the kanban's creation and hide the undelying UI logic.
+                            Additionally to the UI customization, there are javascript view models for sections and cards, that ease the kanban's creation and hide the underlying UI logic.
                         </p>
                         <h3>Data binding</h3>
                         <h4><em>Binding declaration</em></h4>
@@ -1045,7 +1045,61 @@ Ink.createModule('App.Example.Todo', '1', ['Ink.Data.Binding_1'], function(ko) {
                         <header>
                             <h2 class="push-left">Plugins</h2>
                         </header>
-                        <p>This section is forthcoming.</p>
+                        <p>
+                            If you adopt a decoupled modular architecture, then you'll problably want
+                            to allow that certain parts of your application can be replaced or extended. 
+                        </p>
+                        <p>
+                            Typically a Pink application defines extension points through the use of:
+                            <ul>
+                                <li>Custom attributes added to the app's main class module</li>
+                                <li><a href="#signals">An application event bus</a></li>  
+                            </ul>
+                        </p>
+                        <p>
+                            Pink's bootstrap process includes an application overridable method 
+                            called <a href="#listPluginModules">listPluginModules</a>, invoked after the initial 
+                            application structures are defined, but before the routing module is started and
+                            before the databinding occurs.
+                        </p>
+                        <p>
+                            Application bootstrap sequence:
+                            
+                            <ol>
+                                <li><b>app.constructor</b> - Internal structures initialization</li>
+                                <li><b>app.run</b></li>
+                                <li><b>app.listPluginModules</b> - Application overridable</li>
+                                <li>Require plugin modules</li>
+                                <li>Start routing module</li>
+                                <li><b>app.ready</b> - Application overridable</li>
+                                <li><b>app.start</b> - "appReady" signal dispatch, databinding</li>
+                            </ol>
+                        </p>
+                        <p>
+                            <blockquote><pre class="prettyprint lang-js">
+/* 
+    Example application model
+*/
+
+Ink.createModule('App.Images', '1', ['Ink.App_1', 'Ink.Plugin.Signals_1', 'Ink.Data.Binding_1'], function(App, Signal, ko) {
+    var Module = function() {
+        App.call(this, 'search', 'search'); 
+
+        this.appTitle = 'Image search sample';
+    };
+    
+    Module.prototype = new App();
+    Module.constructor = Module;
+
+    Module.prototype.listPluginModules = function() {
+        return [
+            'App.Images.Plugins.Pinterest',
+            'App.Images.Plugins.Instagram'
+        ];
+    };
+...
+                            </pre></blockquote>
+                        </p>
                     </article>
                 </div>
             </div>
