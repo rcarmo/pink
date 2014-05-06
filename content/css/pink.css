@@ -108,6 +108,14 @@
     -ms-user-select:none;
     user-select: none;
     pointer-events: none;
+    background-color: #ffffff;
+    overflow: hidden;
+    padding: 1em;
+    white-space: nowrap;
+}
+
+.draggable-proxy .drag-affordance, .draggable-proxy .selected-icon, .draggable-proxy .edit-action {
+    display: none;
 }
 
 .drop-panel-active {

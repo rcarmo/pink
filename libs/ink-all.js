@@ -14725,7 +14725,7 @@ Ink.createModule('Ink.UI.Tabs', '1', ['Ink.UI.Aux_1','Ink.Dom.Event_1','Ink.Dom.
         _setFirstActive: function() {
             var hash = window.location.hash;
 
-            // INTRA: Changed the init order to first check the options.active attribute and only then the window.href.hash 
+            // PINK: Changed the init order to first check the options.active attribute and only then the window.href.hash 
             this._activeContentTab = Selector.select(this._hashify(this._options.active), this._element)[0] ||
                                      Selector.select(hash, this._element)[0] || 
                                      Selector.select('.tabs-content', this._element)[0];
@@ -18206,7 +18206,7 @@ Ink.createModule("Ink.UI.Droppable","1",["Ink.Dom.Element_1", "Ink.Dom.Event_1",
          * @private
          */
         action: function(coords, type, ev, draggable) {
-            // INTRA: Fixed to make the onDrop handlers execute after the onDropOut handlers (to prevent the element reverting after a successful drop)
+            // PINK: Fixed to make the onDrop handlers execute after the onDropOut handlers (to prevent the element reverting after a successful drop)
             var onDropHandlers = [];
             var onDropOutHandlers = [];
             
@@ -18226,14 +18226,6 @@ Ink.createModule("Ink.UI.Droppable","1",["Ink.Dom.Element_1", "Ink.Dom.Event_1",
                         originalParent: draggable.parentNode
                     });
                 }
-
-                /* Teste HLIMA
-                if (element.id=='droppable3') {
-                    console.clear();
-                    console.log(coords.x);
-                    console.log(data.left);
-                }
-                */
                 
                 // check if our draggable is over our droppable
                 if (coords.x >= data.left && coords.x <= data.right &&
@@ -18246,7 +18238,7 @@ Ink.createModule("Ink.UI.Droppable","1",["Ink.Dom.Element_1", "Ink.Dom.Event_1",
                                     hAddClassName(element));
                             }
                             if (opt.onHover) {
-                            	// INTRA: Added event parameter 
+                            	// PINK: Added event parameter 
                                 opt.onHover(draggable, element, ev);
                             }
                         } else if (type === 'drop') {
@@ -18433,18 +18425,7 @@ Ink.createModule("Ink.UI.Draggable","1",["Ink.Dom.Element_1", "Ink.Dom.Event_1",
          * @private
          */
         _getCoords: function(e) {
-            var node = e.target;
-            var leftScroll = 0;
             var ps = [InkElement.scrollWidth(), InkElement.scrollHeight()];
-            
-            // Teste HLIMA
-            while ( (typeof node.scrollLeft == 'number') && (leftScroll==0) ) {
-                leftScroll += node.scrollLeft;
-                node = node.parentNode;
-            }
-
-            ps[0] = leftScroll;
-            
             return {
                 x: (e.touches ? e.touches[0].clientX : e.clientX) + ps[x],
                 y: (e.touches ? e.touches[0].clientY : e.clientY) + ps[y]
@@ -18494,7 +18475,7 @@ Ink.createModule("Ink.UI.Draggable","1",["Ink.Dom.Element_1", "Ink.Dom.Event_1",
                     InkElement.elementLeft(this.element),
                     InkElement.elementTop( this.element)
                 ];
-
+                
                 var pos = [
                     parseInt(Css.getStyle(this.element, 'left'), 10),
                     parseInt(Css.getStyle(this.element, 'top'),  10)
