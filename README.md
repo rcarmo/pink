@@ -1,4 +1,4 @@
-Pink
+Pink v2.0
 =========
 
 An architectural Pattern for [Ink][i].
