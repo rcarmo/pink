@@ -22,7 +22,7 @@ Ink.createModule('Ink.Data.Module', '1', ['Ink.Data.Binding_1'], function(ko) {
             }
         };
 
-        xhr.open("GET", Ink._modNameToUri(moduleName).replace('lib.js', (ko.bindingHandlers.module.templateName || 'tpl.html'))+(NO_CACHE?'?'+Math.floor(Math.random()*1001):''), true);
+        xhr.open("GET", Ink.getPath(moduleName).replace('lib.js', (ko.bindingHandlers.module.templateName || 'tpl.html'))+(NO_CACHE?'?'+Math.floor(Math.random()*1001):''), true);
         xhr.send();
     };
     

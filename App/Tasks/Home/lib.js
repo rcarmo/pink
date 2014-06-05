@@ -66,10 +66,6 @@ Ink.createModule('App.Tasks.Home', '1', ['App.Tasks', 'Ink.Data.Binding_1', 'App
     	}
     };
     
-    Module.prototype.afterRender = function() {
-        document.getElementById('mainMenuDropDown').style.display = 'none';  
-    };
-
     Module.prototype.tasksMovedHandler = function(source, tasks) {
     	var i;
     	var task;
