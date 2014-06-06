@@ -106,7 +106,7 @@ Ink.createModule('Ink.Data.DragDrop', '1', ['Ink.Data.Binding_1', 'Ink.UI.Dragga
      * 
      * Binding value: {Object}
      * Binding value properties: 
-     * - {object} source: Array or ObservableArray that containes the draggable objects 
+     * - {object} source: Array or ObservableArray that contains the draggable objects 
      * - {string} draggableTemplate: id of template to render the draggable
      * - {function} dropHandler: function to execute when a draggable from this container is dropped in a droppable (receives the selectedData as a parameter)
      * 
