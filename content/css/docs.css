@@ -118,6 +118,15 @@ a.bookmark {
 .ink-grid {
     max-width: none ! important;
 }
+
+nav a.sub-menu+ol {
+    display: none;
+}
+
+nav a.sub-menu.active+ol {
+    display: block;
+}
+
 /*****************************
  Media Queries
 *****************************/
