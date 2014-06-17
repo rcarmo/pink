@@ -1,5 +1,6 @@
 [![Stories in Ready](https://badge.waffle.io/sapo/pink.png?label=ready&title=Ready)](https://waffle.io/sapo/pink)
-Pink
+
+Pink v2.0
 =========
 
 An architectural Pattern for [Ink][i].
@@ -16,7 +17,7 @@ This is an attempt at providing a reference implementation for rich client-side 
 - Customizable application bootstrap (by hooks and plugins).
 - Client-side navigation & routing (routie.js).
 - Client-side signals/event bus for module decoupling (jssignals)
-- Various data-bind ready components: Autocomplete, Drag&Drop, Kanban, Grid, Tooltip, ModalWindow, ...
+- Various data-bind ready components: Autocomplete, Drag&Drop, Kanban, Grid, Tooltip, ModalWindow, Tabs, Carousel, ...
 
 
 ## Documentation & Code examples
