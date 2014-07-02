@@ -798,13 +798,13 @@ Ink.createModule('Pink.Data.DragDrop', '1', ['Pink.Data.Binding_1', 'Ink.Dom.Ele
         	var hints;
         	var i;
 
-        	hints = Ink.ss('.drop-place-hint-before');
+        	hints = Ink.ss('.pink-drop-place-hint-before');
         	for (i=0; i < hints.length; i++) {
-        		inkCss.removeClassName(hints[i], 'drop-place-hint-before');
+        		inkCss.removeClassName(hints[i], 'pink-drop-place-hint-before');
         	}
-        	hints = Ink.ss('.drop-place-hint-after');
+        	hints = Ink.ss('.pink-drop-place-hint-after');
         	for (i=0; i < hints.length; i++) {
-        		inkCss.removeClassName(hints[i], 'drop-place-hint-after');
+        		inkCss.removeClassName(hints[i], 'pink-drop-place-hint-after');
         	}
         },
         
@@ -816,15 +816,15 @@ Ink.createModule('Pink.Data.DragDrop', '1', ['Pink.Data.Binding_1', 'Ink.Dom.Ele
             receiverEl=inkEl.findUpwardsByClass(receiverEl, 'drag-enabled');
 
         	if (receiverEl) {
-        		inkCss.addClassName(receiverEl, 'drop-place-hint-before');
+        		inkCss.addClassName(receiverEl, 'pink-drop-place-hint-before');
         	} else {
         		receiverEl=Ink.ss('.drag-enabled', droppable);
         		if (receiverEl.length>0) {
-            		if (inkCss.hasClassName(receiverEl[receiverEl.length-1], 'draggable-proxy')) {
+            		if (inkCss.hasClassName(receiverEl[receiverEl.length-1], 'pink-draggable-proxy')) {
             			receiverEl.pop();
             		} 
             		receiverEl=receiverEl[receiverEl.length-1];
-            		inkCss.addClassName(receiverEl, 'drop-place-hint-after');
+            		inkCss.addClassName(receiverEl, 'pink-drop-place-hint-after');
         		}
         	}
         }, 
@@ -832,7 +832,7 @@ Ink.createModule('Pink.Data.DragDrop', '1', ['Pink.Data.Binding_1', 'Ink.Dom.Ele
         init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
             var attr;
             var binding = ko.unwrap(valueAccessor());
-            var options = {hoverClass: 'drop-panel-active', onHover: ko.bindingHandlers.droppable._handleHover, onDrop: ko.bindingHandlers.droppable._handleDrop.bind(this, binding), onDropOut: ko.bindingHandlers.droppable._clearHints}; 
+            var options = {hoverClass: 'pink-drop-panel-active', onHover: ko.bindingHandlers.droppable._handleHover, onDrop: ko.bindingHandlers.droppable._handleDrop.bind(this, binding), onDropOut: ko.bindingHandlers.droppable._clearHints}; 
             
             if (typeof binding == 'object') {
                 for (attr in binding) {
@@ -840,7 +840,7 @@ Ink.createModule('Pink.Data.DragDrop', '1', ['Pink.Data.Binding_1', 'Ink.Dom.Ele
                 }
             }
             
-            inkCss.addClassName(element, 'disable-text-selection');
+            inkCss.addClassName(element, 'pink-disable-text-selection');
             
             // The droppable element must have a valid id
             element.id = element.id || 'droppable'+(unknownDropId++);
@@ -895,9 +895,9 @@ Ink.createModule('Pink.Data.DragDrop', '1', ['Pink.Data.Binding_1', 'Ink.Dom.Ele
             var selectedItems;
             var i;
 
-            selectedItems = inkSel.select('.draggable-selected');
+            selectedItems = inkSel.select('.pink-draggable-selected');
             for (i=0; i<selectedItems.length; i++) {
-                inkCss.removeClassName(selectedItems[i], 'draggable-selected');
+                inkCss.removeClassName(selectedItems[i], 'pink-draggable-selected');
             }
 
             selectedData = [];
@@ -969,14 +969,14 @@ Ink.createModule('Pink.Data.DragDrop', '1', ['Pink.Data.Binding_1', 'Ink.Dom.Ele
                         }
                         
                         for (i=start; i<=stop; i++) {
-                            inkCss.addClassName(elements[i], 'draggable-selected');
+                            inkCss.addClassName(elements[i], 'pink-draggable-selected');
                             
                             if (selectedData.indexOf(source[i])==-1) {
                                 selectedData.push(source[i]);
                             }
                         }
                     } else {
-                        inkCss.toggleClassName(draggableElement, 'draggable-selected');
+                        inkCss.toggleClassName(draggableElement, 'pink-draggable-selected');
                         i = selectedData.indexOf(data);
                         if (i !=-1) {
                             selectedData.splice(i, 1);
@@ -1006,7 +1006,7 @@ Ink.createModule('Pink.Data.DragDrop', '1', ['Pink.Data.Binding_1', 'Ink.Dom.Ele
                         ko.bindingHandlers.draggableContainer._isDragging = true;
 
                         // If the dragged element isn't selected let's clear the selection
-                        if (!inkCss.hasClassName(draggableElement, 'draggable-selected')) {
+                        if (!inkCss.hasClassName(draggableElement, 'pink-draggable-selected')) {
                             ko.bindingHandlers.draggableContainer._clearSelection();
                         }
                         
@@ -1025,7 +1025,7 @@ Ink.createModule('Pink.Data.DragDrop', '1', ['Pink.Data.Binding_1', 'Ink.Dom.Ele
                         draggableProxy.style.left = (evt.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - (inkEl.elementWidth(draggableElement) / 2)) + 'px';
                         draggableProxy.style.top = (evt.clientY + document.body.scrollTop + document.documentElement.scrollTop - (inkEl.elementHeight(draggableElement) / 2)) + 'px';
                         
-                        inkCss.addClassName(draggableProxy, 'draggable-proxy');
+                        inkCss.addClassName(draggableProxy, 'pink-draggable-proxy');
                         
                         draggableProxy=document.body.appendChild(draggableProxy);
                         
@@ -1045,8 +1045,8 @@ Ink.createModule('Pink.Data.DragDrop', '1', ['Pink.Data.Binding_1', 'Ink.Dom.Ele
                 } 
             };
             
-            inkCss.addClassName(element, 'draggable-container');
-            inkCss.addClassName(element, 'disable-text-selection');
+            inkCss.addClassName(element, 'pink-draggable-container');
+            inkCss.addClassName(element, 'pink-disable-text-selection');
             
             ko.computed(function() {
                 var source = ko.unwrap(binding.source);
@@ -1069,7 +1069,7 @@ Ink.createModule('Pink.Data.DragDrop', '1', ['Pink.Data.Binding_1', 'Ink.Dom.Ele
                     draggable.guid = guid();
                     draggable.afterRender = binding.afterDraggableRender;
                     
-                    draggableElement = inkEl.htmlToFragment('<div data-index="'+i+'" class="drag-enabled disable-text-selection" style="cursor: move" data-bind="template: {afterRender: $data.afterRender, name: \''+binding.draggableTemplate+'\'}"/>').firstChild;
+                    draggableElement = inkEl.htmlToFragment('<div data-index="'+i+'" class="drag-enabled pink-disable-text-selection" style="cursor: move" data-bind="template: {afterRender: $data.afterRender, name: \''+binding.draggableTemplate+'\'}"/>').firstChild;
                     draggableElement.dataTransfer = {data: draggable};
                     
                     ko.applyBindings(draggable, draggableElement);
