@@ -14,15 +14,15 @@
                     <!--/ko-->
                 <!--/ko-->
                 <!--ko if: (typeof headerTemplate=='string')-->
-                    <div class="content" data-bind="template: {name: headerTemplate, data: $data}"></div>
+                    <div class="pink-content" data-bind="template: {name: headerTemplate, data: $data}"></div>
                 <!--/ko-->
             </div>
             <!--ko if: (typeof $data.droppable == 'undefined') || ($data.droppable) -->
-    		    <div class="content" data-bind="droppable: {dropHandler: $parent.dropHandler.bind($parent, $data.items)}, draggableContainer: {afterDraggableRender: $parent.afterCardRender, offset: $data.offset, source: $data.items, draggableTemplate: 'Pink.Data.Kanban.CardTemplate', dragOutHandler: $parent.dragOutHandler.bind($parent, $data.items)}">
+    		    <div class="pink-content" data-bind="droppable: {dropHandler: $parent.dropHandler.bind($parent, $data.items)}, draggableContainer: {afterDraggableRender: $parent.afterCardRender, offset: $data.offset, source: $data.items, draggableTemplate: 'Pink.Data.Kanban.CardTemplate', dragOutHandler: $parent.dragOutHandler.bind($parent, $data.items)}">
                 </div>
             <!--/ko-->
             <!--ko if: (typeof $data.droppable != 'undefined') && (!$data.droppable) -->
-                <div class="content" data-bind="draggableContainer: {afterDraggableRender: $data.afterCardRender, offset: $data.offset, source: $data.items, draggableTemplate: 'Pink.Data.Kanban.CardTemplate', dragOutHandler: $parent.dragOutHandler.bind($parent, $data.items)}">
+                <div class="pink-content" data-bind="draggableContainer: {afterDraggableRender: $data.afterCardRender, offset: $data.offset, source: $data.items, draggableTemplate: 'Pink.Data.Kanban.CardTemplate', dragOutHandler: $parent.dragOutHandler.bind($parent, $data.items)}">
                 </div>
             <!--/ko-->
             <div class="pink-footer">

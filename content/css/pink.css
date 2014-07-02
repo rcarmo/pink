@@ -155,7 +155,7 @@
     display: block; 
 }
 
-.pink-kanban .pink-section .pink-draggable-selected>.pink-pink-card {
+.pink-kanban .pink-section .pink-draggable-selected>.pink-card {
     background-color: #eee;
 }
 
