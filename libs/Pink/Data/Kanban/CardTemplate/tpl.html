@@ -12,7 +12,7 @@
     <!--ko if: (typeof editHandler == 'object') && (editHandler.length) -->
         <div class="pink-edit-action ink-dropdown" data-bind="click: function() {}, clickBubble: false">
             <a class="toggle" href="javascript:void(0);" data-bind="attr: {'data-target': '#'+guid}"><i data-bind="css: (typeof editIcon=='undefined' ? 'fa fa-edit' : editIcon)"></i></a>
-            <ul class="dropdown-menu" data-bind="foreach: editHandler, attr: {id: guid}">
+            <ul class="dropdown-menu hide-all" data-bind="foreach: editHandler, attr: {id: guid}">
                 <li>
                     <a data-bind="click: handler"><i data-bind="visible: typeof icon!='undefined', css: (typeof icon=='undefined' ? '' : icon)">&nbsp;</i><span data-bind="text: caption"></span></a>
                 </li>
