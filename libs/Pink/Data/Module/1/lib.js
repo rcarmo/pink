@@ -164,7 +164,8 @@ Ink.createModule('Pink.Data.Module', '1', ['Pink.Data.Binding_1'], function(ko) 
 
                 return { controlsDescendantBindings: true };
             },
-            baseDir: ""
+            baseDir: "",
+            templateCache: {}
     };
 
     
@@ -182,11 +183,11 @@ Ink.createModule('Pink.Data.Module', '1', ['Pink.Data.Binding_1'], function(ko) 
     (function(ko) {
         //get a new native template engine to start with
         var engine = new ko.nativeTemplateEngine(),
-        sources = {};
+            sources = ko.bindingHandlers.module.templateCache;
 
         /*
          * Comment from source for integration with Ink
-         * The templates path is derived from the Ink module's name
+         * The template's path is derived from the Ink module's name
          */
 
         //create a template source that loads its template using XmlHttpRequest
