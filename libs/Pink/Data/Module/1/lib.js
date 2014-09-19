@@ -45,7 +45,7 @@ Ink.createModule('Pink.Data.Module', '1', ['Pink.Data.Binding_1'], function(ko) 
         addTrailingSlash = function(path) {
             return path && path.replace(/\/?$/, "/");
         },
-        disposeViewModel = function(element, viewModel, disposeCallback) {
+        disposeViewModel = function(element, viewModel, finalizer, disposeCallback) {
             // If the view model has an appropriate finalizer function, then call it
             if (viewModel[finalizer]) {
                 viewModel[finalizer].apply(viewModel);
@@ -117,11 +117,11 @@ Ink.createModule('Pink.Data.Module', '1', ['Pink.Data.Binding_1'], function(ko) 
                 ko.applyBindingsToNode(element, { template: templateBinding },  context);
                 
                 // Setup custom disposal login to run when the node is removed
-                ko.utils.ko.utils.domNodeDisposal.addDisposeCallback(element, function() {
+                ko.utils.domNodeDisposal.addDisposeCallback(element, function() {
                     var oldModule = templateBinding.data();
                     
                     if (oldModule) {
-                        disposeViewModel(element, oldModule, notifyBeforeDestroy);
+                        disposeViewModel(element, oldModule, finalizer, notifyBeforeDestroy);
                     }
                 });
 
@@ -143,7 +143,7 @@ Ink.createModule('Pink.Data.Module', '1', ['Pink.Data.Binding_1'], function(ko) 
                         }
 
                         if (oldModule) {
-                            disposeViewModel(element, oldModule, notifyBeforeDestroy);
+                            disposeViewModel(element, oldModule, finalizer, notifyBeforeDestroy);
                         }
                         
                         // Destroy the old module
