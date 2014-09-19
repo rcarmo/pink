@@ -27,7 +27,7 @@ Ink.createModule('Pink.Data.Module', '1', ['Pink.Data.Binding_1'], function(ko) 
     };
     
     
-    //  helper functions to support the binding and template engine (whole lib is wrapped in an IIFE)
+    //  helper functions
     var unwrap = ko.utils.unwrapObservable,
         //call a constructor function with a variable number of arguments
         construct = function(Constructor, args) {
@@ -44,8 +44,20 @@ Ink.createModule('Pink.Data.Module', '1', ['Pink.Data.Binding_1'], function(ko) 
         },
         addTrailingSlash = function(path) {
             return path && path.replace(/\/?$/, "/");
+        },
+        disposeViewModel = function(element, viewModel, disposeCallback) {
+            // If the view model has an appropriate finalizer function, then call it
+            if (viewModel[finalizer]) {
+                viewModel[finalizer].apply(viewModel);
+            }
+            
+            // If defined, run this callback to notify that the old module is to be destroyed (eg. run UI transition)
+            if (disposeCallback && (typeof disposeCallback == "function") ) {
+                disposeCallback(element);
+            }
         };
 
+        
     /*
      * Helper binding that allows declarative module loading/binding
      * 
@@ -101,8 +113,17 @@ Ink.createModule('Pink.Data.Module', '1', ['Pink.Data.Binding_1'], function(ko) 
                     }
                 };
 
-                //actually apply the template binding that we built
+                // Actually apply the template binding that we built
                 ko.applyBindingsToNode(element, { template: templateBinding },  context);
+                
+                // Setup custom disposal login to run when the node is removed
+                ko.utils.ko.utils.domNodeDisposal.addDisposeCallback(element, function() {
+                    var oldModule = templateBinding.data();
+                    
+                    if (oldModule) {
+                        disposeViewModel(element, oldModule, notifyBeforeDestroy);
+                    }
+                });
 
                 // Use a computed to force a re-bind when the module name changes
                 ko.computed({
@@ -122,15 +143,7 @@ Ink.createModule('Pink.Data.Module', '1', ['Pink.Data.Binding_1'], function(ko) 
                         }
 
                         if (oldModule) {
-                            // If the old module has an appropriate finalizer function, then call it
-                        	if (oldModule[finalizer]) {
-                        		oldModule[finalizer].apply(oldModule);
-                        	}
-                        	
-                            // Run this method on the host view model to notify that the old module is to be destroyed
-                            if (notifyBeforeDestroy && (typeof notifyBeforeDestroy == "function") ) {
-                            	notifyBeforeDestroy(element);
-                            }
+                            disposeViewModel(element, oldModule, notifyBeforeDestroy);
                         }
                         
                         // Destroy the old module
