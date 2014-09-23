@@ -219,14 +219,14 @@ Ink.createModule('Pink.Data.AutoComplete', '1', ['Pink.Data.Binding_1', 'Ink.Dom
             }
 
             if (filter) {
-                filter=filter.toLowerCase();
+                filter = ".*" + filter.replace(/\s+/g, ".*") + ".*";
             }
             
             for (index=0; index<source.length; index++) {
                 label = source[index].label;
                 value = source[index].value;
                 
-                if (filter && (label.toLowerCase().indexOf(filter)==-1)) {
+                if (filter && !label.match(new RegExp(filter, "i"))) {
                     continue;
                 }
                 
