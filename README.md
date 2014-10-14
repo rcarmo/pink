@@ -19,6 +19,10 @@ This is an attempt at providing a reference implementation for rich client-side 
 - Client-side signals/event bus for module decoupling (jssignals)
 - Various data-bind ready components: Autocomplete, Drag&Drop, Kanban, Grid, Tooltip, ModalWindow, Tabs, Carousel, ...
 
+## To run examples locally
+
+> make serve
+
 
 ## Documentation & Code examples
 
