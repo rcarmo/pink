@@ -26,6 +26,8 @@ module.exports = function(grunt) {
             'libs/Pink/Data/Grid/1/lib.js',
             'libs/Pink/Data/Tabs/1/lib.js',
             'libs/Pink/Data/Carousel/1/lib.js',
+            'libs/Pink/Data/DatePicker/1/lib.js',
+            'libs/Pink/Data/Toggle/1/lib.js',
             'libs/Pink/App/1/lib.js'
           ]
         }
@@ -51,6 +53,8 @@ module.exports = function(grunt) {
                 'libs/Pink/Data/Grid/1/lib.js',
                 'libs/Pink/Data/Tabs/1/lib.js',
                 'libs/Pink/Data/Carousel/1/lib.js',
+                'libs/Pink/Data/DatePicker/1/lib.js',
+                'libs/Pink/Data/Toggle/1/lib.js',
                 'libs/Pink/App/1/lib.js'
               ]
             }
