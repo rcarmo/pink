@@ -769,10 +769,11 @@ Ink.createModule('Pink.Data.DragDrop', '1', ['Pink.Data.Binding_1', 'Ink.Dom.Ele
      * 
      * Binding value: {Object}
      * Binding value properties: 
-     * - {string} hoverClass: class name to add to the element when a draggable hovers over it 
-     * - {function} dropHandler: function to execute when a draggable is dropped in this droppable (receives selectedData as a parameter)
+     * - {string} [hoverClass]: class name to add to the element when a draggable hovers over it 
+     * - {function} [dropHandler]: function to execute when a draggable is dropped in this droppable (receives selectedData as a parameter)
+     * - {function} [dataFlavor]: Only accept drops of objects that are instances of the specified function  
      * 
-     * Binding example: {hoverClass: 'my-drop-panel', dropHandler: handleDrop)}
+     * Binding example: {hoverClass: 'my-drop-panel', dropHandler: handleDrop, dataFlavor: Fruit}
      * 
      */
     ko.bindingHandlers.droppable = {
@@ -780,6 +781,10 @@ Ink.createModule('Pink.Data.DragDrop', '1', ['Pink.Data.Binding_1', 'Ink.Dom.Ele
             var receiverEl;
             var dataIndex;
             
+        	if (!ko.bindingHandlers.droppable._isRightFlavor(binding.dataFlavor)) {
+        		return;
+        	}
+
             if (draggable.parentNode) {
                 draggable.parentNode.removeChild(draggable);
             }
@@ -808,9 +813,25 @@ Ink.createModule('Pink.Data.DragDrop', '1', ['Pink.Data.Binding_1', 'Ink.Dom.Ele
         	}
         },
         
-        _handleHover: function(draggable, droppable, evt) {
+        _isRightFlavor: function(dataFlavor) {
+        	if (dataFlavor) {
+        		if (dataTransfer instanceof Array) {
+        			return dataTransfer.length==1 && dataTransfer[0] instanceof dataFlavor;
+        		} else {
+        			return dataTransfer instanceof dataFlavor;
+        		}
+        	}
+        	
+        	return true;
+        },
+        
+        _handleHover: function(binding, draggable, droppable, evt) {
         	var receiverEl;
 
+        	if (!ko.bindingHandlers.droppable._isRightFlavor(binding.dataFlavor)) {
+        		return;
+        	}
+        	
         	ko.bindingHandlers.droppable._clearHints();
         	receiverEl=document.elementFromPoint(evt.clientX, evt.clientY);
             receiverEl=inkEl.findUpwardsByClass(receiverEl, 'drag-enabled');
@@ -832,12 +853,12 @@ Ink.createModule('Pink.Data.DragDrop', '1', ['Pink.Data.Binding_1', 'Ink.Dom.Ele
         init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
             var attr;
             var binding = ko.unwrap(valueAccessor());
-            var options = {hoverClass: 'pink-drop-panel-active', onHover: ko.bindingHandlers.droppable._handleHover, onDrop: ko.bindingHandlers.droppable._handleDrop.bind(this, binding), onDropOut: ko.bindingHandlers.droppable._clearHints}; 
+            var options = {hoverClass: 'pink-drop-panel-active', onHover: ko.bindingHandlers.droppable._handleHover.bind(this, binding), onDrop: ko.bindingHandlers.droppable._handleDrop.bind(this, binding), onDropOut: ko.bindingHandlers.droppable._clearHints}; 
             
             if (typeof binding == 'object') {
-                for (attr in binding) {
-                    options[attr] = ko.unwrap(binding[attr]);
-                }
+            	if (binding.hoverClass) {
+            		options.hoverClass += ' '+binding.hoverClass;
+            	}
             }
             
             inkCss.addClassName(element, 'pink-disable-text-selection');
@@ -857,10 +878,12 @@ Ink.createModule('Pink.Data.DragDrop', '1', ['Pink.Data.Binding_1', 'Ink.Dom.Ele
      * Binding value: {Object}
      * Binding value properties: 
      * - {object} source: Array or ObservableArray that contains the draggable objects 
-     * - {string} draggableTemplate: id of template to render the draggable
-     * - {function} dropHandler: function to execute when a draggable from this container is dropped in a droppable (receives the selectedData as a parameter)
+     * - {string|function} draggableTemplate: string with id of template to render the draggable or function that receives the draggable and returns a corresponding template id  
+     * - {function} [dragOutHandler]: function to execute when a draggable from this container is dropped in a droppable (receives the selectedData as a parameter)
+     * - {function} [afterDraggableRender]: Function that is called after Knockout renders each draggable
      * 
      * Binding example: {source: grayItems, draggableTemplate: 'veggieTemplate', dragOutHandler: onDragOut}
+     *
      * 
      */
     ko.bindingHandlers.draggableContainer = {
@@ -1052,6 +1075,7 @@ Ink.createModule('Pink.Data.DragDrop', '1', ['Pink.Data.Binding_1', 'Ink.Dom.Ele
                 var source = ko.unwrap(binding.source);
                 var childElements;
                 var i;
+                var template;
                 
                 childElements = inkSel.select('.drag-enabled', element);
                 
@@ -1068,8 +1092,14 @@ Ink.createModule('Pink.Data.DragDrop', '1', ['Pink.Data.Binding_1', 'Ink.Dom.Ele
                     draggable = source[i];
                     draggable.guid = guid();
                     draggable.afterRender = binding.afterDraggableRender;
+
+                    if (typeof binding.draggableTemplate == 'function') {
+                    	template = binding.draggableTemplate(draggable);
+                    } else {
+                    	template = binding.draggableTemplate;
+                    }
                     
-                    draggableElement = inkEl.htmlToFragment('<div data-index="'+i+'" class="drag-enabled pink-disable-text-selection" style="cursor: move" data-bind="template: {afterRender: $data.afterRender, name: \''+binding.draggableTemplate+'\'}"/>').firstChild;
+                    draggableElement = inkEl.htmlToFragment('<div data-index="'+i+'" class="drag-enabled pink-disable-text-selection" style="cursor: move" data-bind="template: {afterRender: $data.afterRender, name: \''+template+'\'}"/>').firstChild;
                     draggableElement.dataTransfer = {data: draggable};
                     
                     ko.applyBindings(draggable, draggableElement);

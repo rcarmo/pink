@@ -905,9 +905,13 @@ Ink.createModule('App.Example.Home', '1', ['Pink.Data.Binding_1', 'Pink.Data.Too
                             <h2 class="push-left">Drag & Drop</h2>
                         </header>
                         <p>
-                            'Pink.Data.DragDrop' provides binding handlers to render drop targets and draggable elements containers.
+                            'Pink.Data.DragDrop' provides binding handlers to render drop targets and draggable elements.
                             These bindings allow a clean separation of the rendered draggable and the underlying data object, meaning that the view model only needs to 
-                            handle pure js objects instead of DOM elements.   
+                            handle pure js objects instead of DOM elements.
+                            
+                        </p>
+                        <p>
+                            The drop targets also permit the definition of a supported data flavor, that checks if the transfered data is an instance of a specified constructor function.   
                         </p>
                         <p>
                             The 'draggableContainer' handler builds a container widget for draggables, delegating the draggable rendering to a specified Knockout template.
@@ -923,7 +927,8 @@ Ink.createModule('App.Example.Home', '1', ['Pink.Data.Binding_1', 'Pink.Data.Too
 
 &lt;div data-bind="draggableContainer: container" /&gt;
 &lt;div data-bind="droppable: trash" /&gt;
-&lt;script id="colorTemplate" type="text/html"&gt;&lt;img data-bind="attr: {src: $data+'.png'}"/&gt;script&gt;
+&lt;script id="colorTemplate" type="text/html"&gt;&lt;img data-bind="attr: {src: $data.name+'.png'}"/&gt;script&gt;
+&lt;script id="sizeTemplate" type="text/html"&gt;&lt;img data-bind="attr: {width: $data.value}"/&gt;script&gt;
                             </pre></blockquote>                            
                         </p>
                         <h4><em>Binding value</em></h4>
@@ -940,7 +945,10 @@ Ink.createModule('App.Example.Home', '1', ['Pink.Data.Binding_1', 'Pink.Data.Dra
     var Module = function() {
         var self=this;
         
-        this.dataItems = ko.observableArray(['blue', 'red', 'cyan', 'green', 'black', 'white']);
+        function Color(name) {this.name = name;};
+        function Size(value) {this.value = value;};
+        
+        this.dataItems = ko.observableArray([new Color('blue'), new Color('red'), new Color('cyan'), new Size(10), new Size(20)]);
         
         this.trash = {
             hoverClass: 'my-drop-panel', 
@@ -951,24 +959,34 @@ Ink.createModule('App.Example.Home', '1', ['Pink.Data.Binding_1', 'Pink.Data.Dra
                 for (i=0; i < data.length; i++) {
                     self.dataItems.remove(data[i]);
                 }
-            } 
+            },
+            dataFlavor: Color 
         };
         
         this.container = {
             source: this.dataItems,
-            draggableTemplate: 'colorTemplate'
+            draggableTemplate: function(draggable) {return draggable instanceof Color ? 'colorTemplate' : 'sizeTemplate';}
         };
 ...
                             </pre></blockquote>
                         </p>
                         <p>
-                            - Draggable container options:
+                            - 'draggableContainer' options:
 
                             <ul class="unstyled">
-                                <li><b>source</b> <em>Observable</em> Array with the draggable objects.</li>
-                                <li><b>draggableTemplate</b> String with the id of a Knockout template.</li>
+                                <li><b>source</b> <em>Observable</em> array with the draggable objects.</li>
+                                <li><b>draggableTemplate</b> String with id of template to render the draggable or function that receives the draggable and returns a corresponding template id.</li>
                                 <li><b>dragOutHandler</b> Function that is called when an object from this container is dropped in a droppable.</li>
-                                <li><b>afterDraggableRender</b> Function that is called after Knockout renders each draggable</li>
+                                <li><b>afterDraggableRender</b> Function that is called after Knockout renders each draggable.</li>
+                            </ul>
+                        </p>
+                        <p>
+                            - 'droppable' options:
+
+                            <ul class="unstyled">
+                                <li><b>hoverClass</b> String with class name to add to the element when a draggable of the right flavor hovers over it.</li>
+                                <li><b>dropHandler</b> Function to execute when a draggable is dropped in this droppable (receives selectedData as a parameter).</li>
+                                <li><b>dataFlavor</b> Constructor function. If specified, the droppable only accepts drops of objects that are instances of this function.</li>
                             </ul>
                         </p>
                     </article>
