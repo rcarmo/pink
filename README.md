@@ -1,6 +1,6 @@
 [![Stories in Ready](https://badge.waffle.io/sapo/pink.png?label=ready&title=Ready)](https://waffle.io/sapo/pink)
 
-Pink v2.0.1
+Pink v2.1.0
 ===========
 
 An architectural Pattern for [Ink][i].
